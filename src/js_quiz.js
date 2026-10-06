@@ -58,20 +58,50 @@
     q.opts = rest; q.slot = slot;
     return q;
   }
-  /* o = { dans: [7], type: 'mix', n: 10 }. 순서대로 asks every fact of every chosen 단 once, in order; the others draw n facts without repeats */
+  /* how well a fact is known, from what is kept for it: [first answers right, first answers wrong, right in a row since the last miss].
+     'new' never asked, 'good' three right in a row, 'hard' missed and not yet answered right since, 'learn' anything between */
+  var FACT_LEVEL = { good: '잘함', learn: '연습 중', hard: '어려움', 'new': '처음' };
+  function factLevel(f) {
+    if (!f || !(f[0] + f[1])) return 'new';
+    var run = f.length > 2 ? f[2] : (f[0] > f[1] ? 1 : 0);   /* a record from before the run count was kept */
+    if (run >= 3) return 'good';
+    if (f[1] > 0 && run === 0) return 'hard';
+    return 'learn';
+  }
+  function factRecord(stats, key, ok) {
+    var f = stats[key] || (stats[key] = [0, 0, 0]);
+    if (ok) { f[0]++; f[2] = (f[2] || 0) + 1; } else { f[1]++; f[2] = 0; }
+    return f;
+  }
+  /* which facts a mixed run asks: weak ones (hard or still learning) about 40%, new ones 40%, known ones 20%. A share with nothing in it goes to the others */
+  var QUIZ_MIX = [['weak', 0.4], ['new', 0.4], ['good', 0.2]];
+  function qDraw(all, n, stats, rf) {
+    var bins = { weak: [], 'new': [], good: [] }, facts = [], i;
+    all.forEach(function (f) { var l = factLevel(stats && stats[f[0] + 'x' + f[1]]); bins[l === 'hard' || l === 'learn' ? 'weak' : l].push(f); });
+    var src = {}; for (var k in bins) src[k] = [];
+    function from(bin) {   /* each share is a shuffled bag, so a fact comes back only after the rest of its share */
+      if (!src[bin].length) src[bin] = qShuffle(bins[bin].slice(), rf);
+      return src[bin].pop();
+    }
+    while (facts.length < n) {
+      var live = QUIZ_MIX.filter(function (b) { return bins[b[0]].length; }), sum = 0, r;
+      live.forEach(function (b) { sum += b[1]; });
+      r = rf() * sum;
+      for (i = 0; i < live.length - 1 && r >= live[i][1]; i++) r -= live[i][1];
+      var f = from(live[i][0]);
+      if (facts.length && f === facts[facts.length - 1] && all.length > 1) continue;   /* a bin with one fact in it: draw again */
+      facts.push(f);
+    }
+    return facts;
+  }
+  /* o = { dans: [7], type: 'mix', n: 10, stats: save.quiz.facts }. 순서대로 asks every fact of every chosen 단 once, in order; the others draw n facts without repeats */
   function quizDeck(o, rf) {
     rf = rf || Math.random;
     var type = QUIZ_TYPES[o.type] ? o.type : 'mix', dans = o.dans && o.dans.length ? o.dans.slice() : [2], facts = [], all = [], i, j;
     for (i = 0; i < dans.length; i++) for (j = 1; j <= 9; j++) all.push([dans[i], j]);
     if (type === 'seq') facts = all;
     else {
-      var n = o.n || 10, bag = [];
-      while (facts.length < n) {
-        if (!bag.length) bag = qShuffle(all.slice(), rf);
-        var f = bag.pop();
-        if (facts.length && facts[facts.length - 1][0] === f[0] && facts[facts.length - 1][1] === f[1] && bag.length) { bag.unshift(f); f = bag.pop(); }
-        facts.push(f);
-      }
+      facts = qDraw(all, o.n || 10, o.stats || null, rf);
     }
     var qs = facts.map(function (f) { return qQuestion(f[0], f[1], type, rf); }), slots = qSlots(qs.length, QUIZ_TYPES[type].opts, rf);
     qs.forEach(function (q, k) { qPlace(q, slots[k]); });

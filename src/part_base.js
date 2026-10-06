@@ -1,5 +1,6 @@
   /* ---------- learning edition: one switch for what is left of the original combat. Weapons, skills and supply crates stay in the code but are off until the quiz modes bring back a gentle version ---------- */
   var EDU = { arms: false };
+  if (!EDU.arms) document.body.classList.add('edu');
 
   /* ---------- textures ---------- */
   function radialTex(stops) {

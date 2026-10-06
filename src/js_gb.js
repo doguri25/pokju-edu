@@ -350,7 +350,7 @@
       : selKind === 'quiz' ? quizMission().name + ' · ' + QUIZ_TYPES[save.quiz.sel.type].name + ' · ' + REGIONS[cond.region].short
       : (selKind === 'surv' || selKind === 'free' ? KINDS[selKind].name + ' · ' + REGIONS[cond.region].short + ' · ' + TIME_LABEL[cond.time] + ' · ' + WEATHERS[cond.weather].name : '미션 ' + (selMission + 1) + ' ' + MISSIONS[selMission].name));
   }
-  function renderMenu() { renderGrid(); renderGear(); renderKinds(); renderMissions(); renderTA(); renderRace(); renderCond(); renderQuiz(); renderFoot(); }
+  function renderMenu() { renderGrid(); renderGear(); renderKinds(); renderMissions(); renderTA(); renderRace(); renderCond(); renderQuiz(); renderRec(); renderFoot(); }
   function pickCourse() {
     var m = missionFor(selKind);
     if (m === mission) return;
@@ -366,7 +366,7 @@
   function setTab(name) {
     if (KINDS[name]) { setKind(name); name = 'mode'; }
     menuTab = name; closeInfo();
-    ['car', 'gear', 'mode', 'set'].forEach(function (t) { $('pane-' + t).hidden = t !== name; $('tab-' + t).setAttribute('aria-selected', t === name ? 'true' : 'false'); });
+    ['car', 'gear', 'mode', 'rec', 'set'].forEach(function (t) { $('pane-' + t).hidden = t !== name; $('tab-' + t).setAttribute('aria-selected', t === name ? 'true' : 'false'); });
     if (name === 'mode' && mode === 'menu') { pickCourse(); renderFoot(); }
     if (name === 'mode') scrollSel();
   }
@@ -414,7 +414,7 @@
       if (!tr.won) { tr.won = true; if (tr.phase === 'play' && !tr.hold) { say('미션 완료. ' + mission.done, 3); tr.t = Math.min(tr.t, 2.8); } }
       return;
     }
-    mode = 'result'; won = win; resultT = win ? 1.0 : 1.6; failWhy = why || '';
+    mode = 'result'; won = win; resultT = win ? 1.0 : 1.6; failWhy = why || ''; $('res-grid').innerHTML = '';
     var cn = CARS[player.car].name, got = win ? scrap : Math.floor(scrap / 20) * 10, bonus, tNow = +tPlay.toFixed(2), newRec = false, snd = '', N = function (v) { return v.toLocaleString('ko-KR'); };
     var kmNow = (dist0() / 1000).toFixed(2) + ' km', half = '모은 고철의 절반 ' + got;
     $('res-next').hidden = true; $('res-ending').hidden = true;
@@ -884,7 +884,7 @@
     var lo = loadoutOf(selCar); lo[s] = e.target.value || null; storeSave();
     var keepX = player.x; setCar(selCar, loadoutOf(selCar)); player.x = keepX; sfx('click'); renderGear(); renderGrid();
   });
-  ['car', 'gear', 'mode', 'set'].forEach(function (t) { $('tab-' + t).addEventListener('click', function () { sfx('click'); setTab(t); }); });
+  ['car', 'gear', 'mode', 'rec', 'set'].forEach(function (t) { $('tab-' + t).addEventListener('click', function () { sfx('click'); setTab(t); }); });
   $('opt-sound').addEventListener('change', function () { setSfx($('opt-sound').checked); sfx('click'); });
   $('opt-unlock').addEventListener('change', function () { save.unlockAll = $('opt-unlock').checked; storeSave(); renderMenu(); });
   $('opt-reset').addEventListener('click', function () {

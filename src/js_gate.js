@@ -63,7 +63,7 @@
   function quizBegin() {
     var o = quizSel();
     quizOff();
-    quiz.deck = quizDeck({ dans: o.dans, type: o.type, n: 10 });
+    quiz.deck = quizDeck({ dans: o.dans, type: o.type, n: 10, stats: save.quiz.facts });
     quiz.pace = QUIZ_PACE[o.pace] || QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0;
     quiz.phase = 'wait'; quiz.t = 0.8;
   }
@@ -90,7 +90,7 @@
       sfx('cycle');
     } else if (quiz.phase === 'ask' && dist >= quiz.d) {
       var picked = clamp(Math.floor((px + QG_EDGE) / quiz.g.W), 0, q.n - 1), first = dk.i <= dk.main, ok = quizAnswer(dk, q, picked);
-      if (first) { var f = save.quiz.facts[q.key] || (save.quiz.facts[q.key] = [0, 0]); f[ok ? 0 : 1]++; }
+      if (first) factRecord(save.quiz.facts, q.key, ok);
       gatesDim(q, picked);
       if (ok) {
         if (first) quiz.ok++; quiz.combo++; quiz.best = Math.max(quiz.best, quiz.combo); score += 100 + 20 * Math.min(quiz.combo - 1, 5); scrap += 20;
@@ -113,7 +113,10 @@
   /* the result panel for a quiz run; returns the sound to play */
   function quizResult() {
     var sc = quizScore(quiz.deck), N = function (v) { return v.toLocaleString('ko-KR'); }, got = scrap, all = sc.right === sc.total;
+    var asked = {}; quiz.deck.items.forEach(function (q) { asked[q.key] = true; });
+    save.quiz.runs = (save.quiz.runs || []).concat([{ day: dayText(Date.now()), name: mission.name, type: QUIZ_TYPES[quiz.deck.type].name, right: sc.right, total: sc.total }]).slice(-30);
     save.scrap += got; storeSave(); setMusic('menu'); quizOff();
+    $('res-grid').innerHTML = factGrid(quiz.deck.dans.slice().sort(), asked);
     $('res-title').textContent = all ? '모두 맞혔다!' : (sc.right >= sc.total * 0.7 ? '잘했어요' : '끝까지 달렸어요');
     $('res-story').textContent = sc.total + '문제 가운데 ' + sc.right + '문제를 맞혔다.' + (sc.missed.length ? ' 틀린 문제는 끝에서 ' + sc.fixed + '개를 다시 맞혔다.' : '');
     resRows([['문제', mission.name + ' · ' + QUIZ_TYPES[quiz.deck.type].name], ['맞힌 문제', sc.right + ' / ' + sc.total], ['가장 긴 연속 정답', quiz.best + '개'],
@@ -121,6 +124,35 @@
     $('res-reward').textContent = '고철 ' + got + ' (맞힌 문제마다 20) · 보유 ' + N(save.scrap);
     return all ? 'record' : (sc.right >= sc.total * 0.7 ? 'win' : 'fail');
   }
+  /* the 9×9 record. dans: the rows to show; now: the facts of the run just played, outlined */
+  var LV_MARK = { good: '★', learn: '●', hard: '▲', 'new': '' };
+  function factGrid(dans, now) {
+    var h = '<table class="fgrid"><tr><th></th>', a, b;
+    for (b = 1; b <= 9; b++) h += '<th>×' + b + '</th>';
+    h += '</tr>';
+    dans.forEach(function (a) {
+      h += '<tr><th>' + a + '단</th>';
+      for (b = 1; b <= 9; b++) {
+        var k = a + 'x' + b, lv = factLevel(save.quiz.facts[k]);
+        h += '<td class="lv-' + lv + (now && now[k] ? ' now' : '') + '" title="' + a + '×' + b + '=' + a * b + ' · ' + FACT_LEVEL[lv] + '">' + a * b + '<i>' + LV_MARK[lv] + '</i></td>';
+      }
+      h += '</tr>';
+    });
+    return h + '</table><div class="flegend"><span>★ 잘함 (세 번 연속 맞힘)</span><span>● 연습 중</span><span>▲ 어려움 (틀린 뒤 아직 못 맞힘)</span><span>빈칸 처음</span></div>';
+  }
+  function levelCount(dans) {
+    var c = { good: 0, learn: 0, hard: 0, 'new': 0 };
+    dans.forEach(function (a) { for (var b = 1; b <= 9; b++) c[factLevel(save.quiz.facts[a + 'x' + b])]++; });
+    return c;
+  }
+  function renderRec() {
+    var all = [2, 3, 4, 5, 6, 7, 8, 9], c = levelCount(all), runs = save.quiz.runs || [], h = '';
+    $('rec-sum').textContent = '72문제 가운데 잘함 ' + c.good + ' · 연습 중 ' + c.learn + ' · 어려움 ' + c.hard + ' · 처음 ' + c['new'];
+    $('rec-grid').innerHTML = factGrid(all);
+    runs.slice(-10).reverse().forEach(function (r) { h += row(r.day, r.name + ' · ' + r.type + ' · ' + r.right + ' / ' + r.total); });
+    $('rec-runs').innerHTML = h || row('아직', '구구단을 한 판 끝내면 여기에 남습니다.');
+  }
+  function dayText(t) { var d = new Date(t); return (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes(); }
   /* menu: what to ask */
   var DAN_OPTS = [['2', '2단'], ['3', '3단'], ['4', '4단'], ['5', '5단'], ['6', '6단'], ['7', '7단'], ['8', '8단'], ['9', '9단'], ['2,5', '2단과 5단'], ['3,6', '3단과 6단'], ['4,8', '4단과 8단'], ['all', '2단~9단 모두']];
   function renderQuiz() {

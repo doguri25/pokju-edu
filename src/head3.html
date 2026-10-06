@@ -211,6 +211,20 @@ body.cine #caption { bottom: calc(9% + 14px); font-size: 16px; }
 #title .kind span { font-size: 12px; }
 .mis { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; }
 .mis b { font-size: 15px; font-weight: 700; }
+/* the 9×9 record: a symbol and a tint per level, so it reads without colour too */
+.fgrid { border-collapse: separate; border-spacing: 2px; width: 100%; max-width: 420px; margin: 6px auto 4px; font-variant-numeric: tabular-nums; table-layout: fixed; }
+.fgrid th { font-size: 11px; font-weight: 700; color: var(--chip-sub); padding: 0; }
+.fgrid th:first-child { width: 30px; }
+.fgrid td { position: relative; text-align: center; font-size: 12px; line-height: 1; padding: 6px 0 9px; border-radius: 6px; background: var(--track); color: var(--chip-fg); }
+.fgrid td i { position: absolute; left: 0; right: 0; bottom: 1px; font-style: normal; font-size: 8px; line-height: 1; }
+.fgrid td.lv-good { background: rgba(24, 128, 56, 0.24); }
+.fgrid td.lv-learn { background: rgba(25, 103, 210, 0.16); }
+.fgrid td.lv-hard { background: rgba(197, 34, 31, 0.24); }
+.fgrid td.lv-new { background: var(--solid); box-shadow: inset 0 0 0 1px var(--line); color: var(--chip-sub); }
+.fgrid td.now { box-shadow: inset 0 0 0 2px var(--chip-fg); }
+.flegend { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: center; font-size: 12px; color: var(--chip-sub); margin: 2px 0 6px; }
+/* the learning edition has no damage, so the 내구 bar is not shown */
+.edu #hp-text, .edu .status .bar.hp { display: none; }
 .detail { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; font-size: 13px; line-height: 1.5; }
 .detail dt { font-weight: 700; color: var(--chip-sub); white-space: nowrap; }
 .detail dd { margin: 0; }
@@ -384,11 +398,12 @@ body.cine #card { bottom: 9%; }
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.2</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.3</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
     <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false" hidden>아이템</button>
     <button type="button" role="tab" id="tab-mode" data-tab="mode" aria-selected="false">모드</button>
+    <button type="button" role="tab" id="tab-rec" data-tab="rec" aria-selected="false">기록</button>
     <button type="button" role="tab" id="tab-set" data-tab="set" aria-selected="false">설정</button>
   </div>
   <div class="scroll">
@@ -442,6 +457,13 @@ body.cine #card { bottom: 9%; }
     <dl class="detail" id="cond-brief"></dl>
   </div>
   </div>
+  <div class="pane" id="pane-rec" role="tabpanel" aria-labelledby="tab-rec" hidden>
+    <p class="premise">구구단 문제마다 처음 답한 결과로 얼마나 익혔는지 보여 줍니다. 틀렸거나 아직 덜 익힌 문제는 「섞어서」 문제에 더 자주 나옵니다.</p>
+    <p class="sub" id="rec-sum"></p>
+    <div id="rec-grid"></div>
+    <h2>최근 기록</h2>
+    <dl class="detail" id="rec-runs"></dl>
+  </div>
   <div class="pane" id="pane-set" role="tabpanel" aria-labelledby="tab-set" hidden>
     <label class="opt"><input type="checkbox" id="opt-sound" checked>효과음</label>
     <label class="opt"><input type="checkbox" id="opt-music">배경음악</label>
@@ -472,6 +494,7 @@ body.cine #card { bottom: 9%; }
   <b id="res-title">미션 완료</b>
   <p class="story" id="res-story"></p>
   <dl class="detail stats" id="res-text"></dl>
+  <div id="res-grid"></div>
   <p class="reward" id="res-reward"></p>
   <div class="btns"><button type="button" id="res-menu">선택 화면으로</button><button type="button" id="res-retry">다시 하기</button><button type="button" class="primary" id="res-next" hidden>다음 미션</button><button type="button" class="primary" id="res-ending" hidden>엔딩 보기</button></div>
 </div>

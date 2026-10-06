@@ -3,7 +3,7 @@
 'use strict';
 var fs = require('fs'), path = require('path'), assert = require('assert');
 var src = fs.readFileSync(path.join(__dirname, '..', 'src', 'js_quiz.js'), 'utf8');
-var Q = new Function(src + '\nreturn { quizDeck: quizDeck, quizNext: quizNext, quizAnswer: quizAnswer, quizScore: quizScore, qQuestion: qQuestion, QUIZ_TYPES: QUIZ_TYPES };')();
+var Q = new Function(src + '\nreturn { quizDeck: quizDeck, quizNext: quizNext, quizAnswer: quizAnswer, quizScore: quizScore, qQuestion: qQuestion, QUIZ_TYPES: QUIZ_TYPES, factLevel: factLevel, factRecord: factRecord };')();
 function seeded(s) { return function () { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x80000000; }; }
 var fails = 0, runs = 0;
 function test(name, fn) { runs++; try { fn(); } catch (e) { fails++; console.log('실패: ' + name + '\n  ' + e.message); } }
@@ -63,6 +63,34 @@ test('틀린 문제는 끝에 한 번만 다시 나오고, 점수는 첫 답만 
   d = Q.quizDeck({ dans: [7], type: 'mix', n: 3 }, rf);
   while ((q = Q.quizNext(d))) Q.quizAnswer(d, q, (q.slot + 1) % q.n, rf);
   assert.strictEqual(d.items.length, 6, '다시 나온 문제를 또 틀려도 한 번 더 나오지 않는다');
+});
+
+test('숙달 단계: 처음, 연습 중, 어려움, 잘함', function () {
+  var st = {};
+  assert.strictEqual(Q.factLevel(st['7x8']), 'new');
+  Q.factRecord(st, '7x8', true); assert.strictEqual(Q.factLevel(st['7x8']), 'learn');
+  Q.factRecord(st, '7x8', false); assert.strictEqual(Q.factLevel(st['7x8']), 'hard');
+  Q.factRecord(st, '7x8', true); Q.factRecord(st, '7x8', true); assert.strictEqual(Q.factLevel(st['7x8']), 'learn');
+  Q.factRecord(st, '7x8', true); assert.strictEqual(Q.factLevel(st['7x8']), 'good');
+  assert.strictEqual(Q.factLevel([2, 1]), 'learn', '예전 기록(연속 칸 없음)도 읽는다');
+});
+test('섞어서: 약한 문제 약 40%, 새 문제 약 40%, 아는 문제 약 20%', function () {
+  var st = {}, b, k, c = { weak: 0, 'new': 0, good: 0 }, n = 0;
+  for (b = 1; b <= 3; b++) st['7x' + b] = [0, 1, 0];          /* 어려움 3개 */
+  for (b = 4; b <= 6; b++) st['7x' + b] = [3, 0, 3];          /* 잘함 3개, 7x7~7x9 는 처음 */
+  for (var s = 1; s <= 400; s++) {
+    var d = Q.quizDeck({ dans: [7], type: 'mix', n: 10, stats: st }, seeded(s));
+    d.items.forEach(function (q, i) {
+      var l = Q.factLevel(st[q.key]); c[l === 'hard' ? 'weak' : l]++; n++;
+      if (i) assert.notStrictEqual(q.key, d.items[i - 1].key, '같은 문제가 이어 나옴');
+    });
+  }
+  ['weak', 'new', 'good'].forEach(function (k2) { var want = k2 === 'good' ? 0.2 : 0.4, r = c[k2] / n; assert.ok(Math.abs(r - want) < 0.04, k2 + ' 비율 ' + r.toFixed(3)); });
+});
+test('섞어서: 모두 잘하는 단이면 그 안에서 고르고, 한 단의 아는 문제만 남아도 끝난다', function () {
+  var st = {}; for (var b = 1; b <= 9; b++) st['3x' + b] = [3, 0, 3];
+  var d = Q.quizDeck({ dans: [3], type: 'mix', n: 10, stats: st }, seeded(5)); assert.strictEqual(d.items.length, 10);
+  st = { '2x1': [0, 1, 0] }; d = Q.quizDeck({ dans: [2], type: 'blank', n: 10, stats: st }, seeded(9)); assert.strictEqual(d.items.length, 10);
 });
 
 console.log(runs - fails + ' / ' + runs + ' 통과');

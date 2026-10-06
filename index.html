@@ -219,6 +219,20 @@ body.cine #caption { bottom: calc(9% + 14px); font-size: 16px; }
 #title .kind span { font-size: 12px; }
 .mis { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; }
 .mis b { font-size: 15px; font-weight: 700; }
+/* the 9×9 record: a symbol and a tint per level, so it reads without colour too */
+.fgrid { border-collapse: separate; border-spacing: 2px; width: 100%; max-width: 420px; margin: 6px auto 4px; font-variant-numeric: tabular-nums; table-layout: fixed; }
+.fgrid th { font-size: 11px; font-weight: 700; color: var(--chip-sub); padding: 0; }
+.fgrid th:first-child { width: 30px; }
+.fgrid td { position: relative; text-align: center; font-size: 12px; line-height: 1; padding: 6px 0 9px; border-radius: 6px; background: var(--track); color: var(--chip-fg); }
+.fgrid td i { position: absolute; left: 0; right: 0; bottom: 1px; font-style: normal; font-size: 8px; line-height: 1; }
+.fgrid td.lv-good { background: rgba(24, 128, 56, 0.24); }
+.fgrid td.lv-learn { background: rgba(25, 103, 210, 0.16); }
+.fgrid td.lv-hard { background: rgba(197, 34, 31, 0.24); }
+.fgrid td.lv-new { background: var(--solid); box-shadow: inset 0 0 0 1px var(--line); color: var(--chip-sub); }
+.fgrid td.now { box-shadow: inset 0 0 0 2px var(--chip-fg); }
+.flegend { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: center; font-size: 12px; color: var(--chip-sub); margin: 2px 0 6px; }
+/* the learning edition has no damage, so the 내구 bar is not shown */
+.edu #hp-text, .edu .status .bar.hp { display: none; }
 .detail { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; font-size: 13px; line-height: 1.5; }
 .detail dt { font-weight: 700; color: var(--chip-sub); white-space: nowrap; }
 .detail dd { margin: 0; }
@@ -392,11 +406,12 @@ body.cine #card { bottom: 9%; }
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.2</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.3</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
     <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false" hidden>아이템</button>
     <button type="button" role="tab" id="tab-mode" data-tab="mode" aria-selected="false">모드</button>
+    <button type="button" role="tab" id="tab-rec" data-tab="rec" aria-selected="false">기록</button>
     <button type="button" role="tab" id="tab-set" data-tab="set" aria-selected="false">설정</button>
   </div>
   <div class="scroll">
@@ -450,6 +465,13 @@ body.cine #card { bottom: 9%; }
     <dl class="detail" id="cond-brief"></dl>
   </div>
   </div>
+  <div class="pane" id="pane-rec" role="tabpanel" aria-labelledby="tab-rec" hidden>
+    <p class="premise">구구단 문제마다 처음 답한 결과로 얼마나 익혔는지 보여 줍니다. 틀렸거나 아직 덜 익힌 문제는 「섞어서」 문제에 더 자주 나옵니다.</p>
+    <p class="sub" id="rec-sum"></p>
+    <div id="rec-grid"></div>
+    <h2>최근 기록</h2>
+    <dl class="detail" id="rec-runs"></dl>
+  </div>
   <div class="pane" id="pane-set" role="tabpanel" aria-labelledby="tab-set" hidden>
     <label class="opt"><input type="checkbox" id="opt-sound" checked>효과음</label>
     <label class="opt"><input type="checkbox" id="opt-music">배경음악</label>
@@ -480,6 +502,7 @@ body.cine #card { bottom: 9%; }
   <b id="res-title">미션 완료</b>
   <p class="story" id="res-story"></p>
   <dl class="detail stats" id="res-text"></dl>
+  <div id="res-grid"></div>
   <p class="reward" id="res-reward"></p>
   <div class="btns"><button type="button" id="res-menu">선택 화면으로</button><button type="button" id="res-retry">다시 하기</button><button type="button" class="primary" id="res-next" hidden>다음 미션</button><button type="button" class="primary" id="res-ending" hidden>엔딩 보기</button></div>
 </div>
@@ -560,6 +583,7 @@ body.cine #card { bottom: 9%; }
 
   /* ---------- learning edition: one switch for what is left of the original combat. Weapons, skills and supply crates stay in the code but are off until the quiz modes bring back a gentle version ---------- */
   var EDU = { arms: false };
+  if (!EDU.arms) document.body.classList.add('edu');
 
   /* ---------- textures ---------- */
   function radialTex(stops) {
@@ -3680,7 +3704,7 @@ body.cine #card { bottom: 9%; }
 
   /* progress: scrap, unlocked cars, cleared missions and loadouts are kept in this browser only */
   var SAVE_KEY = 'pokju-edu-v1';
-  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: false, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true, quiz: { sel: { dan: '2', type: 'seq', pace: 'mid' }, facts: {} } };
+  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: false, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true, quiz: { sel: { dan: '2', type: 'seq', pace: 'mid' }, facts: {}, runs: [] } };
   var W_PRICE = { mg: 0, bolt: 500, laser: 600, shotgun: 400, flame: 500, saw: 300, water: 500, cannon: 700, missile: 800, mine: 400 }, UP_PRICE = [0, 400, 900];
   function loadSave() {
     try {
@@ -3704,6 +3728,7 @@ body.cine #card { bottom: 9%; }
           if (QUIZ_TYPES[qs.type]) save.quiz.sel.type = qs.type;
           if (QUIZ_PACE[qs.pace]) save.quiz.sel.pace = qs.pace;
           if (s.quiz.facts && typeof s.quiz.facts === 'object') save.quiz.facts = s.quiz.facts;
+          if (Array.isArray(s.quiz.runs)) save.quiz.runs = s.quiz.runs.slice(-30);
         }
         if (s.camV === 2 && (s.cam === 'top' || s.cam === 'low' || s.cam === 'cockpit')) { save.cam = s.cam; save.camV = 2; }
         save.unlockAll = !!s.unlockAll; save.muted = !!s.muted; save.music = s.music === true; save.sfx = s.sfx !== false; save.calm = !!s.calm; save.help = !!s.help; save.mirror = s.mirror !== false;
@@ -5083,20 +5108,50 @@ body.cine #card { bottom: 9%; }
     q.opts = rest; q.slot = slot;
     return q;
   }
-  /* o = { dans: [7], type: 'mix', n: 10 }. 순서대로 asks every fact of every chosen 단 once, in order; the others draw n facts without repeats */
+  /* how well a fact is known, from what is kept for it: [first answers right, first answers wrong, right in a row since the last miss].
+     'new' never asked, 'good' three right in a row, 'hard' missed and not yet answered right since, 'learn' anything between */
+  var FACT_LEVEL = { good: '잘함', learn: '연습 중', hard: '어려움', 'new': '처음' };
+  function factLevel(f) {
+    if (!f || !(f[0] + f[1])) return 'new';
+    var run = f.length > 2 ? f[2] : (f[0] > f[1] ? 1 : 0);   /* a record from before the run count was kept */
+    if (run >= 3) return 'good';
+    if (f[1] > 0 && run === 0) return 'hard';
+    return 'learn';
+  }
+  function factRecord(stats, key, ok) {
+    var f = stats[key] || (stats[key] = [0, 0, 0]);
+    if (ok) { f[0]++; f[2] = (f[2] || 0) + 1; } else { f[1]++; f[2] = 0; }
+    return f;
+  }
+  /* which facts a mixed run asks: weak ones (hard or still learning) about 40%, new ones 40%, known ones 20%. A share with nothing in it goes to the others */
+  var QUIZ_MIX = [['weak', 0.4], ['new', 0.4], ['good', 0.2]];
+  function qDraw(all, n, stats, rf) {
+    var bins = { weak: [], 'new': [], good: [] }, facts = [], i;
+    all.forEach(function (f) { var l = factLevel(stats && stats[f[0] + 'x' + f[1]]); bins[l === 'hard' || l === 'learn' ? 'weak' : l].push(f); });
+    var src = {}; for (var k in bins) src[k] = [];
+    function from(bin) {   /* each share is a shuffled bag, so a fact comes back only after the rest of its share */
+      if (!src[bin].length) src[bin] = qShuffle(bins[bin].slice(), rf);
+      return src[bin].pop();
+    }
+    while (facts.length < n) {
+      var live = QUIZ_MIX.filter(function (b) { return bins[b[0]].length; }), sum = 0, r;
+      live.forEach(function (b) { sum += b[1]; });
+      r = rf() * sum;
+      for (i = 0; i < live.length - 1 && r >= live[i][1]; i++) r -= live[i][1];
+      var f = from(live[i][0]);
+      if (facts.length && f === facts[facts.length - 1] && all.length > 1) continue;   /* a bin with one fact in it: draw again */
+      facts.push(f);
+    }
+    return facts;
+  }
+  /* o = { dans: [7], type: 'mix', n: 10, stats: save.quiz.facts }. 순서대로 asks every fact of every chosen 단 once, in order; the others draw n facts without repeats */
   function quizDeck(o, rf) {
     rf = rf || Math.random;
     var type = QUIZ_TYPES[o.type] ? o.type : 'mix', dans = o.dans && o.dans.length ? o.dans.slice() : [2], facts = [], all = [], i, j;
     for (i = 0; i < dans.length; i++) for (j = 1; j <= 9; j++) all.push([dans[i], j]);
     if (type === 'seq') facts = all;
     else {
-      var n = o.n || 10, bag = [];
-      while (facts.length < n) {
-        if (!bag.length) bag = qShuffle(all.slice(), rf);
-        var f = bag.pop();
-        if (facts.length && facts[facts.length - 1][0] === f[0] && facts[facts.length - 1][1] === f[1] && bag.length) { bag.unshift(f); f = bag.pop(); }
-        facts.push(f);
-      }
+      facts = qDraw(all, o.n || 10, o.stats || null, rf);
     }
     var qs = facts.map(function (f) { return qQuestion(f[0], f[1], type, rf); }), slots = qSlots(qs.length, QUIZ_TYPES[type].opts, rf);
     qs.forEach(function (q, k) { qPlace(q, slots[k]); });
@@ -5185,7 +5240,7 @@ body.cine #card { bottom: 9%; }
   function quizBegin() {
     var o = quizSel();
     quizOff();
-    quiz.deck = quizDeck({ dans: o.dans, type: o.type, n: 10 });
+    quiz.deck = quizDeck({ dans: o.dans, type: o.type, n: 10, stats: save.quiz.facts });
     quiz.pace = QUIZ_PACE[o.pace] || QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0;
     quiz.phase = 'wait'; quiz.t = 0.8;
   }
@@ -5212,7 +5267,7 @@ body.cine #card { bottom: 9%; }
       sfx('cycle');
     } else if (quiz.phase === 'ask' && dist >= quiz.d) {
       var picked = clamp(Math.floor((px + QG_EDGE) / quiz.g.W), 0, q.n - 1), first = dk.i <= dk.main, ok = quizAnswer(dk, q, picked);
-      if (first) { var f = save.quiz.facts[q.key] || (save.quiz.facts[q.key] = [0, 0]); f[ok ? 0 : 1]++; }
+      if (first) factRecord(save.quiz.facts, q.key, ok);
       gatesDim(q, picked);
       if (ok) {
         if (first) quiz.ok++; quiz.combo++; quiz.best = Math.max(quiz.best, quiz.combo); score += 100 + 20 * Math.min(quiz.combo - 1, 5); scrap += 20;
@@ -5235,7 +5290,10 @@ body.cine #card { bottom: 9%; }
   /* the result panel for a quiz run; returns the sound to play */
   function quizResult() {
     var sc = quizScore(quiz.deck), N = function (v) { return v.toLocaleString('ko-KR'); }, got = scrap, all = sc.right === sc.total;
+    var asked = {}; quiz.deck.items.forEach(function (q) { asked[q.key] = true; });
+    save.quiz.runs = (save.quiz.runs || []).concat([{ day: dayText(Date.now()), name: mission.name, type: QUIZ_TYPES[quiz.deck.type].name, right: sc.right, total: sc.total }]).slice(-30);
     save.scrap += got; storeSave(); setMusic('menu'); quizOff();
+    $('res-grid').innerHTML = factGrid(quiz.deck.dans.slice().sort(), asked);
     $('res-title').textContent = all ? '모두 맞혔다!' : (sc.right >= sc.total * 0.7 ? '잘했어요' : '끝까지 달렸어요');
     $('res-story').textContent = sc.total + '문제 가운데 ' + sc.right + '문제를 맞혔다.' + (sc.missed.length ? ' 틀린 문제는 끝에서 ' + sc.fixed + '개를 다시 맞혔다.' : '');
     resRows([['문제', mission.name + ' · ' + QUIZ_TYPES[quiz.deck.type].name], ['맞힌 문제', sc.right + ' / ' + sc.total], ['가장 긴 연속 정답', quiz.best + '개'],
@@ -5243,6 +5301,35 @@ body.cine #card { bottom: 9%; }
     $('res-reward').textContent = '고철 ' + got + ' (맞힌 문제마다 20) · 보유 ' + N(save.scrap);
     return all ? 'record' : (sc.right >= sc.total * 0.7 ? 'win' : 'fail');
   }
+  /* the 9×9 record. dans: the rows to show; now: the facts of the run just played, outlined */
+  var LV_MARK = { good: '★', learn: '●', hard: '▲', 'new': '' };
+  function factGrid(dans, now) {
+    var h = '<table class="fgrid"><tr><th></th>', a, b;
+    for (b = 1; b <= 9; b++) h += '<th>×' + b + '</th>';
+    h += '</tr>';
+    dans.forEach(function (a) {
+      h += '<tr><th>' + a + '단</th>';
+      for (b = 1; b <= 9; b++) {
+        var k = a + 'x' + b, lv = factLevel(save.quiz.facts[k]);
+        h += '<td class="lv-' + lv + (now && now[k] ? ' now' : '') + '" title="' + a + '×' + b + '=' + a * b + ' · ' + FACT_LEVEL[lv] + '">' + a * b + '<i>' + LV_MARK[lv] + '</i></td>';
+      }
+      h += '</tr>';
+    });
+    return h + '</table><div class="flegend"><span>★ 잘함 (세 번 연속 맞힘)</span><span>● 연습 중</span><span>▲ 어려움 (틀린 뒤 아직 못 맞힘)</span><span>빈칸 처음</span></div>';
+  }
+  function levelCount(dans) {
+    var c = { good: 0, learn: 0, hard: 0, 'new': 0 };
+    dans.forEach(function (a) { for (var b = 1; b <= 9; b++) c[factLevel(save.quiz.facts[a + 'x' + b])]++; });
+    return c;
+  }
+  function renderRec() {
+    var all = [2, 3, 4, 5, 6, 7, 8, 9], c = levelCount(all), runs = save.quiz.runs || [], h = '';
+    $('rec-sum').textContent = '72문제 가운데 잘함 ' + c.good + ' · 연습 중 ' + c.learn + ' · 어려움 ' + c.hard + ' · 처음 ' + c['new'];
+    $('rec-grid').innerHTML = factGrid(all);
+    runs.slice(-10).reverse().forEach(function (r) { h += row(r.day, r.name + ' · ' + r.type + ' · ' + r.right + ' / ' + r.total); });
+    $('rec-runs').innerHTML = h || row('아직', '구구단을 한 판 끝내면 여기에 남습니다.');
+  }
+  function dayText(t) { var d = new Date(t); return (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes(); }
   /* menu: what to ask */
   var DAN_OPTS = [['2', '2단'], ['3', '3단'], ['4', '4단'], ['5', '5단'], ['6', '6단'], ['7', '7단'], ['8', '8단'], ['9', '9단'], ['2,5', '2단과 5단'], ['3,6', '3단과 6단'], ['4,8', '4단과 8단'], ['all', '2단~9단 모두']];
   function renderQuiz() {
@@ -5603,7 +5690,7 @@ body.cine #card { bottom: 9%; }
       : selKind === 'quiz' ? quizMission().name + ' · ' + QUIZ_TYPES[save.quiz.sel.type].name + ' · ' + REGIONS[cond.region].short
       : (selKind === 'surv' || selKind === 'free' ? KINDS[selKind].name + ' · ' + REGIONS[cond.region].short + ' · ' + TIME_LABEL[cond.time] + ' · ' + WEATHERS[cond.weather].name : '미션 ' + (selMission + 1) + ' ' + MISSIONS[selMission].name));
   }
-  function renderMenu() { renderGrid(); renderGear(); renderKinds(); renderMissions(); renderTA(); renderRace(); renderCond(); renderQuiz(); renderFoot(); }
+  function renderMenu() { renderGrid(); renderGear(); renderKinds(); renderMissions(); renderTA(); renderRace(); renderCond(); renderQuiz(); renderRec(); renderFoot(); }
   function pickCourse() {
     var m = missionFor(selKind);
     if (m === mission) return;
@@ -5619,7 +5706,7 @@ body.cine #card { bottom: 9%; }
   function setTab(name) {
     if (KINDS[name]) { setKind(name); name = 'mode'; }
     menuTab = name; closeInfo();
-    ['car', 'gear', 'mode', 'set'].forEach(function (t) { $('pane-' + t).hidden = t !== name; $('tab-' + t).setAttribute('aria-selected', t === name ? 'true' : 'false'); });
+    ['car', 'gear', 'mode', 'rec', 'set'].forEach(function (t) { $('pane-' + t).hidden = t !== name; $('tab-' + t).setAttribute('aria-selected', t === name ? 'true' : 'false'); });
     if (name === 'mode' && mode === 'menu') { pickCourse(); renderFoot(); }
     if (name === 'mode') scrollSel();
   }
@@ -5667,7 +5754,7 @@ body.cine #card { bottom: 9%; }
       if (!tr.won) { tr.won = true; if (tr.phase === 'play' && !tr.hold) { say('미션 완료. ' + mission.done, 3); tr.t = Math.min(tr.t, 2.8); } }
       return;
     }
-    mode = 'result'; won = win; resultT = win ? 1.0 : 1.6; failWhy = why || '';
+    mode = 'result'; won = win; resultT = win ? 1.0 : 1.6; failWhy = why || ''; $('res-grid').innerHTML = '';
     var cn = CARS[player.car].name, got = win ? scrap : Math.floor(scrap / 20) * 10, bonus, tNow = +tPlay.toFixed(2), newRec = false, snd = '', N = function (v) { return v.toLocaleString('ko-KR'); };
     var kmNow = (dist0() / 1000).toFixed(2) + ' km', half = '모은 고철의 절반 ' + got;
     $('res-next').hidden = true; $('res-ending').hidden = true;
@@ -6137,7 +6224,7 @@ body.cine #card { bottom: 9%; }
     var lo = loadoutOf(selCar); lo[s] = e.target.value || null; storeSave();
     var keepX = player.x; setCar(selCar, loadoutOf(selCar)); player.x = keepX; sfx('click'); renderGear(); renderGrid();
   });
-  ['car', 'gear', 'mode', 'set'].forEach(function (t) { $('tab-' + t).addEventListener('click', function () { sfx('click'); setTab(t); }); });
+  ['car', 'gear', 'mode', 'rec', 'set'].forEach(function (t) { $('tab-' + t).addEventListener('click', function () { sfx('click'); setTab(t); }); });
   $('opt-sound').addEventListener('change', function () { setSfx($('opt-sound').checked); sfx('click'); });
   $('opt-unlock').addEventListener('change', function () { save.unlockAll = $('opt-unlock').checked; storeSave(); renderMenu(); });
   $('opt-reset').addEventListener('click', function () {
