@@ -82,6 +82,16 @@ button, select, label, [role="tab"] { touch-action: manipulation; }
 .qbox.no b, .qbox.no #q-kick { color: var(--danger); }
 .qopts { display: flex; gap: 8px; justify-content: center; margin-top: 6px; }
 .qopts span { min-width: 64px; padding: 2px 12px; border-radius: 12px; color: #ffffff; font-family: var(--display); font-size: 26px; border: 2px solid rgba(255, 255, 255, 0.85); }
+.qbox.long { width: min(640px, calc(100vw - 32px)); box-sizing: border-box; }
+.qbox.long b { font-size: 32px; white-space: normal; word-break: keep-all; }
+.qbox #q-why { margin: 4px 0 0; font-size: 16px; font-weight: 700; word-break: keep-all; }
+.stable { border-collapse: separate; border-spacing: 2px; width: 100%; max-width: 420px; margin: 6px auto; font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; }
+.stable th { font-weight: 700; color: var(--chip-sub); text-align: left; padding: 3px 4px; white-space: nowrap; }
+.stable tr:first-child th { text-align: center; }
+.stable td { padding: 4px 0; border-radius: 6px; }
+.stable td.lv-good { background: rgba(24, 128, 56, 0.24); } .stable td.lv-learn { background: rgba(25, 103, 210, 0.16); } .stable td.lv-hard { background: rgba(197, 34, 31, 0.24); } .stable td.lv-new { box-shadow: inset 0 0 0 1px var(--line); }
+.stable tr.now th { color: var(--chip-fg); }
+@media (max-width: 720px) { .qbox.long b { font-size: 24px; } .qbox #q-why { font-size: 14px; } }
 @media (max-width: 720px) { .qbox { top: max(150px, 22vh); padding: 6px 14px 10px; } .qbox b { font-size: 36px; } .qopts span { font-size: 22px; min-width: 52px; } }
 #vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 46%, transparent 52%, rgba(0, 0, 0, 0.5) 100%); opacity: 0.45; }
 .hud .chip { pointer-events: auto; }
@@ -233,6 +243,8 @@ body.cine #caption { bottom: calc(9% + 14px); font-size: 16px; }
 .flegend { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: center; font-size: 12px; color: var(--chip-sub); margin: 2px 0 6px; }
 /* the learning edition has no damage, so the 내구 bar is not shown */
 .edu #hp-text, .edu .status .bar.hp { display: none; }
+.linkrow { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
+#link-out { width: 100%; box-sizing: border-box; margin-top: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; font: 12px var(--body); background: var(--solid); color: var(--chip-fg); }
 .detail { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; font-size: 13px; line-height: 1.5; }
 .detail dt { font-weight: 700; color: var(--chip-sub); white-space: nowrap; }
 .detail dd { margin: 0; }
@@ -371,7 +383,7 @@ body.cine #card { bottom: 9%; }
 <div id="fade"></div>
 <div id="caption" class="chip" hidden aria-live="polite"></div>
 
-<div class="qbox" id="qbox" hidden aria-live="polite"><span id="q-kick"></span><b id="q-text"></b><div class="qopts" id="q-opts"></div></div>
+<div class="qbox" id="qbox" hidden aria-live="polite"><span id="q-kick"></span><b id="q-text"></b><p id="q-why" hidden></p><div class="qopts" id="q-opts"></div></div>
 <div class="hud" id="hud" hidden>
   <div class="row">
     <div class="chip obj">
@@ -406,7 +418,7 @@ body.cine #card { bottom: 9%; }
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.6</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.7</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
     <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false">아이템</button>
@@ -456,9 +468,10 @@ body.cine #card { bottom: 9%; }
     <dl class="detail" id="ch-brief"></dl>
   </div>
   <div class="pane" id="pane-quiz" hidden>
-    <p class="premise">새벽: “마성이 계산을 까먹었어. 길마다 숫자 갈림길이 생겼는데, 맞는 답이 적힌 문으로 지나가면 다시 기억해.”</p>
-    <label class="opt sel">단<select id="opt-dan"></select></label>
-    <label class="opt sel">문제<select id="opt-qtype"></select></label>
+    <p class="premise" id="quiz-premise"></p>
+    <label class="opt sel" id="lb-dan">단<select id="opt-dan"></select></label>
+    <label class="opt sel" id="lb-qtype">문제<select id="opt-qtype"></select></label>
+    <label class="opt sel" id="lb-spell" hidden>묶음<select id="opt-spell"></select></label>
     <label class="opt sel">생각할 시간<select id="opt-pace"></select></label>
     <label class="opt sel">푸는 법<select id="opt-style"><option value="gate">깃발 문 지나가기</option><option value="shoot">정답 풍선 맞히기</option></select></label>
     <label class="opt sel">적<select id="opt-foe"><option value="on">폭주 차량과 드론이 나온다</option><option value="off">깃발 문만 나온다</option></select></label>
@@ -471,11 +484,18 @@ body.cine #card { bottom: 9%; }
     <label class="opt sel">날씨<select id="opt-weather"></select></label>
     <dl class="detail" id="cond-brief"></dl>
   </div>
+  <div class="linkrow">
+    <button type="button" class="plain" id="link-make">수업 링크 만들기</button>
+    <div id="link-box" hidden><input type="text" id="link-out" readonly aria-label="수업 링크 주소"><p class="keys" id="link-note"></p></div>
+    <p class="keys">지금 고른 모드와 설정이 담긴 주소를 만듭니다. 학생이 이 주소로 열면 이야기를 건너뛰고 바로 이 설정으로 시작합니다. 기록은 학생 기기에만 남습니다.</p>
+  </div>
   </div>
   <div class="pane" id="pane-rec" role="tabpanel" aria-labelledby="tab-rec" hidden>
     <p class="premise">구구단 문제마다 처음 답한 결과로 얼마나 익혔는지 보여 줍니다. 틀렸거나 아직 덜 익힌 문제는 「섞어서」 문제에 더 자주 나옵니다.</p>
     <p class="sub" id="rec-sum"></p>
     <div id="rec-grid"></div>
+    <h2>맞춤법</h2>
+    <div id="rec-spell"></div>
     <h2>최근 기록</h2>
     <dl class="detail" id="rec-runs"></dl>
   </div>
@@ -3711,7 +3731,7 @@ body.cine #card { bottom: 9%; }
 
   /* progress: scrap, unlocked cars, cleared missions and loadouts are kept in this browser only */
   var SAVE_KEY = 'pokju-edu-v1';
-  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: false, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true, quiz: { sel: { dan: '2', type: 'seq', pace: 'mid', foe: 'on', style: 'gate' }, facts: {}, runs: [] }, story: { open: 0, stars: {}, tries: {}, done: false } };
+  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: false, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true, quiz: { sel: { dan: '2', type: 'seq', pace: 'mid', foe: 'on', style: 'gate', spell: 'dwae' }, facts: {}, runs: [] }, story: { open: 0, stars: {}, tries: {}, done: false } };
   var W_PRICE = { mg: 0, bolt: 500, laser: 600, shotgun: 400, flame: 500, saw: 300, water: 500, cannon: 700, missile: 800, mine: 400 }, UP_PRICE = [0, 400, 900];
   function loadSave() {
     try {
@@ -3742,6 +3762,7 @@ body.cine #card { bottom: 9%; }
           if (QUIZ_PACE[qs.pace]) save.quiz.sel.pace = qs.pace;
           if (qs.foe === 'off') save.quiz.sel.foe = 'off';
           if (qs.style === 'shoot') save.quiz.sel.style = 'shoot';
+          if (qs.spell === 'all' || SPELL_DATA.sets.some(function (st) { return st.key === qs.spell; })) save.quiz.sel.spell = qs.spell;
           if (s.quiz.facts && typeof s.quiz.facts === 'object') save.quiz.facts = s.quiz.facts;
           if (Array.isArray(s.quiz.runs)) save.quiz.runs = s.quiz.runs.slice(-30);
         }
@@ -3769,7 +3790,7 @@ body.cine #card { bottom: 9%; }
   function aggK() {
     if (mode === 'menu' || runKind === 'free' || runKind === 'tut') return 0;
     if (runKind === 'story') return 0.62 + 0.05 * runMission;   /* the chapters grow like the missions did */
-    if (runKind === 'quiz') return 0.8;
+    if (runKind === 'quiz' || runKind === 'spell') return 0.8;
     if (runKind === 'mis') return runMission < 18 ? 0.65 + 0.03 * runMission : Math.min(1.3, 1.16 + 0.012 * (runMission - 17));
     if (runKind === 'surv') return Math.min(1.5, 0.7 + 0.1 * survLevel);
     return 1;
@@ -4587,10 +4608,11 @@ body.cine #card { bottom: 9%; }
     surv: { name: '서바이벌', sub: '쓰러질 때까지 버티기' },
     story: { name: '이야기', sub: '고장 난 마성을 구구단으로 고치기' },
     quiz: { name: '구구단', sub: '정답이 적힌 깃발 문으로 지나가기' },
+    spell: { name: '맞춤법', sub: '빈칸에 들어갈 바른 말 고르기' },
     free: { name: '연습 주행', sub: '문제 없이 길과 차에 익숙해지기' },
     tut: { name: '운전 연습', sub: '조작과 이야기 익히기' }
   };
-  var KIND_ORDER = ['story', 'quiz', 'free'],   /* learning edition: the original modes stay in the code but are not offered; the quiz modes join this list */
+  var KIND_ORDER = ['story', 'quiz', 'spell', 'free'],   /* learning edition: the original modes stay in the code but are not offered; the quiz modes join this list */
       TIME_LABEL = { day: '낮', sunset: '노을', night: '밤' };
   var runKind = 'mis', rolling = false, cond = { region: 'city', time: 'day', weather: 'clear' }, raceM = [], rivals = [], finN = 0, survLevel = 1, farmT = 4;
   var RACE_REWARD = [400, 250, 150, 80, 50, 50];
@@ -4607,7 +4629,7 @@ body.cine #card { bottom: 9%; }
     m.aim = '경쟁 차량 5대보다 먼저 결승선을 지난다. 쏘거나 부딪혀 상대를 늦출 수 있다.';
     return (raceM[i] = m);
   }
-  function missionFor(kind) { return kind === 'story' ? storyMission(selChapter) : kind === 'quiz' ? quizMission() : kind === 'ta' ? TRACKS[selTrack] : (kind === 'race' ? raceOf(selTrack) : (kind === 'surv' || kind === 'free' ? condMission(kind) : MISSIONS[selMission])); }
+  function missionFor(kind) { return kind === 'story' ? storyMission(selChapter) : kind === 'quiz' || kind === 'spell' ? quizMission(kind) : kind === 'ta' ? TRACKS[selTrack] : (kind === 'race' ? raceOf(selTrack) : (kind === 'surv' || kind === 'free' ? condMission(kind) : MISSIONS[selMission])); }
   function roadText(m) {
     var R = REGIONS[m.region || 'city'], W = WEATHERS[m.weather || 'clear'];
     return R.name + ' · ' + W.name + '. ' + R.feel + (W.key === 'clear' ? '' : ' ' + W.feel);
@@ -5066,14 +5088,15 @@ body.cine #card { bottom: 9%; }
     else if (!rd.mid && objF >= 0.5 && m) rd.mid = radio(m[0], m[1]);
     else if (!rd.near && objF >= 0.86 && n) rd.near = radio(n[0], n[1], 3.6);
   }
-  /* ---------- 구구단 출제기: no 3D in here, so it can be tested on its own (tests/quiz.test.js).
+  /* ---------- 출제기 (구구단과 맞춤법): no 3D in here, so it can be tested on its own (tests/quiz.test.js).
      A deck is one run: the facts to ask in order, each with its options and where the right one sits.
      Wrong options are the answers children actually give (a neighbouring product, the same last digit, a + b), never random numbers ---------- */
   var QUIZ_TYPES = {
     seq: { name: '순서대로', opts: 2, think: 0 },
     mix: { name: '섞어서', opts: 2, think: 0 },
     blank: { name: '빈칸 찾기', opts: 3, think: 0.5 },
-    rev: { name: '거꾸로', opts: 4, think: 1 }
+    rev: { name: '거꾸로', opts: 4, think: 1 },
+    spell: { name: '맞춤법', opts: 2, think: 2, own: true }   /* sentences take longer to read; the options come from the bank */
   };
   var QUIZ_PACE = { slow: { name: '천천히', t: 6 }, mid: { name: '보통', t: 4 }, fast: { name: '빠르게', t: 2.5 } };
   function qPick(arr, rf) { return arr[(rf() * arr.length) | 0]; }
@@ -5108,6 +5131,16 @@ body.cine #card { bottom: 9%; }
     else { q.text = a + ' × ' + b + ' = ?'; q.ans = a * b; q.full = a + ' × ' + b + ' = ' + a * b; q.opts = qOptions(a * b, qWrongsMul(a, b), t.opts, rf); }
     return q;
   }
+  /* a spelling item from the bank: { q: '이제 집에 가도 ___?', a: '돼', w: ['되'], why: '…' }. The blank is shown as a line, and the full sentence after the answer */
+  function qSpell(f, rf) {
+    var it = f.item, q = { key: f.key, type: 'spell', n: 1 + it.w.length, set: f.set };
+    q.text = it.q.replace('___', '＿＿'); q.full = it.q.replace('___', it.a); q.ans = it.a;
+    q.opts = [it.a].concat(qShuffle(it.w.slice(), rf)); q.why = it.why || '';
+    return q;
+  }
+  /* a fact is { a, b } for 구구단 (a is the 단) or { set, item } for 맞춤법; both carry their record key */
+  function mulFact(a, b) { return { a: a, b: b, key: a + 'x' + b }; }
+  function qMake(f, type, rf) { var q = f.item ? qSpell(f, rf) : qQuestion(f.a, f.b, type, rf); q.fact = f; return q; }
   /* where the right answer sits, over the whole deck: with two gates it is left exactly half the time and never more than twice running on the same side */
   function qSlots(count, n, rf) {
     var s = [], i, run, tries;
@@ -5145,7 +5178,7 @@ body.cine #card { bottom: 9%; }
   var QUIZ_MIX = [['weak', 0.4], ['new', 0.4], ['good', 0.2]];
   function qDraw(all, n, stats, rf) {
     var bins = { weak: [], 'new': [], good: [] }, facts = [], i;
-    all.forEach(function (f) { var l = factLevel(stats && stats[f[0] + 'x' + f[1]]); bins[l === 'hard' || l === 'learn' ? 'weak' : l].push(f); });
+    all.forEach(function (f) { var l = factLevel(stats && stats[f.key]); bins[l === 'hard' || l === 'learn' ? 'weak' : l].push(f); });
     var src = {}; for (var k in bins) src[k] = [];
     function from(bin) {   /* each share is a shuffled bag, so a fact comes back only after the rest of its share */
       if (!src[bin].length) src[bin] = qShuffle(bins[bin].slice(), rf);
@@ -5162,18 +5195,19 @@ body.cine #card { bottom: 9%; }
     }
     return facts;
   }
-  /* o = { dans: [7], type: 'mix', n: 10, stats: save.quiz.facts }. 순서대로 asks every fact of every chosen 단 once, in order; the others draw n facts without repeats */
+  /* 구구단: o = { dans: [7], type: 'mix', n: 10, stats: save.quiz.facts }. 순서대로 asks every fact of every chosen 단 once, in order; the others draw n facts.
+     맞춤법: o = { subject: 'spell', sets: ['dwae'], bank: { dwae: { items: [...] } }, n: 10, stats }. Facts are drawn the same way, weak ones first */
   function quizDeck(o, rf) {
     rf = rf || Math.random;
-    var type = QUIZ_TYPES[o.type] ? o.type : 'mix', dans = o.dans && o.dans.length ? o.dans.slice() : [2], facts = [], all = [], i, j;
-    for (i = 0; i < dans.length; i++) for (j = 1; j <= 9; j++) all.push([dans[i], j]);
-    if (type === 'seq') facts = all;
-    else {
-      facts = qDraw(all, o.n || 10, o.stats || null, rf);
-    }
-    var qs = facts.map(function (f) { return qQuestion(f[0], f[1], type, rf); }), slots = qSlots(qs.length, QUIZ_TYPES[type].opts, rf);
-    qs.forEach(function (q, k) { qPlace(q, slots[k]); });
-    return { type: type, dans: dans, items: qs, main: qs.length, i: 0, retried: {}, log: [] };
+    var spell = o.subject === 'spell', type = spell ? 'spell' : (QUIZ_TYPES[o.type] && !QUIZ_TYPES[o.type].own ? o.type : 'mix'), dans = o.dans && o.dans.length ? o.dans.slice() : [2], sets = o.sets || [], all = [], i, j;
+    if (spell) sets.forEach(function (k) { (o.bank[k] ? o.bank[k].items : []).forEach(function (it, n) { all.push({ set: k, item: it, key: 'sp:' + k + ':' + n }); }); });
+    else for (i = 0; i < dans.length; i++) for (j = 1; j <= 9; j++) all.push(mulFact(dans[i], j));
+    var facts = type === 'seq' ? all : qDraw(all, o.n || 10, o.stats || null, rf), qs = facts.map(function (f) { return qMake(f, type, rf); });
+    /* balance the right answer's place among questions with the same number of options */
+    var byN = {};
+    qs.forEach(function (q) { (byN[q.n] || (byN[q.n] = [])).push(q); });
+    for (var n in byN) { var sl = qSlots(byN[n].length, +n, rf); byN[n].forEach(function (q, k) { qPlace(q, sl[k]); }); }
+    return { subject: spell ? 'spell' : 'mul', type: type, dans: dans, sets: sets, items: qs, main: qs.length, i: 0, retried: {}, log: [] };
   }
   /* the next question, or null when the deck is done */
   function quizNext(deck) { return deck.i < deck.items.length ? deck.items[deck.i++] : null; }
@@ -5184,7 +5218,7 @@ body.cine #card { bottom: 9%; }
     deck.log.push({ key: q.key, ok: ok, retry: retry, picked: picked < 0 ? null : q.opts[picked] });
     if (!ok && !retry && !deck.retried[q.key]) {
       deck.retried[q.key] = true;
-      var again = qQuestion(q.a, q.b, q.type, rf);
+      var again = qMake(q.fact, q.type, rf);
       deck.items.push(qPlace(again, (rf() * again.n) | 0));
     }
     return ok;
@@ -5193,6 +5227,109 @@ body.cine #card { bottom: 9%; }
     var first = deck.log.filter(function (r) { return !r.retry; }), right = first.filter(function (r) { return r.ok; }).length;
     return { right: right, total: first.length, missed: first.filter(function (r) { return !r.ok; }).map(function (r) { return r.key; }), fixed: deck.log.filter(function (r) { return r.retry && r.ok; }).length };
   }
+  var SPELL_DATA = {
+  "about": "맞춤법 문제 묶음. q 에는 빈칸 ___ 를 하나 넣고, a 는 정답, w 는 틀린 보기(1~3개), why 는 틀렸을 때 보여 줄 설명입니다. 고친 뒤 sh build.sh 로 다시 만드세요.",
+  "sets": [
+    { "key": "dwae", "name": "되/돼", "tip": "「되」 자리에 「하」, 「돼」 자리에 「해」를 넣어 봐. 「해」가 어울리면 「돼」야.",
+      "items": [
+        { "q": "이제 집에 가도 ___?", "a": "돼", "w": ["되"], "why": "「가도 되어?」를 줄인 말이라 「돼」예요. 「가도 해?」처럼 「해」가 어울려요." },
+        { "q": "나는 커서 선생님이 ___ 싶어.", "a": "되고", "w": ["돼고"], "why": "「하고 싶어」처럼 「하」가 어울리니까 「되고」예요." },
+        { "q": "벌써 다섯 시가 ___.", "a": "됐다", "w": ["됬다"], "why": "「되었다」를 줄이면 「됐다」예요. 「됬다」는 없는 말이에요." },
+        { "q": "복도에서 뛰면 안 ___.", "a": "돼", "w": ["되"], "why": "「안 되어」를 줄인 말이라 「안 돼」예요." },
+        { "q": "물이 얼음이 ___ 버렸다.", "a": "되어", "w": ["돼어"], "why": "「돼」 안에 이미 「되어」가 들어 있어서 「돼어」는 틀린 말이에요." },
+        { "q": "숙제를 다 하면 놀아도 ___요.", "a": "돼", "w": ["되"], "why": "「되어요」를 줄이면 「돼요」예요." },
+        { "q": "어른이 ___면 무엇을 하고 싶니?", "a": "되", "w": ["돼"], "why": "「하면」처럼 「하」가 어울리니까 「되면」이에요." },
+        { "q": "약속을 잘 지키는 사람이 ___자.", "a": "되", "w": ["돼"], "why": "「하자」처럼 「하」가 어울리니까 「되자」예요." }
+      ] },
+    { "key": "an", "name": "안/않", "tip": "말 앞에 오면 「안」, 「-지」 뒤에 오면 「않」이야.",
+      "items": [
+        { "q": "나는 오늘 학교에 ___ 갔다.", "a": "안", "w": ["않"], "why": "「아니 갔다」를 줄인 말이라 「안」이에요. 말 앞에는 「안」이 와요." },
+        { "q": "밥을 다 먹지 ___.", "a": "않았다", "w": ["안았다"], "why": "「-지」 뒤에는 「않」이 와요. 「먹지 아니하였다」를 줄인 말이에요." },
+        { "q": "오늘은 비가 ___ 온다.", "a": "안", "w": ["않"], "why": "「아니 온다」를 줄인 말이라 「안」이에요." },
+        { "q": "숙제를 ___ 하면 선생님께 혼나.", "a": "안", "w": ["않"], "why": "말 앞에 오니까 「안」이에요." },
+        { "q": "그 말은 맞지 ___.", "a": "않아", "w": ["안아"], "why": "「-지」 뒤에는 「않」이 와요." },
+        { "q": "동생은 이제 울지 ___.", "a": "않는다", "w": ["안는다"], "why": "「울지」의 「-지」 뒤라서 「않는다」예요." },
+        { "q": "길에 쓰레기를 버리지 ___ 합시다.", "a": "않도록", "w": ["안도록"], "why": "「버리지」의 「-지」 뒤라서 「않도록」이에요." },
+        { "q": "아직 아무도 ___ 왔어?", "a": "안", "w": ["않"], "why": "「아니 왔어?」를 줄인 말이라 「안」이에요." }
+      ] },
+    { "key": "mat", "name": "맞히다/맞추다", "tip": "정답은 「맞히고」, 퍼즐이나 시간은 「맞춰」. 두 개를 대어 보면 「맞추다」야.",
+      "items": [
+        { "q": "퀴즈의 정답을 ___.", "a": "맞혔다", "w": ["맞췄다"], "why": "답이 맞게 하는 건 「맞히다」예요." },
+        { "q": "친구와 서로 답을 ___ 보았다.", "a": "맞춰", "w": ["맞혀"], "why": "두 개를 나란히 대어 보는 건 「맞추다」예요." },
+        { "q": "공을 던져 과녁을 ___.", "a": "맞혔다", "w": ["맞췄다"], "why": "던지거나 쏘아서 닿게 하는 건 「맞히다」예요." },
+        { "q": "퍼즐 조각을 하나하나 ___.", "a": "맞췄다", "w": ["맞혔다"], "why": "제자리에 끼워 넣는 건 「맞추다」예요." },
+        { "q": "알람을 일곱 시에 ___.", "a": "맞췄다", "w": ["맞혔다"], "why": "시간을 정해 두는 건 「맞추다」예요." },
+        { "q": "수수께끼를 세 개나 ___.", "a": "맞혔다", "w": ["맞췄다"], "why": "답을 알아낸 거니까 「맞히다」예요." },
+        { "q": "친구와 발을 ___ 걸었다.", "a": "맞춰", "w": ["맞혀"], "why": "서로 같게 하는 건 「맞추다」예요." }
+      ] },
+    { "key": "wen", "name": "웬/왠", "tip": "「왠지」만 「왠」이고, 나머지는 다 「웬」이야. 웬일, 웬 떡!",
+      "items": [
+        { "q": "___일로 여기까지 왔니?", "a": "웬", "w": ["왠"], "why": "「어찌 된 일」이라는 뜻은 「웬일」이에요." },
+        { "q": "오늘은 ___지 기분이 좋다.", "a": "왠", "w": ["웬"], "why": "「왜인지」를 줄인 말이라 「왠지」예요." },
+        { "q": "문 앞에 ___ 강아지가 앉아 있어.", "a": "웬", "w": ["왠"], "why": "「어떤」이라는 뜻은 「웬」이에요." },
+        { "q": "이게 ___ 떡이야!", "a": "웬", "w": ["왠"], "why": "「어찌 된」이라는 뜻이라 「웬」이에요." },
+        { "q": "___지 비가 올 것 같아.", "a": "왠", "w": ["웬"], "why": "「왜인지」를 줄인 말이라 「왠지」예요." },
+        { "q": "___만한 일로는 울지 않아.", "a": "웬", "w": ["왠"], "why": "「웬만하다」는 언제나 「웬」이에요." }
+      ] },
+    { "key": "deun", "name": "든지/던지", "tip": "고를 때는 「든지」, 지난 일을 떠올릴 때는 「던지」야.",
+      "items": [
+        { "q": "사과든지 배___ 하나만 골라.", "a": "든지", "w": ["던지"], "why": "여러 개 가운데 고를 때는 「든지」예요." },
+        { "q": "어제는 얼마나 춥___ 손이 꽁꽁 얼었다.", "a": "던지", "w": ["든지"], "why": "지난 일을 떠올릴 때는 「던지」예요." },
+        { "q": "어디___ 따라갈게.", "a": "든지", "w": ["던지"], "why": "어느 곳이나 고를 수 있다는 뜻이라 「든지」예요." },
+        { "q": "그 영화가 얼마나 재미있___ 또 보고 싶다.", "a": "던지", "w": ["든지"], "why": "이미 본 영화를 떠올리는 거라 「던지」예요." },
+        { "q": "무엇이___ 열심히 하자.", "a": "든지", "w": ["던지"], "why": "무엇을 고르든 상관없다는 뜻이라 「든지」예요." },
+        { "q": "어찌나 배가 고프___ 밥을 두 그릇이나 먹었다.", "a": "던지", "w": ["든지"], "why": "지난 일을 떠올리는 거라 「던지」예요." }
+      ] },
+    { "key": "garu", "name": "가르치다/가리키다", "tip": "알려 주는 건 「가르치다」, 손가락으로 짚는 건 「가리키다」야.",
+      "items": [
+        { "q": "선생님께서 우리에게 구구단을 ___.", "a": "가르치셨다", "w": ["가리키셨다"], "why": "알려 주는 건 「가르치다」예요." },
+        { "q": "손가락으로 밤하늘의 별을 ___.", "a": "가리켰다", "w": ["가르쳤다"], "why": "손가락으로 짚는 건 「가리키다」예요." },
+        { "q": "시곗바늘이 세 시를 ___.", "a": "가리킨다", "w": ["가르친다"], "why": "어느 쪽을 짚어 보이는 건 「가리키다」예요." },
+        { "q": "형이 자전거 타는 법을 ___ 주었다.", "a": "가르쳐", "w": ["가리켜"], "why": "방법을 알려 주는 건 「가르치다」예요." },
+        { "q": "지도에서 우리 집을 ___ 보세요.", "a": "가리켜", "w": ["가르쳐"], "why": "어디 있는지 짚어 보이는 건 「가리키다」예요." },
+        { "q": "할머니께 휴대폰 쓰는 법을 ___ 드렸다.", "a": "가르쳐", "w": ["가리켜"], "why": "쓰는 법을 알려 드린 거라 「가르치다」예요." }
+      ] },
+    { "key": "nat", "name": "낫다/낮다/났다/낳다", "tip": "병이 좋아지면 「낫다」, 높지 않으면 「낮다」, 생기면 「났다」, 아기는 「낳다」야.",
+      "items": [
+        { "q": "감기가 다 ___.", "a": "나았다", "w": ["낳았다", "났다"], "why": "병이 좋아지는 건 「낫다」, 그래서 「나았다」예요." },
+        { "q": "이 산은 저 산보다 ___.", "a": "낮다", "w": ["낫다", "났다"], "why": "높지 않은 건 「낮다」예요." },
+        { "q": "밖에서 큰 소리가 ___.", "a": "났다", "w": ["낫다", "낮다"], "why": "소리가 생긴 건 「나다」, 그래서 「났다」예요." },
+        { "q": "고양이가 새끼를 ___.", "a": "낳았다", "w": ["나았다", "났다"], "why": "새끼나 아기를 세상에 내보내는 건 「낳다」예요." },
+        { "q": "이 방법이 저 방법보다 ___.", "a": "낫다", "w": ["낮다", "났다"], "why": "더 좋다는 뜻은 「낫다」예요." },
+        { "q": "책상에 비해 의자가 너무 ___.", "a": "낮다", "w": ["낫다", "났다"], "why": "높이가 높지 않은 건 「낮다」예요." }
+      ] },
+    { "key": "often", "name": "자주 틀리는 말", "tip": "「며칠」은 언제나 「며칠」! 「몇일」이라는 말은 없어.",
+      "items": [
+        { "q": "오늘이 ___이지?", "a": "며칠", "w": ["몇일"], "why": "「몇일」이라는 말은 없어요. 언제나 「며칠」이에요." },
+        { "q": "아이스크림이 ___ 녹았다.", "a": "금세", "w": ["금새"], "why": "「금시에」를 줄인 말이라 「금세」예요." },
+        { "q": "___ 그런 게 아니야.", "a": "일부러", "w": ["일부로"], "why": "「일부러」가 바른 말이에요." },
+        { "q": "숙제를 집에 두고 왔어. ___?", "a": "어떡해", "w": ["어떻해"], "why": "「어떻게 해」를 줄이면 「어떡해」예요." },
+        { "q": "밥을 먹고 ___를 했다.", "a": "설거지", "w": ["설겆이"], "why": "「설거지」가 바른 말이에요." },
+        { "q": "밖에서 놀고 와서 손을 ___ 씻자.", "a": "깨끗이", "w": ["깨끗히"], "why": "「깨끗하다」는 「깨끗이」로 써요." },
+        { "q": "___에 할머니를 만났다.", "a": "오랜만", "w": ["오랫만"], "why": "「오래간만」을 줄인 말이라 「오랜만」이에요." },
+        { "q": "이 문제는 ___ 풀까?", "a": "어떻게", "w": ["어떡해"], "why": "방법을 물을 때는 「어떻게」예요." }
+      ] },
+    { "key": "bara", "name": "바라다/바래다", "tip": "바라는 마음은 「바라」, 「바람」이야. 「바래」는 색이 옅어질 때 써.",
+      "items": [
+        { "q": "네가 꼭 이기길 ___.", "a": "바라", "w": ["바래"], "why": "바라는 마음은 「바라다」라서 「바라」가 맞아요." },
+        { "q": "내 ___은 가족 여행을 가는 거야.", "a": "바람", "w": ["바램"], "why": "「바라다」에서 나온 말이라 「바람」이에요." },
+        { "q": "할머니께서 건강하시기를 ___.", "a": "바라요", "w": ["바래요"], "why": "「바라다」에 「-아요」가 붙어 「바라요」예요." },
+        { "q": "우리 반 모두 행복하길 ___.", "a": "바란다", "w": ["바랜다"], "why": "바라는 마음은 「바란다」예요." },
+        { "q": "모두 좋은 결과를 ___.", "a": "바랐다", "w": ["바랬다"], "why": "「바라다」의 지난 일은 「바랐다」예요." },
+        { "q": "햇볕에 오래 둔 티셔츠 색이 ___.", "a": "바랬다", "w": ["바랐다"], "why": "색이 옅어지는 건 「바래다」, 그래서 「바랬다」예요." }
+      ] },
+    { "key": "ro", "name": "로서/로써", "tip": "사람의 자격은 「로서」, 도구나 재료는 「로써」야.",
+      "items": [
+        { "q": "나는 반장___ 열심히 일했다.", "a": "으로서", "w": ["으로써"], "why": "반장이라는 자격으로 일한 거라 「로서」예요." },
+        { "q": "쌀___ 떡을 만든다.", "a": "로써", "w": ["로서"], "why": "떡을 만드는 재료라서 「로써」예요." },
+        { "q": "대화___ 다툼을 풀었다.", "a": "로써", "w": ["로서"], "why": "다툼을 푸는 방법이라서 「로써」예요." },
+        { "q": "형___ 동생을 잘 돌봐야지.", "a": "으로서", "w": ["으로써"], "why": "형이라는 자격이라서 「로서」예요." },
+        { "q": "나무___ 집을 지었다.", "a": "로써", "w": ["로서"], "why": "집을 짓는 재료라서 「로써」예요." },
+        { "q": "학생___ 지켜야 할 약속이 있다.", "a": "으로서", "w": ["으로써"], "why": "학생이라는 신분이라서 「로서」예요." }
+      ] }
+  ]
+}
+;
   /* ---------- 깃발 문: the quiz on the road. A question shows at the top, a row of gates comes down the road with one option on each,
      and the gate the car drives through is the answer. The gates split the whole road between them, so there is always an answer;
      the time to think is set in seconds, and the gates are put as far ahead as the car covers in that time ---------- */
@@ -5205,7 +5342,10 @@ body.cine #card { bottom: 9%; }
     x.globalAlpha = dim ? 0.35 : 1;
     x.fillStyle = col; x.beginPath(); x.moveTo(16, 4); x.arcTo(w - 4, 4, w - 4, h - 4, 18); x.arcTo(w - 4, h - 4, 4, h - 4, 18); x.arcTo(4, h - 4, 4, 4, 18); x.arcTo(4, 4, w - 4, 4, 18); x.fill();
     x.lineWidth = 8; x.strokeStyle = '#ffffff'; x.stroke();
-    x.fillStyle = '#ffffff'; x.font = '900 ' + Math.round(h * 0.66) + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(text), w / 2, h * 0.55);
+    var fs = Math.round(h * 0.66), font = function (z) { return '900 ' + z + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif'; };
+    x.font = font(fs); var tw = x.measureText(String(text)).width;
+    if (tw > w - 30) { fs = Math.floor(fs * (w - 30) / tw); x.font = font(fs); }   /* a word like 가르치셨다 shrinks to fit the sign */
+    x.fillStyle = '#ffffff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(text), w / 2, h * 0.55);
     x.globalAlpha = 1;
   }
   /* one set of gates per option count, built the first time it is needed */
@@ -5233,7 +5373,7 @@ body.cine #card { bottom: 9%; }
   }
   function gatesShow(q) {
     var s = gateSet(q.n);
-    s.banners.forEach(function (b, i) { gateTex(b.c, q.opts[i], QG_COL[i], false); b.tx.needsUpdate = true; });
+    s.banners.forEach(function (b, i) { gateTex(b.c, q.opts[i], QG_COL[i], false); b.tx.needsUpdate = true; b.m.material.opacity = 1; });
     s.g.visible = true; quiz.g = s;
   }
   function gatesDim(q, picked) {
@@ -5249,6 +5389,10 @@ body.cine #card { bottom: 9%; }
     if (dans.length === 8) return '2단~9단';
     return dans.map(function (d) { return d + '단'; }).join('·');
   }
+  var SPELL_SETS = {}; SPELL_DATA.sets.forEach(function (st) { SPELL_SETS[st.key] = st; });
+  var SPELL_ORDER = SPELL_DATA.sets.map(function (st) { return st.key; });
+  function spellSel() { var s = save.quiz.sel, k = s.spell || 'dwae'; return { subject: 'spell', sets: k === 'all' ? SPELL_ORDER.slice() : [SPELL_SETS[k] ? k : 'dwae'], type: 'spell', pace: s.pace, foe: s.foe !== 'off', style: s.style === 'shoot' ? 'shoot' : 'gate' }; }
+  function setLabel(sets) { return sets.length === SPELL_ORDER.length ? '모든 묶음' : sets.map(function (k) { return SPELL_SETS[k].name; }).join('·'); }
   function quizSel() { var s = save.quiz.sel; return { dans: s.dan === 'all' ? [2, 3, 4, 5, 6, 7, 8, 9] : s.dan.split(',').map(Number), type: s.type, pace: s.pace, foe: s.foe !== 'off', style: s.style === 'shoot' ? 'shoot' : 'gate' }; }
   /* enemies on a quiz road, as in the original missions: f = { drones, kami, strike, buggy, traffic }. null: only the gates */
   function quizFoes(m, f) {
@@ -5257,24 +5401,25 @@ body.cine #card { bottom: 9%; }
     m.traffic = f ? f.traffic || 1.2 : 1; m.chasers = f ? 1 : 0; m.noFoes = !f;
     return m;
   }
-  function quizMission() {
-    var m = condMission('free'), o = quizSel();
-    m.kind = 'quiz'; m.goal = 'quiz'; m.name = '구구단 ' + danLabel(o.dans); m.label = QUIZ_TYPES[o.type].name; m.quiz = o;
+  function quizMission(kind) {
+    var spell = kind === 'spell', m = condMission('free'), o = spell ? spellSel() : quizSel();
+    m.kind = spell ? 'spell' : 'quiz'; m.goal = 'quiz'; m.name = spell ? '맞춤법 ' + setLabel(o.sets) : '구구단 ' + danLabel(o.dans); m.label = QUIZ_TYPES[o.type].name; m.quiz = o;
     m.farm = o.foe && m.region === 'country' ? 0.6 : 0; m.road = { order: ['hill'], gap: [300, 420] };
     quizFoes(m, o.foe ? { drones: 0.5, buggy: true, traffic: 1.2 } : null);
-    m.aim = (o.style === 'shoot' ? '문제를 보고 정답이 적힌 풍선을 쏘아 맞힌다.' : '문제를 보고 정답이 적힌 깃발 문으로 지나간다.') + (o.foe ? ' 덤비는 폭주 차량과 드론은 쏴서 막는다.' : '') + ' 틀린 문제는 끝에 한 번 더 나온다.';
+    m.aim = (o.style === 'shoot' ? '문제를 보고 정답이 적힌 풍선을 쏘아 맞힌다.' : '문제를 보고 정답이 적힌 깃발 문으로 지나간다.') + (spell ? ' 빈칸에 들어갈 바른 말을 고른다.' : '') + (o.foe ? ' 덤비는 폭주 차량과 드론은 쏴서 막는다.' : '') + ' 틀린 문제는 끝에 한 번 더 나온다.';
     return m;
   }
-  function quizRun() { return runKind === 'quiz' || runKind === 'story'; }
+  function quizRun() { return runKind === 'quiz' || runKind === 'spell' || runKind === 'story'; }
   function quizBegin() {
     var o = mission.quiz || quizSel();
     quizOff();
-    quiz.deck = quizDeck({ dans: o.dans, type: o.type, n: 10, stats: save.quiz.facts });
+    quiz.deck = o.subject === 'spell' ? quizDeck({ subject: 'spell', sets: o.sets, bank: SPELL_SETS, n: 10, stats: save.quiz.facts }) : quizDeck({ dans: o.dans, type: o.type, n: 10, stats: save.quiz.facts });
     quiz.style = o.style === 'shoot' && EDU.arms ? 'shoot' : 'gate'; quiz.pace = QUIZ_PACE[o.pace] || QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0; quiz.hinted = false;
     quiz.phase = 'wait'; quiz.t = 0.8;
   }
-  function qboxSet(kick, text, cls, q) {
-    $('q-kick').textContent = kick; $('q-text').textContent = text; $('qbox').className = 'qbox' + (cls ? ' ' + cls : '');
+  function qboxSet(kick, text, cls, q, why) {
+    $('q-kick').textContent = kick; $('q-text').textContent = text; $('qbox').className = 'qbox' + (cls ? ' ' + cls : '') + (text.length > 12 ? ' long' : '');
+    $('q-why').textContent = why || ''; $('q-why').hidden = !why;
     var h = '';
     if (q) q.opts.forEach(function (v, i) { h += '<span style="background:' + QG_COL[i] + '">' + v + '</span>'; });
     $('q-opts').innerHTML = h; $('q-opts').hidden = !q;
@@ -5334,14 +5479,18 @@ body.cine #card { bottom: 9%; }
       qboxSet((quiz.combo >= 3 ? quiz.combo + '개 연속 정답!' : '정답!') + (EDU.arms ? ' · 수리 +20%' : ''), q.full, 'ok');
     } else {
       quiz.combo = 0; player.v = Math.max(car.vmin, player.v * 0.7); sfx('thud');
-      qboxSet(first ? '정답은 이거예요 · 끝에 한 번 더 나와요' : '정답은 이거예요', q.full, 'no');
+      qboxSet(first ? '정답은 이거예요 · 끝에 한 번 더 나와요' : '정답은 이거예요', q.full, 'no', null, q.why);
     }
-    quiz.phase = 'show'; quiz.t = ok ? 1.6 : 2.4;
+    quiz.phase = 'show'; quiz.t = ok ? 1.6 : (q.why ? 3.6 : 2.4);   /* a spelling miss shows why, which takes longer to read */
   }
   function quizStep(dt, px, car) {
     if (quiz.phase === 'off' || mode !== 'play' || briefT > 0 || player.dead) return;
     var dk = quiz.deck, q = quiz.q, bs = quiz.b;
-    if (quiz.g) { quiz.g.g.position.z = dist - quiz.d; if (quiz.phase !== 'ask' && quiz.g.g.position.z > 40) { quiz.g.g.visible = false; quiz.g = null; } }
+    if (quiz.g) {
+      var gz = quiz.g.g.position.z = dist - quiz.d, fade = clamp(-(gz + 2) / 12, 0, 1);   /* the signs fade as the car passes under, so they never fill the screen */
+      quiz.g.banners.forEach(function (b) { b.m.material.opacity = fade; });
+      if (quiz.phase !== 'ask' && gz > 40) { quiz.g.g.visible = false; quiz.g = null; }
+    }
     if (bs) {
       var bz = bs.g.position.z;
       if (quiz.phase === 'ask') {
@@ -5377,14 +5526,16 @@ body.cine #card { bottom: 9%; }
   function quizResult(win) {
     var sc = quizScore(quiz.deck), N = function (v) { return v.toLocaleString('ko-KR'); }, got = win ? scrap : Math.floor(scrap / 2), all = win && sc.right === sc.total;
     var asked = {}; quiz.deck.items.forEach(function (q) { asked[q.key] = true; });
-    save.quiz.runs = (save.quiz.runs || []).concat([{ day: dayText(Date.now()), name: mission.name, type: QUIZ_TYPES[quiz.deck.type].name, right: sc.right, total: sc.total }]).slice(-30);
+    var dk = quiz.deck, spell = dk.subject === 'spell', fullOf = {};
+    dk.items.forEach(function (q) { fullOf[q.key] = spell ? q.full : q.full.replace(/ /g, ''); });
+    save.quiz.runs = (save.quiz.runs || []).concat([{ day: dayText(Date.now()), name: mission.name, type: QUIZ_TYPES[dk.type].name, right: sc.right, total: sc.total }]).slice(-30);
     save.scrap += got; storeSave(); setMusic('menu'); quizOff();
-    $('res-grid').innerHTML = factGrid(quiz.deck.dans.slice().sort(), asked);
+    $('res-grid').innerHTML = spell ? spellTable(dk.sets, asked) : factGrid(dk.dans.slice().sort(), asked);
     $('res-title').textContent = !win ? '차가 멈췄어요' : all ? '모두 맞혔다!' : (sc.right >= sc.total * 0.7 ? '잘했어요' : '끝까지 달렸어요');
     $('res-story').textContent = !win ? failWhy + ' ' + quiz.deck.main + '문제 가운데 ' + sc.total + '문제까지 풀고 ' + sc.right + '문제를 맞혔다.'
       : sc.total + '문제 가운데 ' + sc.right + '문제를 맞혔다.' + (sc.missed.length ? ' 틀린 문제는 끝에서 ' + sc.fixed + '개를 다시 맞혔다.' : '');
-    resRows([['문제', mission.name + ' · ' + QUIZ_TYPES[quiz.deck.type].name], ['맞힌 문제', sc.right + ' / ' + sc.total], ['가장 긴 연속 정답', quiz.best + '개'],
-      ['다시 볼 문제', sc.missed.length ? sc.missed.map(function (k) { var p = k.split('x'); return p[0] + '×' + p[1] + '=' + p[0] * p[1]; }).join(', ') : '없음'], ['점수', N(score)]]);
+    resRows([['문제', mission.name + (spell ? '' : ' · ' + QUIZ_TYPES[dk.type].name)], ['맞힌 문제', sc.right + ' / ' + sc.total], ['가장 긴 연속 정답', quiz.best + '개'],
+      ['다시 볼 문제', sc.missed.length ? sc.missed.filter(function (k, i) { return sc.missed.indexOf(k) === i; }).map(function (k) { return fullOf[k]; }).join(spell ? ' / ' : ', ') : '없음'], ['점수', N(score)]]);
     $('res-reward').textContent = (win ? '고철 ' + got : '모은 고철의 절반 ' + got) + ' · 보유 ' + N(save.scrap);
     if (runKind === 'story') return storyAfter(sc, win);
     return !win ? 'fail' : all ? 'record' : (sc.right >= sc.total * 0.7 ? 'win' : 'fail');
@@ -5410,27 +5561,46 @@ body.cine #card { bottom: 9%; }
     dans.forEach(function (a) { for (var b = 1; b <= 9; b++) c[factLevel(save.quiz.facts[a + 'x' + b])]++; });
     return c;
   }
+  /* 맞춤법 record: one row per set, how many of its sentences are at each level */
+  function spellTable(sets, now) {
+    var h = '<table class="stable"><tr><th>묶음</th><th>★ 잘함</th><th>● 연습 중</th><th>▲ 어려움</th><th>처음</th></tr>';
+    sets.forEach(function (k) {
+      var c = { good: 0, learn: 0, hard: 0, 'new': 0 }, st = SPELL_SETS[k], hit = false;
+      st.items.forEach(function (it, i) { var key = 'sp:' + k + ':' + i; c[factLevel(save.quiz.facts[key])]++; if (now && now[key]) hit = true; });
+      h += '<tr' + (hit ? ' class="now"' : '') + '><th>' + st.name + '</th><td class="lv-good">' + c.good + '</td><td class="lv-learn">' + c.learn + '</td><td class="lv-hard">' + c.hard + '</td><td class="lv-new">' + c['new'] + '</td></tr>';
+    });
+    return h + '</table>';
+  }
   function renderRec() {
     var all = [2, 3, 4, 5, 6, 7, 8, 9], c = levelCount(all), runs = save.quiz.runs || [], h = '';
     $('rec-sum').textContent = '72문제 가운데 잘함 ' + c.good + ' · 연습 중 ' + c.learn + ' · 어려움 ' + c.hard + ' · 처음 ' + c['new'];
     $('rec-grid').innerHTML = factGrid(all);
+    $('rec-spell').innerHTML = spellTable(SPELL_ORDER);
     runs.slice(-10).reverse().forEach(function (r) { h += row(r.day, r.name + ' · ' + r.type + ' · ' + r.right + ' / ' + r.total); });
-    $('rec-runs').innerHTML = h || row('아직', '구구단을 한 판 끝내면 여기에 남습니다.');
+    $('rec-runs').innerHTML = h || row('아직', '한 판을 끝내면 여기에 남습니다.');
   }
   function dayText(t) { var d = new Date(t); return (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes(); }
   /* menu: what to ask */
   var DAN_OPTS = [['2', '2단'], ['3', '3단'], ['4', '4단'], ['5', '5단'], ['6', '6단'], ['7', '7단'], ['8', '8단'], ['9', '9단'], ['2,5', '2단과 5단'], ['3,6', '3단과 6단'], ['4,8', '4단과 8단'], ['all', '2단~9단 모두']];
   function renderQuiz() {
-    var s = save.quiz.sel, o = quizSel(), t = QUIZ_TYPES[o.type], p = QUIZ_PACE[o.pace];
-    $('opt-dan').value = s.dan; $('opt-qtype').value = s.type; $('opt-pace').value = s.pace;
+    var s = save.quiz.sel, spell = selKind === 'spell', o = spell ? spellSel() : quizSel(), t = QUIZ_TYPES[o.type], p = QUIZ_PACE[o.pace];
+    $('opt-dan').value = s.dan; $('opt-qtype').value = s.type; $('opt-pace').value = s.pace; $('opt-spell').value = s.spell || 'dwae';
+    $('lb-dan').hidden = spell; $('lb-qtype').hidden = spell; $('lb-spell').hidden = !spell;
+    $('quiz-premise').textContent = spell ? '새벽: “마성의 글자 칩도 말썽이야. 빈칸에 들어갈 바른 말이 적힌 문으로 지나가 줘.”' : '새벽: “마성이 계산을 까먹었어. 길마다 숫자 갈림길이 생겼는데, 맞는 답이 적힌 문으로 지나가면 다시 기억해.”';
     $('opt-foe').value = s.foe === 'off' ? 'off' : 'on'; $('opt-style').value = o.style;
+    if (spell) {
+      var st = o.sets.length === 1 ? SPELL_SETS[o.sets[0]] : null;
+      $('quiz-brief').innerHTML = row('문제 수', '10문제') + row('요령', st ? st.tip : '모든 묶음에서 섞어 나온다. 덜 익힌 문장이 더 자주 나온다.') +
+        row('보기', (o.style === 'shoot' ? '풍선 ' : '깃발 문 ') + '2~4개') + row('생각할 시간', '약 ' + (p.t + t.think) + '초 (문장을 읽는 시간 2초 더함)') + row('틀리면', '정답 문장과 까닭을 보여 준다. 그 문제는 끝에 한 번 더 나온다.');
+      return;
+    }
     $('quiz-brief').innerHTML = row('문제 수', o.type === 'seq' ? o.dans.length * 9 + '문제 (단마다 1부터 9까지)' : '10문제') + row('보기', (o.style === 'shoot' ? '숫자 풍선 ' : '깃발 문 ') + t.opts + '개') + row('푸는 법', o.style === 'shoot' ? '정답 풍선을 쏘아 맞힌다. 못 쏘면 차가 들이받는 풍선이 답이 된다' : '정답이 적힌 문으로 지나간다') +
       row('생각할 시간', (o.style === 'shoot' ? '풍선이 앞에 멈춰 기다리는 시간 약 ' : '문제가 나오고 문에 닿기까지 약 ') + (p.t + t.think) + '초') + row('틀리면', '차가 잠깐 느려지고 정답을 보여 준다. 그 문제는 끝에 한 번 더 나온다.');
   }
   /* ---------- 이야기 1부: 고장 난 마성을 구구단으로 고친다. Nine chapters in the order the 단 are taught (2·5, 3·6, 4·8, 7, 9, then 1 and everything),
      one road each. A chapter is a quiz run: the first try goes 1 to 9 in order, later tries are mixed. Seven right out of ten (or of nine) clears it ---------- */
   var CHAPTERS = [
-    { dans: [2], region: 'city', time: 'day', weather: 'clear', fix: '신호등', foes: { traffic: 1.4 }, name: '깜빡이는 신호등',
+    { part: '1부 · 계산 칩', dans: [2], region: 'city', time: 'day', weather: 'clear', fix: '신호등', foes: { traffic: 1.4 }, name: '깜빡이는 신호등',
       go: '도심 신호등이 7초인지 70초인지 몰라서 다 깜빡이고 있어. 2단 갈림길부터 지나가 보자.', hint: '2단은 2씩 커져. 2, 4, 6, 8… 손가락으로 세어도 돼.',
       done: '도심 신호등이 하나둘 제자리로 돌아왔다. 초록불이 켜지자 사람들이 건널목을 건넜다.' },
     { dans: [5], region: 'country', time: 'day', weather: 'clear', fix: '버스 시간표', foes: { buggy: true, traffic: 1.3 }, name: '엉뚱한 시골 버스',
@@ -5454,14 +5624,43 @@ body.cine #card { bottom: 9%; }
     { dans: [9], region: 'coast', time: 'sunset', weather: 'clear', fix: '등대', foes: { drones: 0.8, kami: 0.6, strike: 0.6, buggy: true, traffic: 1.1 }, name: '꺼진 등대',
       go: '바닷가 등대가 몇 초마다 깜빡일지 몰라서 꺼져 있어. 9단이야.', hint: '9단은 십의 자리와 일의 자리를 더하면 늘 9야. 9×4는 36, 3 더하기 6은 9!',
       done: '등대 불빛이 바다를 비췄다. 멀리서 고깃배들이 불빛을 따라 돌아왔다.' },
-    { dans: [1, 2, 3, 4, 5, 6, 7, 8, 9], region: 'city', time: 'night', weather: 'clear', fix: '마성의 계산 칩', foes: { drones: 1, kami: 0.7, strike: 0.8, buggy: true, traffic: 1.1, strikes: ['lane', 'cross', 'diag', 'chase', 'cluster'] }, name: '마성 타워', last: true,
+    { dans: [1, 2, 3, 4, 5, 6, 7, 8, 9], region: 'city', time: 'night', weather: 'clear', fix: '마성의 계산 칩', ending: 1, foes: { drones: 1, kami: 0.7, strike: 0.8, buggy: true, traffic: 1.1, strikes: ['lane', 'cross', 'diag', 'chase', 'cluster'] }, name: '마성 타워', last: true,
       go: '마지막이야. 마성 타워 앞 갈림길에는 1단부터 9단까지 다 나와. 지금까지 한 대로만 하면 돼.', hint: '1단은 곱한 수 그대로야. 1×7은 7. 거의 다 왔어!',
-      done: '타워 꼭대기에 불이 들어왔다. 마성의 목소리가 스피커에서 흘러나왔다. “고마워요. 이제 잊지 않을게요.”' }
+      done: '타워 꼭대기에 불이 들어왔다. 마성의 목소리가 스피커에서 흘러나왔다. “고마워요. 이제 잊지 않을게요.”' },
+    /* part two: the 글자 칩. The same roads again, one pair of easily confused words each */
+    { part: '2부 · 글자 칩', sets: ['dwae'], region: 'city', time: 'sunset', weather: 'clear', fix: '도로 전광판', foes: { traffic: 1.3 }, name: '엉터리 전광판',
+      go: '이번엔 마성의 글자 칩이 말썽이야. 도로 전광판에 「천천히 가도 됀다」가 떴어. 되와 돼부터 고치자.', hint: '되와 돼가 헷갈리면 「하」와 「해」를 넣어 봐. 「해」가 어울리면 「돼」야.',
+      done: '전광판 글자가 바로잡혔다. 「천천히 가도 돼요.」 지나가던 버스 기사님이 고개를 끄덕였다.' },
+    { sets: ['an'], region: 'country', time: 'day', weather: 'clear', fix: '마을 방송', foes: { buggy: true, traffic: 1.25 }, name: '이상한 마을 방송',
+      go: '마을 방송에서 「오늘은 비가 않 옵니다」라고 하네. 안과 않을 고쳐 줘.', hint: '말 앞에 오면 「안」, 「-지」 뒤에 오면 「않」이야. 「오지 않는다」, 「안 온다」!',
+      done: '이장님 목소리가 바르게 흘러나왔다. 「오늘은 비가 안 옵니다. 빨래를 널어도 됩니다.」' },
+    { sets: ['mat'], region: 'creek', time: 'day', weather: 'clear', fix: '퀴즈 안내판', foes: { drones: 0.5, traffic: 1.25 }, name: '다리 앞 퀴즈 안내판',
+      go: '다리 앞 퀴즈 안내판에 「정답을 맞추세요」라고 쓰여 있어. 맞히다와 맞추다야.', hint: '답을 알아내는 건 「맞히다」, 둘을 대어 보거나 퍼즐을 끼우는 건 「맞추다」야.',
+      done: '안내판이 「정답을 맞혀 보세요!」로 바뀌었다. 다리 위 아이들이 퀴즈를 풀기 시작했다.' },
+    { sets: ['wen'], region: 'mountain', time: 'sunset', weather: 'clear', fix: '케이블카 안내 방송', foes: { drones: 0.6, buggy: true, traffic: 1.2 }, name: '수상한 케이블카 방송',
+      go: '케이블카 방송이 「왠일로 이렇게 사람이 많죠?」래. 웬과 왠이야.', hint: '「왠지」만 「왠」이고 나머지는 다 「웬」이야. 웬일, 웬 떡!',
+      done: '방송이 바르게 흘러나왔다. 「웬일로 이렇게 손님이 많으세요? 오늘은 노을이 예뻐요.」' },
+    { sets: ['deun'], region: 'highway', time: 'day', weather: 'rain', fix: '휴게소 안내판', foes: { drones: 0.6, strike: 0.35, traffic: 1.2 }, name: '헷갈린 휴게소',
+      go: '휴게소 안내판에 「무엇이던지 물어보세요」라고 쓰여 있어. 든지와 던지야. 비가 오니까 조심해.', hint: '고를 때는 「든지」, 지난 일을 떠올릴 때는 「던지」야.',
+      done: '안내판이 「무엇이든지 물어보세요」로 고쳐졌다. 비를 피하던 사람들이 길을 물어보러 다가갔다.' },
+    { sets: ['garu'], region: 'offroad', time: 'day', weather: 'clear', fix: '길 안내 로봇', foes: { drones: 0.7, kami: 0.45, buggy: true, traffic: 1.2 }, name: '길 잃은 안내 로봇',
+      go: '숲길 안내 로봇이 「저쪽을 가르쳐 드릴게요」라며 엉뚱한 데를 짚고 있어. 가르치다와 가리키다야.', hint: '손가락으로 짚는 건 「가리키다」, 알려 주는 건 「가르치다」야.',
+      done: '로봇이 손을 들어 숲길 쪽을 바르게 가리켰다. 「이쪽으로 가세요. 길은 제가 가르쳐 드릴게요.」' },
+    { sets: ['nat'], region: 'snow', time: 'day', weather: 'snow', fix: '날씨 안내판', foes: { drones: 0.75, kami: 0.55, strike: 0.45, traffic: 1.2 }, name: '뒤죽박죽 날씨 안내판',
+      go: '고갯길 날씨 안내판에 「기온이 낫습니다」래. 낫다, 낮다, 났다, 낳다야. 이번엔 문이 세 개야.', hint: '병이 좋아지면 「낫다」, 높지 않으면 「낮다」, 생기면 「났다」, 아기는 「낳다」야.',
+      done: '안내판에 「기온이 낮습니다. 눈길 조심」이 떴다. 제설차가 안내판 옆을 지나갔다.' },
+    { sets: ['often'], region: 'coast', time: 'sunset', weather: 'clear', fix: '등대 일지', foes: { drones: 0.85, kami: 0.6, strike: 0.6, buggy: true, traffic: 1.1 }, name: '틀린 말투성이 등대 일지',
+      go: '등대지기 일지가 「몇일」, 「금새」 투성이야. 자주 틀리는 말들이니까 하나씩 고쳐 보자.', hint: '「며칠」은 언제나 「며칠」이야. 「몇일」이라는 말은 없어!',
+      done: '등대 일지가 반듯하게 고쳐졌다. 「며칠 동안 바다가 잔잔했다. 배들이 금세 돌아왔다.」' },
+    { sets: ['dwae', 'an', 'mat', 'wen', 'deun', 'garu', 'nat', 'often', 'bara', 'ro'], region: 'city', time: 'night', weather: 'clear', fix: '마성의 글자 칩', ending: 2, name: '다시 마성 타워', last: true,
+      foes: { drones: 1, kami: 0.75, strike: 0.85, buggy: true, traffic: 1.05, strikes: ['lane', 'cross', 'diag', 'chase', 'cluster'] },
+      go: '마지막이야. 마성 타워 앞에는 헷갈리는 말이 다 나와. 처음 보는 「바라다」와 「로서」도 있어.', hint: '바라는 마음은 「바라」, 「바람」이야. 사람의 자격은 「로서」, 도구는 「로써」!',
+      done: '타워의 전광판에 바른 글자가 하나씩 켜졌다. 마성의 목소리가 들렸다. “고마워요. 이제 「안 돼요」를 바르게 쓸게요.”' }
   ];
   var selChapter = 0;
   /* 을/를 after a word, by whether its last syllable has a final consonant */
   function objJosa(w) { var c = w.charCodeAt(w.length - 1) - 0xac00; return w + (c >= 0 && c < 11172 && c % 28 ? '을' : '를'); }
-  function chapterOpen(i) { return save.unlockAll || i <= (save.story.open || 0); }
+  function chapterOpen(i) { return save.unlockAll || i <= (save.story.open || 0) || i === linkCh; }
   function chapterStars(sc) { var r = sc.right / sc.total; return r >= 1 ? 3 : (r >= 0.9 ? 2 : (r >= 0.7 ? 1 : 0)); }
   function storyMission(i) {
     var ch = CHAPTERS[i] || CHAPTERS[0], m, k, keep = {};
@@ -5472,8 +5671,11 @@ body.cine #card { bottom: 9%; }
     m.kind = 'story'; m.goal = 'quiz'; m.name = (i + 1) + '장 ' + ch.name; m.label = ch.fix;
     m.farm = ch.region === 'country' ? 1 : 0; m.road = { order: ['hill'], gap: [300, 420] };
     quizFoes(m, ch.foes);
-    m.quiz = { dans: ch.dans, type: save.story.tries && save.story.tries[i] ? 'mix' : 'seq', pace: save.quiz.sel.pace };
-    if (ch.last) m.quiz.type = 'mix';
+    if (ch.sets) m.quiz = { subject: 'spell', sets: ch.sets, type: 'spell', pace: save.quiz.sel.pace };
+    else {
+      m.quiz = { dans: ch.dans, type: save.story.tries && save.story.tries[i] ? 'mix' : 'seq', pace: save.quiz.sel.pace };
+      if (ch.last) m.quiz.type = 'mix';
+    }
     m.aim = '새벽: “' + ch.go + '”';
     m.why = REGIONS[ch.region].short + ' · ' + TIME_LABEL[ch.time] + ' · ' + WEATHERS[ch.weather].name;
     return m;
@@ -5498,25 +5700,73 @@ body.cine #card { bottom: 9%; }
     $('res-ending').hidden = !(st && ch.last);
     return st ? (st === 3 ? 'record' : 'win') : 'fail';
   }
+  var ENDING2 = ['한울시, 다시 바르게 말하다', '마성의 글자 칩이 고쳐지자 전광판도, 마을 방송도, 안내판도, 등대 일지도 한꺼번에 바른 말로 돌아왔다. 마성이 말했다. “고마워요. 숫자도 글자도 이제 잊지 않을게요.”',
+    '오 사장이 카센터 간판을 가리켰다. 「전설 카센터」. “이건 처음부터 맞게 썼지.” 새벽이 웃으며 무전기를 내려놓았다. “전설 하나, 이제 한울시는 숫자도 글자도 다 기억해. 정말 수고했어.”'];
   function storyEnding() {
-    var stars = 0, k; for (k in save.story.stars) stars += save.story.stars[k];
+    var stars = 0, k, two = CHAPTERS[runMission] && CHAPTERS[runMission].ending === 2; for (k in save.story.stars) stars += save.story.stars[k];
     $('result').hidden = true; $('hud').hidden = true; $('ending').hidden = false;
+    if (two) { $('ending-head').textContent = ENDING2[0]; $('ending-a').textContent = ENDING2[1]; $('ending-b').textContent = ENDING2[2]; }
+    else {
     $('ending-head').textContent = '한울시, 다시 숫자를 기억하다';
     $('ending-a').textContent = '마성 타워의 불이 켜지자 도시의 신호등, 버스, 다리, 케이블카, 톨게이트, 택배 창고, 제설차, 등대가 한꺼번에 제자리로 돌아왔다. 마성이 말했다. “고마워요. 이제 7 곱하기 8은 56이라는 걸 잊지 않을게요.”';
     $('ending-b').textContent = '전설 카센터로 돌아오자 오 사장이 새 작업복을 내밀었다. 가슴에는 「막내」 대신 이름표가 달려 있었다. 새벽이 무전기로 말했다. “전설 하나, 수고했어. 다음엔 글자 칩이 말썽이래.”';
-    $('ending-stats').textContent = '모은 별 ' + stars + ' / ' + CHAPTERS.length * 3 + ' · 보유 고철 ' + save.scrap.toLocaleString('ko-KR');
+    }
+    $('ending-stats').textContent = (two ? '' : '2부 「글자 칩」이 열렸다 · ') + '모은 별 ' + stars + ' / ' + CHAPTERS.length * 3 + ' · 보유 고철 ' + save.scrap.toLocaleString('ko-KR');
   }
   function renderChapters() {
     var html = '', ch = CHAPTERS[selChapter];
     CHAPTERS.forEach(function (c, i) {
       var s = save.story.stars[i] || 0;
-      html += '<button type="button" class="mis" id="ch-' + i + '" data-chapter="' + i + '" aria-pressed="' + (i === selChapter) + '"><span class="tag">' + REGIONS[c.region].short + '</span><span class="tag">' + (c.last ? '모든 단' : c.dans[0] + '단') + '</span><b>' + (i + 1) + '장 ' + c.name + '</b>' +
+      if (c.part) html += '<div class="part">' + c.part + '</div>';
+      html += '<button type="button" class="mis" id="ch-' + i + '" data-chapter="' + i + '" aria-pressed="' + (i === selChapter) + '"><span class="tag">' + REGIONS[c.region].short + '</span><span class="tag">' + (c.sets ? (c.last ? '모든 묶음' : SPELL_SETS[c.sets[0]].name) : (c.last ? '모든 단' : c.dans[0] + '단')) + '</span><b>' + (i + 1) + '장 ' + c.name + '</b>' +
         (chapterOpen(i) ? (s ? '<span class="sub" aria-label="별 ' + s + '개">' + '★★★'.slice(0, s) + '☆☆☆'.slice(0, 3 - s) + '</span>' : '') : '<span class="lock">잠김</span>') + '</button>';
     });
     $('ch-list').innerHTML = html;
+    var cb = $('ch-' + selChapter); if (cb && cb.scrollIntoView && !$('menu').hidden && !$('pane-story').hidden) cb.scrollIntoView({ block: 'nearest' });
     var m = storyMission(selChapter);
-    $('ch-brief').innerHTML = (chapterOpen(selChapter) ? '' : row('잠금', (selChapter) + '장 「' + CHAPTERS[selChapter - 1].name + '」을 깨면 열립니다')) +
-      row('고칠 것', ch.fix) + row('문제', (ch.last ? '1단~9단 섞어서' : ch.dans[0] + '단 ' + QUIZ_TYPES[m.quiz.type].name)) + row('길', m.why) + row('깨기', '10문제 가운데 7문제 이상 (순서대로는 9문제 가운데 7문제). 별은 7개 이상 1개, 9개 이상 2개, 모두 맞히면 3개');
+    $('ch-brief').innerHTML = (chapterOpen(selChapter) ? '' : row('잠금', (selChapter) + '장 「' + CHAPTERS[selChapter - 1].name + '」' + objJosa(CHAPTERS[selChapter - 1].name).slice(CHAPTERS[selChapter - 1].name.length) + ' 깨면 열립니다')) +
+      row('고칠 것', ch.fix) + row('문제', ch.sets ? '맞춤법 ' + (ch.last ? '모든 묶음 섞어서' : SPELL_SETS[ch.sets[0]].name) : (ch.last ? '1단~9단 섞어서' : ch.dans[0] + '단 ' + QUIZ_TYPES[m.quiz.type].name)) + row('길', m.why) + row('깨기', '10문제 가운데 7문제 이상 (순서대로는 9문제 가운데 7문제). 별은 7개 이상 1개, 9개 이상 2개, 모두 맞히면 3개');
+  }
+  /* ---------- 수업 링크: a teacher picks a mode and its settings, and shares one address. Opening it skips the prologue and lands on that mode,
+     already set; nothing is sent anywhere, the settings ride in the address itself (?m=quiz&dan=7&type=mix…). A story link opens its chapter even if it is still locked ---------- */
+  var classLink = null, linkCh = -1;
+  function linkParams() {
+    var out = {}, src = (location.search || '').slice(1) + '&' + (location.hash || '').replace(/^#/, '');
+    src.split('&').forEach(function (kv) { var p = kv.split('='); if (p[0]) { try { out[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || ''); } catch (e) {} } });
+    return out;
+  }
+  /* read the address once, after the save is loaded */
+  function applyLink() {
+    var p = linkParams(), s = save.quiz.sel, m = p.m;
+    if (!m || KIND_ORDER.indexOf(m) < 0) return;
+    if (p.dan && DAN_OPTS.some(function (o) { return o[0] === p.dan; })) s.dan = p.dan;
+    if (p.type && QUIZ_TYPES[p.type] && !QUIZ_TYPES[p.type].own) s.type = p.type;
+    if (p.pace && QUIZ_PACE[p.pace]) s.pace = p.pace;
+    if (p.foe === 'on' || p.foe === 'off') s.foe = p.foe;
+    if (p.style === 'gate' || p.style === 'shoot') s.style = p.style;
+    if (p.set && (p.set === 'all' || SPELL_SETS[p.set])) s.spell = p.set;
+    if (m === 'story') { var ch = (parseInt(p.ch, 10) || 1) - 1; if (ch >= 0 && ch < CHAPTERS.length) { selChapter = ch; linkCh = ch; } }
+    selKind = m; classLink = { label: linkLabel(m) };
+  }
+  function linkLabel(m) {
+    if (m === 'story') return '이야기 ' + (selChapter + 1) + '장 ' + CHAPTERS[selChapter].name;
+    if (m === 'quiz' || m === 'spell') { var q = quizMission(m); return q.name + (m === 'quiz' ? ' · ' + QUIZ_TYPES[save.quiz.sel.type].name : '') + (save.quiz.sel.foe === 'off' ? ' · 적 없음' : ''); }
+    return KINDS[m].name;
+  }
+  /* the address for what is chosen now */
+  function linkMake() {
+    var s = save.quiz.sel, q = ['m=' + selKind];
+    if (selKind === 'story') q.push('ch=' + (selChapter + 1));
+    if (selKind === 'quiz') q.push('dan=' + encodeURIComponent(s.dan), 'type=' + s.type);
+    if (selKind === 'spell') q.push('set=' + s.spell);
+    if (selKind === 'quiz' || selKind === 'spell') q.push('style=' + s.style, 'foe=' + s.foe);
+    if (selKind !== 'free') q.push('pace=' + s.pace);
+    return location.href.split(/[?#]/)[0] + '?' + q.join('&');
+  }
+  function linkShow() {
+    var url = linkMake(), out = $('link-out'), done = function (ok) { $('link-note').textContent = ok ? '복사했습니다. 학생들에게 이 주소를 나눠 주세요.' : '주소를 길게 눌러 복사해 학생들에게 나눠 주세요.'; };
+    out.value = url; $('link-box').hidden = false; out.focus(); out.select();
+    try { navigator.clipboard.writeText(url).then(function () { done(true); }, function () { done(false); }); } catch (e) { done(false); }
   }
   /* ---------- flow ---------- */
   var aimed = true, menuTab = 'car', steerWant = null, humpT = 0, gearT = 0, susp = { f: 0, vf: 0, r: 0, vr: 0, ro: 0, vro: 0, q: [] }, picks = 0, hunts = 0, huntT = 0, stepT = 0, stepDir = 0, burstT = 0, hornT = 0, padBasic = false, nextCargoD = 0, rushLimit = 0, hitGlowK = 0, helpThen = null, touchUI = false;
@@ -5561,7 +5811,7 @@ body.cine #card { bottom: 9%; }
     var cw = ' · ' + REGIONS[mission.region || 'city'].short + ' · ' + WEATHERS[mission.weather || 'clear'].name;
     if (runKind === 'ta' || runKind === 'race') return KINDS[runKind].name + ' · ' + mission.timeLabel + cw + ' · ' + (mission.n / 1000).toFixed(1) + ' km';
     if (runKind === 'story') return '이야기 ' + (misIdx + 1) + '장 · ' + mission.why;
-    if (runKind === 'surv' || runKind === 'free' || runKind === 'quiz' || runKind === 'tut') return KINDS[runKind].name + ' · ' + mission.why;
+    if (runKind === 'surv' || runKind === 'free' || runKind === 'quiz' || runKind === 'spell' || runKind === 'tut') return KINDS[runKind].name + ' · ' + mission.why;
     return (mission.part ? mission.part + ' · ' : '') + '미션 ' + (misIdx + 1) + ' · ' + mission.timeLabel + cw + ' · ' + dirText(mission);
   }
   function bestText() {
@@ -5578,7 +5828,7 @@ body.cine #card { bottom: 9%; }
     runKind = kind || (taIdx === undefined || taIdx === null ? 'mis' : 'ta');
     runTA = runKind === 'ta' || runKind === 'race' ? taIdx : -1;
     mode = isDemo ? 'demo' : 'play'; won = false; runMission = misIdx;
-    mission = runKind === 'tut' ? tutMission() : runKind === 'story' ? storyMission(misIdx) : runKind === 'quiz' ? quizMission() : (runKind === 'ta' ? TRACKS[runTA] : (runKind === 'race' ? raceOf(runTA) : (runKind === 'surv' || runKind === 'free' ? condMission(runKind) : MISSIONS[misIdx])));
+    mission = runKind === 'tut' ? tutMission() : runKind === 'story' ? storyMission(misIdx) : runKind === 'quiz' || runKind === 'spell' ? quizMission(runKind) : (runKind === 'ta' ? TRACKS[runTA] : (runKind === 'race' ? raceOf(runTA) : (runKind === 'surv' || runKind === 'free' ? condMission(runKind) : MISSIONS[misIdx])));
     tut.i = -1; radioReset(); $('coach').hidden = true;
     target = PRESETS[mission.time]; setRegion(mission.region || 'city'); setWeather(mission.weather || 'clear', true);
     rolling = runKind === 'ta' || runKind === 'race' || mission.goal === 'duel';
@@ -5846,13 +6096,13 @@ body.cine #card { bottom: 9%; }
   }
   function renderCond() {
     var surv = selKind === 'surv', R = REGIONS[cond.region], W = WEATHERS[cond.weather], sv = save.surv, c = CARS[selCar];
-    $('cond-premise').textContent = selKind === 'quiz' ? '달릴 길의 배경과 시간, 날씨를 고릅니다.' : surv ? '끝이 없는 도로에서 쓰러질 때까지 버팁니다. 25초마다 단계가 올라 적이 늘어납니다. 배경과 시간, 날씨는 직접 고릅니다.'
+    $('cond-premise').textContent = selKind === 'quiz' || selKind === 'spell' ? '달릴 길의 배경과 시간, 날씨를 고릅니다.' : surv ? '끝이 없는 도로에서 쓰러질 때까지 버팁니다. 25초마다 단계가 올라 적이 늘어납니다. 배경과 시간, 날씨는 직접 고릅니다.'
       : '적도 목표도 없이 달립니다. 배경과 시간, 날씨를 골라 길과 차량의 주행 특성을 느껴 보세요. 부딪혀도 내구는 줄지 않습니다.';
     $('opt-region').value = cond.region; $('opt-time').value = cond.time; $('opt-weather').value = cond.weather;
     $('cond-brief').innerHTML = row('배경', R.name + '. ' + R.feel) + row('날씨', W.name + '. ' + W.feel) + row('이 차', c.name + ' · ' + c.spec.drive + ' · 험로 주파 ' + (c.rough * 10).toFixed(1) + ' / 10') +
       (surv ? row('단계', '1단계 폭주 차량, 2단계부터 버기와 드론, 3단계부터 자폭 드론, 4단계부터 공중폭격') +
         row('기록', sv.best ? '최고 ' + sv.best.toLocaleString('ko-KR') + '점 · ' + sv.km + ' km · ' + sv.level + '단계' + (CARS[sv.car] ? ' (' + CARS[sv.car].name + ')' : '') : '없음') + row('보상', '모은 고철 전부, 오른 단계마다 20')
-        : selKind === 'quiz' ? '' : row('끝내기', '일시정지(Esc)에서 선택 화면으로 돌아간다'));
+        : selKind === 'quiz' || selKind === 'spell' ? '' : row('끝내기', '일시정지(Esc)에서 선택 화면으로 돌아간다'));
   }
   function renderKinds() {
     var html = '';
@@ -5860,8 +6110,9 @@ body.cine #card { bottom: 9%; }
       html += '<button type="button" class="kind" role="radio" id="kind-' + k + '" data-kind="' + k + '" aria-checked="' + (k === selKind) + '"><b>' + KINDS[k].name + '</b><span>' + (k === 'mis' ? '이야기를 따라가는 ' + MISSIONS.length + '개 미션' : KINDS[k].sub) + '</span></button>';
     });
     $('kinds').innerHTML = html;
-    ['mis', 'ta', 'race', 'quiz', 'story'].forEach(function (k) { $('pane-' + k).hidden = k !== selKind; });
-    $('pane-cond').hidden = !(selKind === 'surv' || selKind === 'free' || selKind === 'quiz');
+    ['mis', 'ta', 'race', 'quiz', 'story'].forEach(function (k) { $('pane-' + k).hidden = k !== (selKind === 'spell' ? 'quiz' : selKind); });   /* 맞춤법 shares the quiz pane */
+    $('pane-cond').hidden = !(selKind === 'surv' || selKind === 'free' || selKind === 'quiz' || selKind === 'spell');
+    renderQuiz(); $('link-box').hidden = true;
   }
   function renderFoot() {
     var why = !carOpen(selCar) ? '아직 구입하지 않은 차량입니다.' : (selKind === 'mis' && !missionOpen(selMission) ? '이 미션은 앞 미션을 완료하면 열립니다.' : (selKind === 'story' && !chapterOpen(selChapter) ? '이 장은 앞 장을 깨면 열립니다.' : ''));
@@ -5869,7 +6120,8 @@ body.cine #card { bottom: 9%; }
     $('go').disabled = !!why; $('go-why').hidden = !why; $('go-why').textContent = why;
     $('go-what').textContent = CARS[selCar].name + ' · ' + (selKind === 'ta' || selKind === 'race' ? KINDS[selKind].name + ' ' + TRACKS[selTrack].name
       : selKind === 'story' ? '이야기 ' + storyMission(selChapter).name
-      : selKind === 'quiz' ? quizMission().name + ' · ' + QUIZ_TYPES[save.quiz.sel.type].name + ' · ' + REGIONS[cond.region].short
+      : selKind === 'quiz' ? quizMission('quiz').name + ' · ' + QUIZ_TYPES[save.quiz.sel.type].name + ' · ' + REGIONS[cond.region].short
+      : selKind === 'spell' ? quizMission('spell').name + ' · ' + REGIONS[cond.region].short
       : (selKind === 'surv' || selKind === 'free' ? KINDS[selKind].name + ' · ' + REGIONS[cond.region].short + ' · ' + TIME_LABEL[cond.time] + ' · ' + WEATHERS[cond.weather].name : '미션 ' + (selMission + 1) + ' ' + MISSIONS[selMission].name));
   }
   function renderMenu() { renderGrid(); renderGear(); renderKinds(); renderMissions(); renderTA(); renderRace(); renderCond(); renderQuiz(); renderChapters(); renderRec(); renderFoot(); }
@@ -5879,7 +6131,7 @@ body.cine #card { bottom: 9%; }
     mission = m; target = PRESETS[mission.time]; setRegion(mission.region || 'city'); setWeather(mission.weather || 'clear', true); clearAll(); apWant = 2;
   }
   /* with thirty missions the chosen one can be far down the list: keep it in view */
-  function scrollSel() { var b = $('mis-' + selMission), bx0 = $('mis-list'); if (b && bx0 && b.offsetParent && b.scrollIntoView && !$('menu').hidden) b.scrollIntoView({ block: 'nearest' }); }
+  function scrollSel() { var b = selKind === 'story' ? $('ch-' + selChapter) : $('mis-' + selMission); if (b && b.offsetParent && b.scrollIntoView && !$('menu').hidden) b.scrollIntoView({ block: 'nearest' }); }
   function setKind(k) {
     selKind = k; renderKinds(); renderRace(); renderCond(); renderChapters();
     if (mode === 'menu') { pickCourse(); renderFoot(); }
@@ -5905,7 +6157,8 @@ body.cine #card { bottom: 9%; }
   }
   function showTitle() {
     toMenu(); titleOn = true; $('menu').hidden = true; $('title').hidden = false;
-    $('title-more').textContent = '정답이 적힌 깃발 문을 지나가며 푸는 구구단 주행. 차량 ' + CAR_ORDER.length + '종, 배경 ' + REGION_ORDER.length + '곳과 날씨 5가지.';
+    $('title-more').textContent = classLink ? '수업 링크로 열었습니다: ' + classLink.label + '. 「게임 시작」을 누르고 「출발」을 누르세요.'
+      : '정답이 적힌 깃발 문을 지나가며 푸는 구구단과 맞춤법 주행. 차량 ' + CAR_ORDER.length + '종, 배경 ' + REGION_ORDER.length + '곳과 날씨 5가지.';
   }
   function setPaused(p) {
     if (mode !== 'play' || briefT > 0) return;
@@ -6317,7 +6570,7 @@ body.cine #card { bottom: 9%; }
   $('res-ending').addEventListener('click', function () { if (runKind === 'story') storyEnding(); else showEnding(); });
   $('ending-title').addEventListener('click', showTitle);
   $('ending-menu').addEventListener('click', toMenu);
-  $('title-start').addEventListener('click', function () { sfx('click'); if (save.tut) toMenu(); else openStory(); });   /* the first start tells the story and runs the driving practice */
+  $('title-start').addEventListener('click', function () { sfx('click'); if (classLink) { toMenu(); setTab('mode'); } else if (save.tut) toMenu(); else openStory(); });   /* the first start tells the story and runs the driving practice */
   $('title-tut').addEventListener('click', function () { sfx('click'); openStory(); });
   $('opt-story').addEventListener('click', function () { sfx('click'); openStory(); });
   $('story-next').addEventListener('click', storyNext); $('story-skip').addEventListener('click', storySkip);
@@ -6335,6 +6588,7 @@ body.cine #card { bottom: 9%; }
     if (runKind === 'story') { selChapter = Math.min(CHAPTERS.length - 1, runMission + 1); beginRun(selCar, selChapter, false, undefined, 'story', true); return; }
     selMission = Math.min(MISSIONS.length - 1, runMission + 1); beginRun(selCar, selMission, false, undefined, 'mis', true); });
   $('res-menu').addEventListener('click', toMenu);
+  $('link-make').addEventListener('click', function () { sfx('click'); linkShow(); });
   $('car-grid').addEventListener('click', function (e) {
     var bb = hit(e.target, 'data-buy-car');
     if (bb) {
@@ -6355,7 +6609,7 @@ body.cine #card { bottom: 9%; }
   });
   $('kinds').addEventListener('click', function (e) { var b = hit(e.target, 'data-kind'); if (!b) return; sfx('click'); setKind(b.getAttribute('data-kind')); });
   $('title-kinds').addEventListener('click', function (e) { var b = hit(e.target, 'data-kind'); if (!b) return; sfx('click'); selKind = b.getAttribute('data-kind'); toMenu(); setTab('mode'); });
-  [['dan', 'opt-dan'], ['type', 'opt-qtype'], ['pace', 'opt-pace'], ['foe', 'opt-foe'], ['style', 'opt-style']].forEach(function (p) {
+  [['dan', 'opt-dan'], ['type', 'opt-qtype'], ['pace', 'opt-pace'], ['foe', 'opt-foe'], ['style', 'opt-style'], ['spell', 'opt-spell']].forEach(function (p) {
     $(p[1]).addEventListener('change', function () { save.quiz.sel[p[0]] = $(p[1]).value; storeSave(); sfx('click'); renderQuiz(); renderFoot(); });
   });
   ['region', 'time', 'weather'].forEach(function (k) {
@@ -6366,7 +6620,8 @@ body.cine #card { bottom: 9%; }
     REGION_ORDER.forEach(function (k) { h += '<option value="' + k + '">' + REGIONS[k].name + '</option>'; }); $('opt-region').innerHTML = h; h = '';
     WEATHER_ORDER.forEach(function (k) { h += '<option value="' + k + '">' + WEATHERS[k].name + '</option>'; }); $('opt-weather').innerHTML = h; h = '';
     DAN_OPTS.forEach(function (o) { h += '<option value="' + o[0] + '">' + o[1] + '</option>'; }); $('opt-dan').innerHTML = h; h = '';
-    for (var qk in QUIZ_TYPES) h += '<option value="' + qk + '">' + QUIZ_TYPES[qk].name + ' (보기 ' + QUIZ_TYPES[qk].opts + '개)</option>'; $('opt-qtype').innerHTML = h; h = '';
+    SPELL_DATA.sets.forEach(function (st) { h += '<option value="' + st.key + '">' + st.name + '</option>'; }); h += '<option value="all">모든 묶음 섞기</option>'; $('opt-spell').innerHTML = h; h = '';
+    for (var qk in QUIZ_TYPES) if (!QUIZ_TYPES[qk].own) h += '<option value="' + qk + '">' + QUIZ_TYPES[qk].name + ' (보기 ' + QUIZ_TYPES[qk].opts + '개)</option>'; $('opt-qtype').innerHTML = h; h = '';
     for (var pk in QUIZ_PACE) h += '<option value="' + pk + '">' + QUIZ_PACE[pk].name + ' (' + QUIZ_PACE[pk].t + '초)</option>'; $('opt-pace').innerHTML = h; h = '';
     KIND_ORDER.forEach(function (k) { h += '<button type="button" class="kind" data-kind="' + k + '"><b>' + KINDS[k].name + '</b><span>' + (k === 'mis' ? '이야기를 따라가는 ' + MISSIONS.length + '개 미션' : KINDS[k].sub) + '</span></button>'; });
     $('title-kinds').innerHTML = h;
@@ -7265,7 +7520,7 @@ body.cine #card { bottom: 9%; }
   }
 
   /* start on the selection screen: the chosen car drives up the screen behind the panel */
-  loadSave(); setMuted(save.muted); musicOn = save.music; sfxOn = save.sfx; setCam(save.cam);
+  loadSave(); applyLink(); setMuted(save.muted); musicOn = save.music; sfxOn = save.sfx; setCam(save.cam);
   makeThumbs(); resize(); applyGfx(save.gfx === 'auto' ? gfxStart() : save.gfx); carQ = CAR_ORDER.slice();
   touchUI = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   $('opt-unlock').checked = save.unlockAll; $('opt-gfx').value = save.gfx; $('opt-calm').checked = save.calm; $('opt-mirror').checked = save.mirror; syncSound();

@@ -74,6 +74,16 @@ button, select, label, [role="tab"] { touch-action: manipulation; }
 .qbox.no b, .qbox.no #q-kick { color: var(--danger); }
 .qopts { display: flex; gap: 8px; justify-content: center; margin-top: 6px; }
 .qopts span { min-width: 64px; padding: 2px 12px; border-radius: 12px; color: #ffffff; font-family: var(--display); font-size: 26px; border: 2px solid rgba(255, 255, 255, 0.85); }
+.qbox.long { width: min(640px, calc(100vw - 32px)); box-sizing: border-box; }
+.qbox.long b { font-size: 32px; white-space: normal; word-break: keep-all; }
+.qbox #q-why { margin: 4px 0 0; font-size: 16px; font-weight: 700; word-break: keep-all; }
+.stable { border-collapse: separate; border-spacing: 2px; width: 100%; max-width: 420px; margin: 6px auto; font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; }
+.stable th { font-weight: 700; color: var(--chip-sub); text-align: left; padding: 3px 4px; white-space: nowrap; }
+.stable tr:first-child th { text-align: center; }
+.stable td { padding: 4px 0; border-radius: 6px; }
+.stable td.lv-good { background: rgba(24, 128, 56, 0.24); } .stable td.lv-learn { background: rgba(25, 103, 210, 0.16); } .stable td.lv-hard { background: rgba(197, 34, 31, 0.24); } .stable td.lv-new { box-shadow: inset 0 0 0 1px var(--line); }
+.stable tr.now th { color: var(--chip-fg); }
+@media (max-width: 720px) { .qbox.long b { font-size: 24px; } .qbox #q-why { font-size: 14px; } }
 @media (max-width: 720px) { .qbox { top: max(150px, 22vh); padding: 6px 14px 10px; } .qbox b { font-size: 36px; } .qopts span { font-size: 22px; min-width: 52px; } }
 #vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 46%, transparent 52%, rgba(0, 0, 0, 0.5) 100%); opacity: 0.45; }
 .hud .chip { pointer-events: auto; }
@@ -225,6 +235,8 @@ body.cine #caption { bottom: calc(9% + 14px); font-size: 16px; }
 .flegend { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: center; font-size: 12px; color: var(--chip-sub); margin: 2px 0 6px; }
 /* the learning edition has no damage, so the 내구 bar is not shown */
 .edu #hp-text, .edu .status .bar.hp { display: none; }
+.linkrow { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
+#link-out { width: 100%; box-sizing: border-box; margin-top: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; font: 12px var(--body); background: var(--solid); color: var(--chip-fg); }
 .detail { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; font-size: 13px; line-height: 1.5; }
 .detail dt { font-weight: 700; color: var(--chip-sub); white-space: nowrap; }
 .detail dd { margin: 0; }
@@ -363,7 +375,7 @@ body.cine #card { bottom: 9%; }
 <div id="fade"></div>
 <div id="caption" class="chip" hidden aria-live="polite"></div>
 
-<div class="qbox" id="qbox" hidden aria-live="polite"><span id="q-kick"></span><b id="q-text"></b><div class="qopts" id="q-opts"></div></div>
+<div class="qbox" id="qbox" hidden aria-live="polite"><span id="q-kick"></span><b id="q-text"></b><p id="q-why" hidden></p><div class="qopts" id="q-opts"></div></div>
 <div class="hud" id="hud" hidden>
   <div class="row">
     <div class="chip obj">
@@ -398,7 +410,7 @@ body.cine #card { bottom: 9%; }
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.6</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.7</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
     <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false">아이템</button>
@@ -448,9 +460,10 @@ body.cine #card { bottom: 9%; }
     <dl class="detail" id="ch-brief"></dl>
   </div>
   <div class="pane" id="pane-quiz" hidden>
-    <p class="premise">새벽: “마성이 계산을 까먹었어. 길마다 숫자 갈림길이 생겼는데, 맞는 답이 적힌 문으로 지나가면 다시 기억해.”</p>
-    <label class="opt sel">단<select id="opt-dan"></select></label>
-    <label class="opt sel">문제<select id="opt-qtype"></select></label>
+    <p class="premise" id="quiz-premise"></p>
+    <label class="opt sel" id="lb-dan">단<select id="opt-dan"></select></label>
+    <label class="opt sel" id="lb-qtype">문제<select id="opt-qtype"></select></label>
+    <label class="opt sel" id="lb-spell" hidden>묶음<select id="opt-spell"></select></label>
     <label class="opt sel">생각할 시간<select id="opt-pace"></select></label>
     <label class="opt sel">푸는 법<select id="opt-style"><option value="gate">깃발 문 지나가기</option><option value="shoot">정답 풍선 맞히기</option></select></label>
     <label class="opt sel">적<select id="opt-foe"><option value="on">폭주 차량과 드론이 나온다</option><option value="off">깃발 문만 나온다</option></select></label>
@@ -463,11 +476,18 @@ body.cine #card { bottom: 9%; }
     <label class="opt sel">날씨<select id="opt-weather"></select></label>
     <dl class="detail" id="cond-brief"></dl>
   </div>
+  <div class="linkrow">
+    <button type="button" class="plain" id="link-make">수업 링크 만들기</button>
+    <div id="link-box" hidden><input type="text" id="link-out" readonly aria-label="수업 링크 주소"><p class="keys" id="link-note"></p></div>
+    <p class="keys">지금 고른 모드와 설정이 담긴 주소를 만듭니다. 학생이 이 주소로 열면 이야기를 건너뛰고 바로 이 설정으로 시작합니다. 기록은 학생 기기에만 남습니다.</p>
+  </div>
   </div>
   <div class="pane" id="pane-rec" role="tabpanel" aria-labelledby="tab-rec" hidden>
     <p class="premise">구구단 문제마다 처음 답한 결과로 얼마나 익혔는지 보여 줍니다. 틀렸거나 아직 덜 익힌 문제는 「섞어서」 문제에 더 자주 나옵니다.</p>
     <p class="sub" id="rec-sum"></p>
     <div id="rec-grid"></div>
+    <h2>맞춤법</h2>
+    <div id="rec-spell"></div>
     <h2>최근 기록</h2>
     <dl class="detail" id="rec-runs"></dl>
   </div>

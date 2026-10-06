@@ -3,6 +3,8 @@
 'use strict';
 var fs = require('fs'), path = require('path'), assert = require('assert');
 var src = fs.readFileSync(path.join(__dirname, '..', 'src', 'js_quiz.js'), 'utf8');
+var SPELL = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'spell.json'), 'utf8')), BANK = {};
+SPELL.sets.forEach(function (st) { BANK[st.key] = st; });
 var Q = new Function(src + '\nreturn { quizDeck: quizDeck, quizNext: quizNext, quizAnswer: quizAnswer, quizScore: quizScore, qQuestion: qQuestion, QUIZ_TYPES: QUIZ_TYPES, factLevel: factLevel, factRecord: factRecord };')();
 function seeded(s) { return function () { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x80000000; }; }
 var fails = 0, runs = 0;
@@ -91,6 +93,44 @@ test('섞어서: 모두 잘하는 단이면 그 안에서 고르고, 한 단의 
   var st = {}; for (var b = 1; b <= 9; b++) st['3x' + b] = [3, 0, 3];
   var d = Q.quizDeck({ dans: [3], type: 'mix', n: 10, stats: st }, seeded(5)); assert.strictEqual(d.items.length, 10);
   st = { '2x1': [0, 1, 0] }; d = Q.quizDeck({ dans: [2], type: 'blank', n: 10, stats: st }, seeded(9)); assert.strictEqual(d.items.length, 10);
+});
+
+test('맞춤법 묶음 파일: 빈칸 하나, 정답과 틀린 보기가 다르고 보기는 2~4개', function () {
+  var keys = {};
+  SPELL.sets.forEach(function (st) {
+    assert.ok(st.key && st.name && st.tip && st.items.length >= 5, st.key + ' 묶음 정보');
+    assert.ok(!keys[st.key], '묶음 key 중복 ' + st.key); keys[st.key] = true;
+    st.items.forEach(function (it, i) {
+      var where = st.key + ' ' + (i + 1) + '번 ';
+      assert.strictEqual(it.q.split('___').length, 2, where + '빈칸은 하나');
+      assert.ok(it.a && Array.isArray(it.w) && it.w.length >= 1 && it.w.length <= 3, where + '보기');
+      assert.ok(it.w.indexOf(it.a) < 0 && new Set(it.w).size === it.w.length, where + '보기 중복');
+      assert.ok(it.why, where + '설명');
+    });
+  });
+});
+test('맞춤법 덱: 10문제, 보기 개수 맞음, 정답 위치 맞음, 빈칸이 정답으로 채워짐', function () {
+  for (var s = 1; s <= 50; s++) {
+    var d = Q.quizDeck({ subject: 'spell', sets: ['dwae', 'nat'], bank: BANK, n: 10 }, seeded(s));
+    assert.strictEqual(d.items.length, 10); assert.strictEqual(d.type, 'spell');
+    d.items.forEach(function (q) {
+      assert.strictEqual(q.opts[q.slot], q.ans); assert.strictEqual(q.opts.length, q.n);
+      assert.ok(q.text.indexOf('＿＿') >= 0 && q.full.indexOf(q.ans) >= 0 && q.full.indexOf('___') < 0);
+      assert.ok(/^sp:(dwae|nat):\d+$/.test(q.key));
+    });
+  }
+});
+test('맞춤법: 보기 2개짜리 정답 위치 반반, 틀린 문제는 같은 문장으로 다시 나온다', function () {
+  var left = 0, all = 0;
+  for (var s = 1; s <= 200; s++) {
+    var d = Q.quizDeck({ subject: 'spell', sets: ['an'], bank: BANK, n: 10 }, seeded(s));
+    d.items.forEach(function (q) { if (q.slot === 0) left++; all++; });
+  }
+  assert.ok(Math.abs(left / all - 0.5) < 0.05, '왼쪽 비율 ' + (left / all).toFixed(3));
+  var rf = seeded(4), d2 = Q.quizDeck({ subject: 'spell', sets: ['wen'], bank: BANK, n: 4 }, rf), q, first = null;
+  while ((q = Q.quizNext(d2))) { if (!first) first = q; Q.quizAnswer(d2, q, q === first ? (q.slot + 1) % q.n : q.slot, rf); }
+  var again = d2.items[d2.items.length - 1];
+  assert.strictEqual(d2.items.length, 5); assert.strictEqual(again.key, first.key); assert.strictEqual(again.full, first.full);
 });
 
 console.log(runs - fails + ' / ' + runs + ' 통과');

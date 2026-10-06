@@ -1,11 +1,12 @@
-  /* ---------- 구구단 출제기: no 3D in here, so it can be tested on its own (tests/quiz.test.js).
+  /* ---------- 출제기 (구구단과 맞춤법): no 3D in here, so it can be tested on its own (tests/quiz.test.js).
      A deck is one run: the facts to ask in order, each with its options and where the right one sits.
      Wrong options are the answers children actually give (a neighbouring product, the same last digit, a + b), never random numbers ---------- */
   var QUIZ_TYPES = {
     seq: { name: '순서대로', opts: 2, think: 0 },
     mix: { name: '섞어서', opts: 2, think: 0 },
     blank: { name: '빈칸 찾기', opts: 3, think: 0.5 },
-    rev: { name: '거꾸로', opts: 4, think: 1 }
+    rev: { name: '거꾸로', opts: 4, think: 1 },
+    spell: { name: '맞춤법', opts: 2, think: 2, own: true }   /* sentences take longer to read; the options come from the bank */
   };
   var QUIZ_PACE = { slow: { name: '천천히', t: 6 }, mid: { name: '보통', t: 4 }, fast: { name: '빠르게', t: 2.5 } };
   function qPick(arr, rf) { return arr[(rf() * arr.length) | 0]; }
@@ -40,6 +41,16 @@
     else { q.text = a + ' × ' + b + ' = ?'; q.ans = a * b; q.full = a + ' × ' + b + ' = ' + a * b; q.opts = qOptions(a * b, qWrongsMul(a, b), t.opts, rf); }
     return q;
   }
+  /* a spelling item from the bank: { q: '이제 집에 가도 ___?', a: '돼', w: ['되'], why: '…' }. The blank is shown as a line, and the full sentence after the answer */
+  function qSpell(f, rf) {
+    var it = f.item, q = { key: f.key, type: 'spell', n: 1 + it.w.length, set: f.set };
+    q.text = it.q.replace('___', '＿＿'); q.full = it.q.replace('___', it.a); q.ans = it.a;
+    q.opts = [it.a].concat(qShuffle(it.w.slice(), rf)); q.why = it.why || '';
+    return q;
+  }
+  /* a fact is { a, b } for 구구단 (a is the 단) or { set, item } for 맞춤법; both carry their record key */
+  function mulFact(a, b) { return { a: a, b: b, key: a + 'x' + b }; }
+  function qMake(f, type, rf) { var q = f.item ? qSpell(f, rf) : qQuestion(f.a, f.b, type, rf); q.fact = f; return q; }
   /* where the right answer sits, over the whole deck: with two gates it is left exactly half the time and never more than twice running on the same side */
   function qSlots(count, n, rf) {
     var s = [], i, run, tries;
@@ -77,7 +88,7 @@
   var QUIZ_MIX = [['weak', 0.4], ['new', 0.4], ['good', 0.2]];
   function qDraw(all, n, stats, rf) {
     var bins = { weak: [], 'new': [], good: [] }, facts = [], i;
-    all.forEach(function (f) { var l = factLevel(stats && stats[f[0] + 'x' + f[1]]); bins[l === 'hard' || l === 'learn' ? 'weak' : l].push(f); });
+    all.forEach(function (f) { var l = factLevel(stats && stats[f.key]); bins[l === 'hard' || l === 'learn' ? 'weak' : l].push(f); });
     var src = {}; for (var k in bins) src[k] = [];
     function from(bin) {   /* each share is a shuffled bag, so a fact comes back only after the rest of its share */
       if (!src[bin].length) src[bin] = qShuffle(bins[bin].slice(), rf);
@@ -94,18 +105,19 @@
     }
     return facts;
   }
-  /* o = { dans: [7], type: 'mix', n: 10, stats: save.quiz.facts }. 순서대로 asks every fact of every chosen 단 once, in order; the others draw n facts without repeats */
+  /* 구구단: o = { dans: [7], type: 'mix', n: 10, stats: save.quiz.facts }. 순서대로 asks every fact of every chosen 단 once, in order; the others draw n facts.
+     맞춤법: o = { subject: 'spell', sets: ['dwae'], bank: { dwae: { items: [...] } }, n: 10, stats }. Facts are drawn the same way, weak ones first */
   function quizDeck(o, rf) {
     rf = rf || Math.random;
-    var type = QUIZ_TYPES[o.type] ? o.type : 'mix', dans = o.dans && o.dans.length ? o.dans.slice() : [2], facts = [], all = [], i, j;
-    for (i = 0; i < dans.length; i++) for (j = 1; j <= 9; j++) all.push([dans[i], j]);
-    if (type === 'seq') facts = all;
-    else {
-      facts = qDraw(all, o.n || 10, o.stats || null, rf);
-    }
-    var qs = facts.map(function (f) { return qQuestion(f[0], f[1], type, rf); }), slots = qSlots(qs.length, QUIZ_TYPES[type].opts, rf);
-    qs.forEach(function (q, k) { qPlace(q, slots[k]); });
-    return { type: type, dans: dans, items: qs, main: qs.length, i: 0, retried: {}, log: [] };
+    var spell = o.subject === 'spell', type = spell ? 'spell' : (QUIZ_TYPES[o.type] && !QUIZ_TYPES[o.type].own ? o.type : 'mix'), dans = o.dans && o.dans.length ? o.dans.slice() : [2], sets = o.sets || [], all = [], i, j;
+    if (spell) sets.forEach(function (k) { (o.bank[k] ? o.bank[k].items : []).forEach(function (it, n) { all.push({ set: k, item: it, key: 'sp:' + k + ':' + n }); }); });
+    else for (i = 0; i < dans.length; i++) for (j = 1; j <= 9; j++) all.push(mulFact(dans[i], j));
+    var facts = type === 'seq' ? all : qDraw(all, o.n || 10, o.stats || null, rf), qs = facts.map(function (f) { return qMake(f, type, rf); });
+    /* balance the right answer's place among questions with the same number of options */
+    var byN = {};
+    qs.forEach(function (q) { (byN[q.n] || (byN[q.n] = [])).push(q); });
+    for (var n in byN) { var sl = qSlots(byN[n].length, +n, rf); byN[n].forEach(function (q, k) { qPlace(q, sl[k]); }); }
+    return { subject: spell ? 'spell' : 'mul', type: type, dans: dans, sets: sets, items: qs, main: qs.length, i: 0, retried: {}, log: [] };
   }
   /* the next question, or null when the deck is done */
   function quizNext(deck) { return deck.i < deck.items.length ? deck.items[deck.i++] : null; }
@@ -116,7 +128,7 @@
     deck.log.push({ key: q.key, ok: ok, retry: retry, picked: picked < 0 ? null : q.opts[picked] });
     if (!ok && !retry && !deck.retried[q.key]) {
       deck.retried[q.key] = true;
-      var again = qQuestion(q.a, q.b, q.type, rf);
+      var again = qMake(q.fact, q.type, rf);
       deck.items.push(qPlace(again, (rf() * again.n) | 0));
     }
     return ok;

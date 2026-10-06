@@ -10,7 +10,10 @@
     x.globalAlpha = dim ? 0.35 : 1;
     x.fillStyle = col; x.beginPath(); x.moveTo(16, 4); x.arcTo(w - 4, 4, w - 4, h - 4, 18); x.arcTo(w - 4, h - 4, 4, h - 4, 18); x.arcTo(4, h - 4, 4, 4, 18); x.arcTo(4, 4, w - 4, 4, 18); x.fill();
     x.lineWidth = 8; x.strokeStyle = '#ffffff'; x.stroke();
-    x.fillStyle = '#ffffff'; x.font = '900 ' + Math.round(h * 0.66) + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(text), w / 2, h * 0.55);
+    var fs = Math.round(h * 0.66), font = function (z) { return '900 ' + z + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif'; };
+    x.font = font(fs); var tw = x.measureText(String(text)).width;
+    if (tw > w - 30) { fs = Math.floor(fs * (w - 30) / tw); x.font = font(fs); }   /* a word like 가르치셨다 shrinks to fit the sign */
+    x.fillStyle = '#ffffff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(text), w / 2, h * 0.55);
     x.globalAlpha = 1;
   }
   /* one set of gates per option count, built the first time it is needed */
@@ -38,7 +41,7 @@
   }
   function gatesShow(q) {
     var s = gateSet(q.n);
-    s.banners.forEach(function (b, i) { gateTex(b.c, q.opts[i], QG_COL[i], false); b.tx.needsUpdate = true; });
+    s.banners.forEach(function (b, i) { gateTex(b.c, q.opts[i], QG_COL[i], false); b.tx.needsUpdate = true; b.m.material.opacity = 1; });
     s.g.visible = true; quiz.g = s;
   }
   function gatesDim(q, picked) {
@@ -54,6 +57,10 @@
     if (dans.length === 8) return '2단~9단';
     return dans.map(function (d) { return d + '단'; }).join('·');
   }
+  var SPELL_SETS = {}; SPELL_DATA.sets.forEach(function (st) { SPELL_SETS[st.key] = st; });
+  var SPELL_ORDER = SPELL_DATA.sets.map(function (st) { return st.key; });
+  function spellSel() { var s = save.quiz.sel, k = s.spell || 'dwae'; return { subject: 'spell', sets: k === 'all' ? SPELL_ORDER.slice() : [SPELL_SETS[k] ? k : 'dwae'], type: 'spell', pace: s.pace, foe: s.foe !== 'off', style: s.style === 'shoot' ? 'shoot' : 'gate' }; }
+  function setLabel(sets) { return sets.length === SPELL_ORDER.length ? '모든 묶음' : sets.map(function (k) { return SPELL_SETS[k].name; }).join('·'); }
   function quizSel() { var s = save.quiz.sel; return { dans: s.dan === 'all' ? [2, 3, 4, 5, 6, 7, 8, 9] : s.dan.split(',').map(Number), type: s.type, pace: s.pace, foe: s.foe !== 'off', style: s.style === 'shoot' ? 'shoot' : 'gate' }; }
   /* enemies on a quiz road, as in the original missions: f = { drones, kami, strike, buggy, traffic }. null: only the gates */
   function quizFoes(m, f) {
@@ -62,24 +69,25 @@
     m.traffic = f ? f.traffic || 1.2 : 1; m.chasers = f ? 1 : 0; m.noFoes = !f;
     return m;
   }
-  function quizMission() {
-    var m = condMission('free'), o = quizSel();
-    m.kind = 'quiz'; m.goal = 'quiz'; m.name = '구구단 ' + danLabel(o.dans); m.label = QUIZ_TYPES[o.type].name; m.quiz = o;
+  function quizMission(kind) {
+    var spell = kind === 'spell', m = condMission('free'), o = spell ? spellSel() : quizSel();
+    m.kind = spell ? 'spell' : 'quiz'; m.goal = 'quiz'; m.name = spell ? '맞춤법 ' + setLabel(o.sets) : '구구단 ' + danLabel(o.dans); m.label = QUIZ_TYPES[o.type].name; m.quiz = o;
     m.farm = o.foe && m.region === 'country' ? 0.6 : 0; m.road = { order: ['hill'], gap: [300, 420] };
     quizFoes(m, o.foe ? { drones: 0.5, buggy: true, traffic: 1.2 } : null);
-    m.aim = (o.style === 'shoot' ? '문제를 보고 정답이 적힌 풍선을 쏘아 맞힌다.' : '문제를 보고 정답이 적힌 깃발 문으로 지나간다.') + (o.foe ? ' 덤비는 폭주 차량과 드론은 쏴서 막는다.' : '') + ' 틀린 문제는 끝에 한 번 더 나온다.';
+    m.aim = (o.style === 'shoot' ? '문제를 보고 정답이 적힌 풍선을 쏘아 맞힌다.' : '문제를 보고 정답이 적힌 깃발 문으로 지나간다.') + (spell ? ' 빈칸에 들어갈 바른 말을 고른다.' : '') + (o.foe ? ' 덤비는 폭주 차량과 드론은 쏴서 막는다.' : '') + ' 틀린 문제는 끝에 한 번 더 나온다.';
     return m;
   }
-  function quizRun() { return runKind === 'quiz' || runKind === 'story'; }
+  function quizRun() { return runKind === 'quiz' || runKind === 'spell' || runKind === 'story'; }
   function quizBegin() {
     var o = mission.quiz || quizSel();
     quizOff();
-    quiz.deck = quizDeck({ dans: o.dans, type: o.type, n: 10, stats: save.quiz.facts });
+    quiz.deck = o.subject === 'spell' ? quizDeck({ subject: 'spell', sets: o.sets, bank: SPELL_SETS, n: 10, stats: save.quiz.facts }) : quizDeck({ dans: o.dans, type: o.type, n: 10, stats: save.quiz.facts });
     quiz.style = o.style === 'shoot' && EDU.arms ? 'shoot' : 'gate'; quiz.pace = QUIZ_PACE[o.pace] || QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0; quiz.hinted = false;
     quiz.phase = 'wait'; quiz.t = 0.8;
   }
-  function qboxSet(kick, text, cls, q) {
-    $('q-kick').textContent = kick; $('q-text').textContent = text; $('qbox').className = 'qbox' + (cls ? ' ' + cls : '');
+  function qboxSet(kick, text, cls, q, why) {
+    $('q-kick').textContent = kick; $('q-text').textContent = text; $('qbox').className = 'qbox' + (cls ? ' ' + cls : '') + (text.length > 12 ? ' long' : '');
+    $('q-why').textContent = why || ''; $('q-why').hidden = !why;
     var h = '';
     if (q) q.opts.forEach(function (v, i) { h += '<span style="background:' + QG_COL[i] + '">' + v + '</span>'; });
     $('q-opts').innerHTML = h; $('q-opts').hidden = !q;
@@ -139,14 +147,18 @@
       qboxSet((quiz.combo >= 3 ? quiz.combo + '개 연속 정답!' : '정답!') + (EDU.arms ? ' · 수리 +20%' : ''), q.full, 'ok');
     } else {
       quiz.combo = 0; player.v = Math.max(car.vmin, player.v * 0.7); sfx('thud');
-      qboxSet(first ? '정답은 이거예요 · 끝에 한 번 더 나와요' : '정답은 이거예요', q.full, 'no');
+      qboxSet(first ? '정답은 이거예요 · 끝에 한 번 더 나와요' : '정답은 이거예요', q.full, 'no', null, q.why);
     }
-    quiz.phase = 'show'; quiz.t = ok ? 1.6 : 2.4;
+    quiz.phase = 'show'; quiz.t = ok ? 1.6 : (q.why ? 3.6 : 2.4);   /* a spelling miss shows why, which takes longer to read */
   }
   function quizStep(dt, px, car) {
     if (quiz.phase === 'off' || mode !== 'play' || briefT > 0 || player.dead) return;
     var dk = quiz.deck, q = quiz.q, bs = quiz.b;
-    if (quiz.g) { quiz.g.g.position.z = dist - quiz.d; if (quiz.phase !== 'ask' && quiz.g.g.position.z > 40) { quiz.g.g.visible = false; quiz.g = null; } }
+    if (quiz.g) {
+      var gz = quiz.g.g.position.z = dist - quiz.d, fade = clamp(-(gz + 2) / 12, 0, 1);   /* the signs fade as the car passes under, so they never fill the screen */
+      quiz.g.banners.forEach(function (b) { b.m.material.opacity = fade; });
+      if (quiz.phase !== 'ask' && gz > 40) { quiz.g.g.visible = false; quiz.g = null; }
+    }
     if (bs) {
       var bz = bs.g.position.z;
       if (quiz.phase === 'ask') {
@@ -182,14 +194,16 @@
   function quizResult(win) {
     var sc = quizScore(quiz.deck), N = function (v) { return v.toLocaleString('ko-KR'); }, got = win ? scrap : Math.floor(scrap / 2), all = win && sc.right === sc.total;
     var asked = {}; quiz.deck.items.forEach(function (q) { asked[q.key] = true; });
-    save.quiz.runs = (save.quiz.runs || []).concat([{ day: dayText(Date.now()), name: mission.name, type: QUIZ_TYPES[quiz.deck.type].name, right: sc.right, total: sc.total }]).slice(-30);
+    var dk = quiz.deck, spell = dk.subject === 'spell', fullOf = {};
+    dk.items.forEach(function (q) { fullOf[q.key] = spell ? q.full : q.full.replace(/ /g, ''); });
+    save.quiz.runs = (save.quiz.runs || []).concat([{ day: dayText(Date.now()), name: mission.name, type: QUIZ_TYPES[dk.type].name, right: sc.right, total: sc.total }]).slice(-30);
     save.scrap += got; storeSave(); setMusic('menu'); quizOff();
-    $('res-grid').innerHTML = factGrid(quiz.deck.dans.slice().sort(), asked);
+    $('res-grid').innerHTML = spell ? spellTable(dk.sets, asked) : factGrid(dk.dans.slice().sort(), asked);
     $('res-title').textContent = !win ? '차가 멈췄어요' : all ? '모두 맞혔다!' : (sc.right >= sc.total * 0.7 ? '잘했어요' : '끝까지 달렸어요');
     $('res-story').textContent = !win ? failWhy + ' ' + quiz.deck.main + '문제 가운데 ' + sc.total + '문제까지 풀고 ' + sc.right + '문제를 맞혔다.'
       : sc.total + '문제 가운데 ' + sc.right + '문제를 맞혔다.' + (sc.missed.length ? ' 틀린 문제는 끝에서 ' + sc.fixed + '개를 다시 맞혔다.' : '');
-    resRows([['문제', mission.name + ' · ' + QUIZ_TYPES[quiz.deck.type].name], ['맞힌 문제', sc.right + ' / ' + sc.total], ['가장 긴 연속 정답', quiz.best + '개'],
-      ['다시 볼 문제', sc.missed.length ? sc.missed.map(function (k) { var p = k.split('x'); return p[0] + '×' + p[1] + '=' + p[0] * p[1]; }).join(', ') : '없음'], ['점수', N(score)]]);
+    resRows([['문제', mission.name + (spell ? '' : ' · ' + QUIZ_TYPES[dk.type].name)], ['맞힌 문제', sc.right + ' / ' + sc.total], ['가장 긴 연속 정답', quiz.best + '개'],
+      ['다시 볼 문제', sc.missed.length ? sc.missed.filter(function (k, i) { return sc.missed.indexOf(k) === i; }).map(function (k) { return fullOf[k]; }).join(spell ? ' / ' : ', ') : '없음'], ['점수', N(score)]]);
     $('res-reward').textContent = (win ? '고철 ' + got : '모은 고철의 절반 ' + got) + ' · 보유 ' + N(save.scrap);
     if (runKind === 'story') return storyAfter(sc, win);
     return !win ? 'fail' : all ? 'record' : (sc.right >= sc.total * 0.7 ? 'win' : 'fail');
@@ -215,20 +229,39 @@
     dans.forEach(function (a) { for (var b = 1; b <= 9; b++) c[factLevel(save.quiz.facts[a + 'x' + b])]++; });
     return c;
   }
+  /* 맞춤법 record: one row per set, how many of its sentences are at each level */
+  function spellTable(sets, now) {
+    var h = '<table class="stable"><tr><th>묶음</th><th>★ 잘함</th><th>● 연습 중</th><th>▲ 어려움</th><th>처음</th></tr>';
+    sets.forEach(function (k) {
+      var c = { good: 0, learn: 0, hard: 0, 'new': 0 }, st = SPELL_SETS[k], hit = false;
+      st.items.forEach(function (it, i) { var key = 'sp:' + k + ':' + i; c[factLevel(save.quiz.facts[key])]++; if (now && now[key]) hit = true; });
+      h += '<tr' + (hit ? ' class="now"' : '') + '><th>' + st.name + '</th><td class="lv-good">' + c.good + '</td><td class="lv-learn">' + c.learn + '</td><td class="lv-hard">' + c.hard + '</td><td class="lv-new">' + c['new'] + '</td></tr>';
+    });
+    return h + '</table>';
+  }
   function renderRec() {
     var all = [2, 3, 4, 5, 6, 7, 8, 9], c = levelCount(all), runs = save.quiz.runs || [], h = '';
     $('rec-sum').textContent = '72문제 가운데 잘함 ' + c.good + ' · 연습 중 ' + c.learn + ' · 어려움 ' + c.hard + ' · 처음 ' + c['new'];
     $('rec-grid').innerHTML = factGrid(all);
+    $('rec-spell').innerHTML = spellTable(SPELL_ORDER);
     runs.slice(-10).reverse().forEach(function (r) { h += row(r.day, r.name + ' · ' + r.type + ' · ' + r.right + ' / ' + r.total); });
-    $('rec-runs').innerHTML = h || row('아직', '구구단을 한 판 끝내면 여기에 남습니다.');
+    $('rec-runs').innerHTML = h || row('아직', '한 판을 끝내면 여기에 남습니다.');
   }
   function dayText(t) { var d = new Date(t); return (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes(); }
   /* menu: what to ask */
   var DAN_OPTS = [['2', '2단'], ['3', '3단'], ['4', '4단'], ['5', '5단'], ['6', '6단'], ['7', '7단'], ['8', '8단'], ['9', '9단'], ['2,5', '2단과 5단'], ['3,6', '3단과 6단'], ['4,8', '4단과 8단'], ['all', '2단~9단 모두']];
   function renderQuiz() {
-    var s = save.quiz.sel, o = quizSel(), t = QUIZ_TYPES[o.type], p = QUIZ_PACE[o.pace];
-    $('opt-dan').value = s.dan; $('opt-qtype').value = s.type; $('opt-pace').value = s.pace;
+    var s = save.quiz.sel, spell = selKind === 'spell', o = spell ? spellSel() : quizSel(), t = QUIZ_TYPES[o.type], p = QUIZ_PACE[o.pace];
+    $('opt-dan').value = s.dan; $('opt-qtype').value = s.type; $('opt-pace').value = s.pace; $('opt-spell').value = s.spell || 'dwae';
+    $('lb-dan').hidden = spell; $('lb-qtype').hidden = spell; $('lb-spell').hidden = !spell;
+    $('quiz-premise').textContent = spell ? '새벽: “마성의 글자 칩도 말썽이야. 빈칸에 들어갈 바른 말이 적힌 문으로 지나가 줘.”' : '새벽: “마성이 계산을 까먹었어. 길마다 숫자 갈림길이 생겼는데, 맞는 답이 적힌 문으로 지나가면 다시 기억해.”';
     $('opt-foe').value = s.foe === 'off' ? 'off' : 'on'; $('opt-style').value = o.style;
+    if (spell) {
+      var st = o.sets.length === 1 ? SPELL_SETS[o.sets[0]] : null;
+      $('quiz-brief').innerHTML = row('문제 수', '10문제') + row('요령', st ? st.tip : '모든 묶음에서 섞어 나온다. 덜 익힌 문장이 더 자주 나온다.') +
+        row('보기', (o.style === 'shoot' ? '풍선 ' : '깃발 문 ') + '2~4개') + row('생각할 시간', '약 ' + (p.t + t.think) + '초 (문장을 읽는 시간 2초 더함)') + row('틀리면', '정답 문장과 까닭을 보여 준다. 그 문제는 끝에 한 번 더 나온다.');
+      return;
+    }
     $('quiz-brief').innerHTML = row('문제 수', o.type === 'seq' ? o.dans.length * 9 + '문제 (단마다 1부터 9까지)' : '10문제') + row('보기', (o.style === 'shoot' ? '숫자 풍선 ' : '깃발 문 ') + t.opts + '개') + row('푸는 법', o.style === 'shoot' ? '정답 풍선을 쏘아 맞힌다. 못 쏘면 차가 들이받는 풍선이 답이 된다' : '정답이 적힌 문으로 지나간다') +
       row('생각할 시간', (o.style === 'shoot' ? '풍선이 앞에 멈춰 기다리는 시간 약 ' : '문제가 나오고 문에 닿기까지 약 ') + (p.t + t.think) + '초') + row('틀리면', '차가 잠깐 느려지고 정답을 보여 준다. 그 문제는 끝에 한 번 더 나온다.');
   }
