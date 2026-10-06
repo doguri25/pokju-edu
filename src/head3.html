@@ -66,6 +66,15 @@ button:focus-visible, .lever:focus-visible { outline: 3px solid var(--accent); o
 .hud, .hud *, #demo, #demo *, #coach, #caption, #banner, #card { touch-action: none; }
 button, select, label, [role="tab"] { touch-action: manipulation; }
 .hud button, .lever { touch-action: none; }
+/* quiz: the question sits high in the middle, over the sky in the chase view; the options under it are in the colours of the gates, in the same order */
+.qbox { position: fixed; left: 50%; top: max(118px, 17vh); transform: translateX(-50%); z-index: 3; pointer-events: none; text-align: center; background: var(--chip); color: var(--chip-fg); border-radius: 20px; padding: 8px 22px 12px; box-shadow: 0 2px 14px rgba(0, 0, 0, 0.25); max-width: calc(100vw - 32px); }
+.qbox #q-kick { display: block; font-size: 14px; font-weight: 700; color: var(--chip-sub); }
+.qbox b { display: block; font-family: var(--display); font-weight: 400; font-size: 48px; line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.qbox.ok b, .qbox.ok #q-kick { color: var(--ok); }
+.qbox.no b, .qbox.no #q-kick { color: var(--danger); }
+.qopts { display: flex; gap: 8px; justify-content: center; margin-top: 6px; }
+.qopts span { min-width: 64px; padding: 2px 12px; border-radius: 12px; color: #ffffff; font-family: var(--display); font-size: 26px; border: 2px solid rgba(255, 255, 255, 0.85); }
+@media (max-width: 720px) { .qbox { top: max(150px, 22vh); padding: 6px 14px 10px; } .qbox b { font-size: 36px; } .qopts span { font-size: 22px; min-width: 52px; } }
 #vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 46%, transparent 52%, rgba(0, 0, 0, 0.5) 100%); opacity: 0.45; }
 .hud .chip { pointer-events: auto; }
 .obj { display: flex; flex-direction: column; gap: 3px; min-width: 200px; max-width: 340px; }
@@ -340,6 +349,7 @@ body.cine #card { bottom: 9%; }
 <div id="fade"></div>
 <div id="caption" class="chip" hidden aria-live="polite"></div>
 
+<div class="qbox" id="qbox" hidden aria-live="polite"><span id="q-kick"></span><b id="q-text"></b><div class="qopts" id="q-opts"></div></div>
 <div class="hud" id="hud" hidden>
   <div class="row">
     <div class="chip obj">
@@ -374,7 +384,7 @@ body.cine #card { bottom: 9%; }
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.1</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.2</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
     <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false" hidden>아이템</button>
@@ -416,6 +426,13 @@ body.cine #card { bottom: 9%; }
     <p class="premise">타임어택 트랙에서 경쟁 차량 5대와 순위를 겨룹니다. 상대는 고른 차와 최고속도가 비슷한 차량들이고, 무기와 몸싸움이 모두 허용됩니다.</p>
     <div class="missions" id="race-list"></div>
     <dl class="detail" id="race-brief"></dl>
+  </div>
+  <div class="pane" id="pane-quiz" hidden>
+    <p class="premise">새벽: “마성이 계산을 까먹었어. 길마다 숫자 갈림길이 생겼는데, 맞는 답이 적힌 문으로 지나가면 다시 기억해.”</p>
+    <label class="opt sel">단<select id="opt-dan"></select></label>
+    <label class="opt sel">문제<select id="opt-qtype"></select></label>
+    <label class="opt sel">생각할 시간<select id="opt-pace"></select></label>
+    <dl class="detail" id="quiz-brief"></dl>
   </div>
   <div class="pane" id="pane-cond" hidden>
     <p class="premise" id="cond-premise"></p>

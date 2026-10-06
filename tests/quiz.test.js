@@ -1,0 +1,69 @@
+/* 출제기 시험: node tests/quiz.test.js
+   src/js_quiz.js 는 게임의 큰 함수 안에 들어가는 조각이라, 여기서는 함수 하나로 감싸 불러온다. */
+'use strict';
+var fs = require('fs'), path = require('path'), assert = require('assert');
+var src = fs.readFileSync(path.join(__dirname, '..', 'src', 'js_quiz.js'), 'utf8');
+var Q = new Function(src + '\nreturn { quizDeck: quizDeck, quizNext: quizNext, quizAnswer: quizAnswer, quizScore: quizScore, qQuestion: qQuestion, QUIZ_TYPES: QUIZ_TYPES };')();
+function seeded(s) { return function () { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x80000000; }; }
+var fails = 0, runs = 0;
+function test(name, fn) { runs++; try { fn(); } catch (e) { fails++; console.log('실패: ' + name + '\n  ' + e.message); } }
+
+test('81개 곱셈 모든 유형: 보기 개수, 중복 없음, 정답 한 개, 음수 없음', function () {
+  var rf = seeded(7);
+  ['seq', 'mix', 'blank', 'rev'].forEach(function (type) {
+    for (var a = 1; a <= 9; a++) for (var b = 1; b <= 9; b++) for (var k = 0; k < 5; k++) {
+      var q = Q.qQuestion(a, b, type, rf);
+      assert.strictEqual(q.opts.length, Q.QUIZ_TYPES[type].opts, type + ' ' + a + 'x' + b + ' 보기 개수');
+      assert.strictEqual(new Set(q.opts).size, q.opts.length, type + ' ' + a + 'x' + b + ' 중복 ' + q.opts);
+      assert.strictEqual(q.opts.filter(function (v) { return v === q.ans; }).length, 1, type + ' ' + a + 'x' + b + ' 정답 한 개');
+      q.opts.forEach(function (v) { assert.ok(v >= 0 && Number.isInteger(v), '음수나 소수 ' + v); });
+    }
+  });
+});
+test('곱셈 정답이 맞다', function () {
+  var q = Q.qQuestion(7, 8, 'mix', seeded(1)); assert.strictEqual(q.ans, 56); assert.strictEqual(q.text, '7 × 8 = ?');
+  q = Q.qQuestion(6, 7, 'blank', seeded(1)); assert.strictEqual(q.ans, 7); assert.strictEqual(q.text, '6 × □ = 42');
+  q = Q.qQuestion(7, 8, 'rev', seeded(1)); assert.strictEqual(q.ans, 8); assert.strictEqual(q.text, '56 = 7 × □');
+});
+test('헷갈리는 보기는 이웃 곱에서 먼저 나온다 (7×8)', function () {
+  var near = [63, 49, 64, 48], hit = 0;
+  for (var s = 1; s <= 200; s++) { var q = Q.qQuestion(7, 8, 'mix', seeded(s)); if (near.indexOf(q.opts[1]) >= 0) hit++; }
+  assert.strictEqual(hit, 200);
+});
+test('보기 2개일 때 정답 위치가 왼쪽·오른쪽 반반이고 같은 쪽이 세 번 이어지지 않는다', function () {
+  var left = 0, all = 0;
+  for (var s = 1; s <= 300; s++) {
+    var d = Q.quizDeck({ dans: [2 + (s % 8)], type: 'mix', n: 10 }, seeded(s)), run = 1;
+    d.items.forEach(function (q, i) {
+      assert.strictEqual(q.opts[q.slot], q.ans);
+      if (q.slot === 0) left++; all++;
+      if (i) { run = q.slot === d.items[i - 1].slot ? run + 1 : 1; assert.ok(run <= 2, '같은 쪽 ' + run + '번'); }
+    });
+  }
+  var r = left / all; assert.ok(r >= 0.45 && r <= 0.55, '왼쪽 비율 ' + r.toFixed(3));
+});
+test('순서대로는 단마다 1부터 9까지', function () {
+  var d = Q.quizDeck({ dans: [3, 6], type: 'seq' }, seeded(3));
+  assert.deepStrictEqual(d.items.map(function (q) { return q.key; }), [1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (b) { return '3x' + b; }).concat([1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (b) { return '6x' + b; })));
+});
+test('섞어서는 n개, 같은 문제가 바로 이어 나오지 않는다', function () {
+  for (var s = 1; s <= 100; s++) {
+    var d = Q.quizDeck({ dans: [5], type: 'mix', n: 10 }, seeded(s));
+    assert.strictEqual(d.items.length, 10);
+    assert.strictEqual(new Set(d.items.map(function (q) { return q.key; })).size, 9, '한 단 9문제를 모두 내고 한 문제만 겹친다');
+    d.items.forEach(function (q, i) { if (i) assert.notStrictEqual(q.key, d.items[i - 1].key); });
+  }
+});
+test('틀린 문제는 끝에 한 번만 다시 나오고, 점수는 첫 답만 센다', function () {
+  var rf = seeded(11), d = Q.quizDeck({ dans: [7], type: 'mix', n: 5 }, rf), q, picks = 0;
+  while ((q = Q.quizNext(d))) { var wrong = (q.slot + 1) % q.n; Q.quizAnswer(d, q, picks++ < 5 && picks % 2 ? wrong : q.slot, rf); }
+  var sc = Q.quizScore(d);
+  assert.strictEqual(sc.total, 5); assert.strictEqual(sc.right, 2); assert.strictEqual(sc.missed.length, 3);
+  assert.strictEqual(d.items.length, 8); assert.strictEqual(sc.fixed, 3);
+  d = Q.quizDeck({ dans: [7], type: 'mix', n: 3 }, rf);
+  while ((q = Q.quizNext(d))) Q.quizAnswer(d, q, (q.slot + 1) % q.n, rf);
+  assert.strictEqual(d.items.length, 6, '다시 나온 문제를 또 틀려도 한 번 더 나오지 않는다');
+});
+
+console.log(runs - fails + ' / ' + runs + ' 통과');
+process.exit(fails ? 1 : 0);

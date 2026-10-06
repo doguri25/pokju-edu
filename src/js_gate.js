@@ -1,0 +1,131 @@
+  /* ---------- 깃발 문: the quiz on the road. A question shows at the top, a row of gates comes down the road with one option on each,
+     and the gate the car drives through is the answer. The gates split the whole road between them, so there is always an answer;
+     the time to think is set in seconds, and the gates are put as far ahead as the car covers in that time ---------- */
+  var QG_EDGE = 8.6, QG_COL = ['#1967d2', '#8e24aa', '#e8710a', '#00897b'];   /* blue, purple, orange, teal: no colour hints at right or wrong */
+  var quiz = { deck: null, q: null, phase: 'off', t: 0, d: 0, g: null, combo: 0, best: 0, ok: 0 };
+  var gateSets = {};
+  function gateTex(c, text, col, dim) {
+    var x = c.getContext('2d'), w = c.width, h = c.height;
+    x.clearRect(0, 0, w, h);
+    x.globalAlpha = dim ? 0.35 : 1;
+    x.fillStyle = col; x.beginPath(); x.moveTo(16, 4); x.arcTo(w - 4, 4, w - 4, h - 4, 18); x.arcTo(w - 4, h - 4, 4, h - 4, 18); x.arcTo(4, h - 4, 4, 4, 18); x.arcTo(4, 4, w - 4, 4, 18); x.fill();
+    x.lineWidth = 8; x.strokeStyle = '#ffffff'; x.stroke();
+    x.fillStyle = '#ffffff'; x.font = '900 ' + Math.round(h * 0.66) + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(text), w / 2, h * 0.55);
+    x.globalAlpha = 1;
+  }
+  /* one set of gates per option count, built the first time it is needed */
+  function gateSet(n) {
+    if (gateSets[n]) return gateSets[n];
+    var g = new T.Group(), W = 2 * QG_EDGE / n, s = { g: g, n: n, W: W, banners: [], i: 0 }, i;
+    var postM = std(0xf2f2ee, 0.5), barM = std(0x2a2d34, 0.6);
+    for (i = 0; i <= n; i++) {
+      var bxX = -QG_EDGE + W * i;
+      g.add(cyl(0.16, 0.16, 4.6, 8, postM, bxX, 2.3, 0));
+      g.add(bx(0.95, 0.6, 0.05, std(parseInt(QG_COL[Math.min(i, n - 1)].slice(1), 16), 0.6), bxX + (i === n ? -0.5 : 0.5), 4.3, 0));   /* the little flag on each post */
+    }
+    g.add(bx(2 * QG_EDGE + 0.4, 0.22, 0.22, barM, 0, 4.62, 0));
+    for (i = 0; i < n; i++) {
+      var c = document.createElement('canvas'); c.width = 256; c.height = 128;
+      var tx = new T.CanvasTexture(c); tx.encoding = T.sRGBEncoding;
+      var bw = Math.min(W - 0.5, 4.2), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
+      m.position.set(-QG_EDGE + W * (i + 0.5), 3.3, 0.05); g.add(m);
+      var lane = new T.Mesh(new T.PlaneGeometry(W - 0.5, 3), new T.MeshBasicMaterial({ color: C(parseInt(QG_COL[i].slice(1), 16)), transparent: true, opacity: 0.32, depthWrite: false }));
+      lane.rotation.x = -Math.PI / 2; lane.position.set(m.position.x, 0.03, 0); g.add(lane);
+      s.banners.push({ c: c, tx: tx, m: m });
+    }
+    g.visible = false; scene.add(g);
+    return (gateSets[n] = s);
+  }
+  function gatesShow(q) {
+    var s = gateSet(q.n);
+    s.banners.forEach(function (b, i) { gateTex(b.c, q.opts[i], QG_COL[i], false); b.tx.needsUpdate = true; });
+    s.g.visible = true; quiz.g = s;
+  }
+  function gatesDim(q, picked) {
+    quiz.g.banners.forEach(function (b, i) { if (i !== q.slot) { gateTex(b.c, q.opts[i], QG_COL[i], true); b.tx.needsUpdate = true; } });
+  }
+  function quizOff() {
+    for (var k in gateSets) gateSets[k].g.visible = false;
+    quiz.phase = 'off'; quiz.g = null; quiz.q = null; $('qbox').hidden = true;
+  }
+  function danLabel(dans) {
+    if (dans.length === 8) return '2단~9단';
+    return dans.map(function (d) { return d + '단'; }).join('·');
+  }
+  function quizSel() { var s = save.quiz.sel; return { dans: s.dan === 'all' ? [2, 3, 4, 5, 6, 7, 8, 9] : s.dan.split(',').map(Number), type: s.type, pace: s.pace }; }
+  function quizMission() {
+    var m = condMission('free'), o = quizSel();
+    m.kind = 'quiz'; m.goal = 'quiz'; m.name = '구구단 ' + danLabel(o.dans); m.label = QUIZ_TYPES[o.type].name;
+    m.traffic = 0; m.farm = 0; m.road = { order: ['hill'], gap: [300, 420] };
+    m.aim = '문제를 보고 정답이 적힌 깃발 문으로 지나간다. 틀린 문제는 끝에 한 번 더 나온다.';
+    return m;
+  }
+  function quizBegin() {
+    var o = quizSel();
+    quizOff();
+    quiz.deck = quizDeck({ dans: o.dans, type: o.type, n: 10 });
+    quiz.pace = QUIZ_PACE[o.pace] || QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0;
+    quiz.phase = 'wait'; quiz.t = 0.8;
+  }
+  function qboxSet(kick, text, cls, q) {
+    $('q-kick').textContent = kick; $('q-text').textContent = text; $('qbox').className = 'qbox' + (cls ? ' ' + cls : '');
+    var h = '';
+    if (q) q.opts.forEach(function (v, i) { h += '<span style="background:' + QG_COL[i] + '">' + v + '</span>'; });
+    $('q-opts').innerHTML = h; $('q-opts').hidden = !q;
+    $('qbox').hidden = false;
+  }
+  function quizStep(dt, px, car) {
+    if (quiz.phase === 'off' || mode !== 'play' || briefT > 0 || player.dead) return;
+    var dk = quiz.deck, q = quiz.q;
+    if (quiz.g) { quiz.g.g.position.z = dist - quiz.d; if (quiz.phase !== 'ask' && quiz.g.g.position.z > 40) { quiz.g.g.visible = false; quiz.g = null; } }
+    quiz.t -= dt;
+    if (quiz.phase === 'wait' && quiz.t <= 0) {
+      q = quiz.q = quizNext(dk);
+      if (!q) { quiz.phase = 'done'; finish(true); return; }
+      var think = quiz.pace.t + QUIZ_TYPES[q.type].think;
+      quiz.d = dist + Math.max(70, veff * think); quiz.phase = 'ask';
+      if (quiz.g) quiz.g.g.visible = false;
+      gatesShow(q); quiz.g.g.position.set(0, 0, dist - quiz.d);
+      qboxSet(dk.i > dk.main ? '다시 풀기' : '문제 ' + dk.i + ' / ' + dk.main, q.text, '', q);
+      sfx('cycle');
+    } else if (quiz.phase === 'ask' && dist >= quiz.d) {
+      var picked = clamp(Math.floor((px + QG_EDGE) / quiz.g.W), 0, q.n - 1), first = dk.i <= dk.main, ok = quizAnswer(dk, q, picked);
+      if (first) { var f = save.quiz.facts[q.key] || (save.quiz.facts[q.key] = [0, 0]); f[ok ? 0 : 1]++; }
+      gatesDim(q, picked);
+      if (ok) {
+        if (first) quiz.ok++; quiz.combo++; quiz.best = Math.max(quiz.best, quiz.combo); score += 100 + 20 * Math.min(quiz.combo - 1, 5); scrap += 20;
+        buff.nitro = Math.max(buff.nitro, 1.2); sfx('item');
+        spawnRing(px, 0, 9, 0.45, 0, COL.cyan); spawnP('glow', px, 1.4, 0, 0, 0, 0, 0.4, 4, 12, COL.cyan, 0.9, 0);
+        qboxSet(quiz.combo >= 3 ? quiz.combo + '개 연속 정답!' : '정답!', q.full, 'ok');
+      } else {
+        quiz.combo = 0; player.v = Math.max(car.vmin, player.v * 0.7); sfx('thud');
+        qboxSet(first ? '정답은 이거예요 · 끝에 한 번 더 나와요' : '정답은 이거예요', q.full, 'no');
+      }
+      quiz.phase = 'show'; quiz.t = ok ? 1.6 : 2.4;
+    } else if (quiz.phase === 'show' && quiz.t <= 0) { quiz.phase = 'wait'; quiz.t = 0.6; $('qbox').hidden = true; }
+  }
+  function quizObjective() {
+    var dk = quiz.deck;
+    if (!dk) return { f: 0, txt: '' };
+    var n = Math.min(dk.i, dk.main), extra = dk.items.length - dk.main;
+    return { f: dk.log.length / dk.items.length, txt: (dk.i > dk.main ? '다시 풀기 ' + (dk.i - dk.main) + ' / ' + extra : '문제 ' + Math.max(1, n) + ' / ' + dk.main) + ' · 맞힘 ' + quiz.ok };
+  }
+  /* the result panel for a quiz run; returns the sound to play */
+  function quizResult() {
+    var sc = quizScore(quiz.deck), N = function (v) { return v.toLocaleString('ko-KR'); }, got = scrap, all = sc.right === sc.total;
+    save.scrap += got; storeSave(); setMusic('menu'); quizOff();
+    $('res-title').textContent = all ? '모두 맞혔다!' : (sc.right >= sc.total * 0.7 ? '잘했어요' : '끝까지 달렸어요');
+    $('res-story').textContent = sc.total + '문제 가운데 ' + sc.right + '문제를 맞혔다.' + (sc.missed.length ? ' 틀린 문제는 끝에서 ' + sc.fixed + '개를 다시 맞혔다.' : '');
+    resRows([['문제', mission.name + ' · ' + QUIZ_TYPES[quiz.deck.type].name], ['맞힌 문제', sc.right + ' / ' + sc.total], ['가장 긴 연속 정답', quiz.best + '개'],
+      ['다시 볼 문제', sc.missed.length ? sc.missed.map(function (k) { var p = k.split('x'); return p[0] + '×' + p[1] + '=' + p[0] * p[1]; }).join(', ') : '없음'], ['점수', N(score)]]);
+    $('res-reward').textContent = '고철 ' + got + ' (맞힌 문제마다 20) · 보유 ' + N(save.scrap);
+    return all ? 'record' : (sc.right >= sc.total * 0.7 ? 'win' : 'fail');
+  }
+  /* menu: what to ask */
+  var DAN_OPTS = [['2', '2단'], ['3', '3단'], ['4', '4단'], ['5', '5단'], ['6', '6단'], ['7', '7단'], ['8', '8단'], ['9', '9단'], ['2,5', '2단과 5단'], ['3,6', '3단과 6단'], ['4,8', '4단과 8단'], ['all', '2단~9단 모두']];
+  function renderQuiz() {
+    var s = save.quiz.sel, o = quizSel(), t = QUIZ_TYPES[o.type], p = QUIZ_PACE[o.pace];
+    $('opt-dan').value = s.dan; $('opt-qtype').value = s.type; $('opt-pace').value = s.pace;
+    $('quiz-brief').innerHTML = row('문제 수', o.type === 'seq' ? o.dans.length * 9 + '문제 (단마다 1부터 9까지)' : '10문제') + row('보기', '깃발 문 ' + t.opts + '개') +
+      row('생각할 시간', '문제가 나오고 문에 닿기까지 약 ' + (p.t + t.think) + '초') + row('틀리면', '차가 잠깐 느려지고 정답을 보여 준다. 그 문제는 끝에 한 번 더 나온다.');
+  }

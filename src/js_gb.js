@@ -11,7 +11,7 @@
     for (i = 0; i < bombs.length; i++) { bombs[i].g.visible = false; bombPool.push(bombs[i]); } bombs.length = 0;
     for (i = 0; i < scraps.length; i++) { scraps[i].m.visible = false; spool.push(scraps[i]); } scraps.length = 0;
     if (crate.g) crate.g.visible = false;
-    crate.active = false; trackM = null;
+    crate.active = false; trackM = null; quizOff();
     boss = null; plane.visible = false; bannerT = 0; $('banner').hidden = true; $('caption').hidden = true; capHold = 0; capSeen = {};
     spawnT = 0.3; nextRowDist = dist + 20; droneT = 3; strikeT = 4.5; salvoN = 0; maxX = 9.9; minX = -9.9; workHitT = 0; slowT = 0; timeScale = 1;
     strikeQ.length = 0; clearHulks(); planeShadow.visible = false; kamiT = 6; sirenT = 0; fireHitT = 0;
@@ -40,13 +40,13 @@
   function cardKick(misIdx) {
     var cw = ' · ' + REGIONS[mission.region || 'city'].short + ' · ' + WEATHERS[mission.weather || 'clear'].name;
     if (runKind === 'ta' || runKind === 'race') return KINDS[runKind].name + ' · ' + mission.timeLabel + cw + ' · ' + (mission.n / 1000).toFixed(1) + ' km';
-    if (runKind === 'surv' || runKind === 'free' || runKind === 'tut') return KINDS[runKind].name + ' · ' + mission.why;
+    if (runKind === 'surv' || runKind === 'free' || runKind === 'quiz' || runKind === 'tut') return KINDS[runKind].name + ' · ' + mission.why;
     return (mission.part ? mission.part + ' · ' : '') + '미션 ' + (misIdx + 1) + ' · ' + mission.timeLabel + cw + ' · ' + dirText(mission);
   }
   function bestText() {
     if (runKind === 'race') { var q = save.race[runTA]; return q && q.rank ? '최고 ' + q.rank + '위 ' + fmtT(q.t) : '첫 도전'; }
     if (runKind === 'surv') return save.surv.best ? '최고 ' + save.surv.best.toLocaleString('ko-KR') + '점' : '첫 도전';
-    if (runKind === 'free' || runKind === 'tut') return '';
+    if (runKind === 'free' || runKind === 'quiz' || runKind === 'tut') return '';
     if (runTA >= 0) { var r = taRec(runTA); return r.best ? '최고 ' + fmtT(r.best) : '첫 기록 도전'; }
     if (mission.goal === 'time') return save.best[runMission] ? '최고 ' + save.best[runMission].toLocaleString('ko-KR') + '점' : '첫 도전';
     return save.bestT[runMission] ? '최고 ' + fmtT(save.bestT[runMission]) : '첫 기록 도전';
@@ -57,7 +57,7 @@
     runKind = kind || (taIdx === undefined || taIdx === null ? 'mis' : 'ta');
     runTA = runKind === 'ta' || runKind === 'race' ? taIdx : -1;
     mode = isDemo ? 'demo' : 'play'; won = false; runMission = misIdx;
-    mission = runKind === 'tut' ? tutMission() : (runKind === 'ta' ? TRACKS[runTA] : (runKind === 'race' ? raceOf(runTA) : (runKind === 'surv' || runKind === 'free' ? condMission(runKind) : MISSIONS[misIdx])));
+    mission = runKind === 'tut' ? tutMission() : runKind === 'quiz' ? quizMission() : (runKind === 'ta' ? TRACKS[runTA] : (runKind === 'race' ? raceOf(runTA) : (runKind === 'surv' || runKind === 'free' ? condMission(runKind) : MISSIONS[misIdx])));
     tut.i = -1; radioReset(); $('coach').hidden = true;
     target = PRESETS[mission.time]; setRegion(mission.region || 'city'); setWeather(mission.weather || 'clear', true);
     rolling = runKind === 'ta' || runKind === 'race' || mission.goal === 'duel';
@@ -86,6 +86,7 @@
     $('tag-dir').textContent = kindText(); $('tag-dir').className = mission.dir > 0 ? 'tag' : 'tag rev';
     $('clock-best').textContent = bestText();
     $('car-name').textContent = car.name; $('skill-name').textContent = car.skillName; $('basic-name').textContent = BASICS[car.basic].name;
+    if (runKind === 'quiz' && !isDemo) quizBegin(); else quizOff();
     hudCache = {}; hud();
   }
   function rerun() { beginRun(selCar, runMission, false, runTA >= 0 ? runTA : undefined, runKind, true); }
@@ -324,13 +325,13 @@
   }
   function renderCond() {
     var surv = selKind === 'surv', R = REGIONS[cond.region], W = WEATHERS[cond.weather], sv = save.surv, c = CARS[selCar];
-    $('cond-premise').textContent = surv ? '끝이 없는 도로에서 쓰러질 때까지 버팁니다. 25초마다 단계가 올라 적이 늘어납니다. 배경과 시간, 날씨는 직접 고릅니다.'
+    $('cond-premise').textContent = selKind === 'quiz' ? '달릴 길의 배경과 시간, 날씨를 고릅니다.' : surv ? '끝이 없는 도로에서 쓰러질 때까지 버팁니다. 25초마다 단계가 올라 적이 늘어납니다. 배경과 시간, 날씨는 직접 고릅니다.'
       : '적도 목표도 없이 달립니다. 배경과 시간, 날씨를 골라 길과 차량의 주행 특성을 느껴 보세요. 부딪혀도 내구는 줄지 않습니다.';
     $('opt-region').value = cond.region; $('opt-time').value = cond.time; $('opt-weather').value = cond.weather;
     $('cond-brief').innerHTML = row('배경', R.name + '. ' + R.feel) + row('날씨', W.name + '. ' + W.feel) + row('이 차', c.name + ' · ' + c.spec.drive + ' · 험로 주파 ' + (c.rough * 10).toFixed(1) + ' / 10') +
       (surv ? row('단계', '1단계 폭주 차량, 2단계부터 버기와 드론, 3단계부터 자폭 드론, 4단계부터 공중폭격') +
         row('기록', sv.best ? '최고 ' + sv.best.toLocaleString('ko-KR') + '점 · ' + sv.km + ' km · ' + sv.level + '단계' + (CARS[sv.car] ? ' (' + CARS[sv.car].name + ')' : '') : '없음') + row('보상', '모은 고철 전부, 오른 단계마다 20')
-        : row('끝내기', '일시정지(Esc)에서 선택 화면으로 돌아간다'));
+        : selKind === 'quiz' ? '' : row('끝내기', '일시정지(Esc)에서 선택 화면으로 돌아간다'));
   }
   function renderKinds() {
     var html = '';
@@ -338,17 +339,18 @@
       html += '<button type="button" class="kind" role="radio" id="kind-' + k + '" data-kind="' + k + '" aria-checked="' + (k === selKind) + '"><b>' + KINDS[k].name + '</b><span>' + (k === 'mis' ? '이야기를 따라가는 ' + MISSIONS.length + '개 미션' : KINDS[k].sub) + '</span></button>';
     });
     $('kinds').innerHTML = html;
-    ['mis', 'ta', 'race'].forEach(function (k) { $('pane-' + k).hidden = k !== selKind; });
-    $('pane-cond').hidden = !(selKind === 'surv' || selKind === 'free');
+    ['mis', 'ta', 'race', 'quiz'].forEach(function (k) { $('pane-' + k).hidden = k !== selKind; });
+    $('pane-cond').hidden = !(selKind === 'surv' || selKind === 'free' || selKind === 'quiz');
   }
   function renderFoot() {
     var why = !carOpen(selCar) ? '아직 구입하지 않은 차량입니다.' : (selKind === 'mis' && !missionOpen(selMission) ? '이 미션은 앞 미션을 완료하면 열립니다.' : '');
     $('wallet').textContent = save.scrap.toLocaleString('ko-KR');
     $('go').disabled = !!why; $('go-why').hidden = !why; $('go-why').textContent = why;
     $('go-what').textContent = CARS[selCar].name + ' · ' + (selKind === 'ta' || selKind === 'race' ? KINDS[selKind].name + ' ' + TRACKS[selTrack].name
+      : selKind === 'quiz' ? quizMission().name + ' · ' + QUIZ_TYPES[save.quiz.sel.type].name + ' · ' + REGIONS[cond.region].short
       : (selKind === 'surv' || selKind === 'free' ? KINDS[selKind].name + ' · ' + REGIONS[cond.region].short + ' · ' + TIME_LABEL[cond.time] + ' · ' + WEATHERS[cond.weather].name : '미션 ' + (selMission + 1) + ' ' + MISSIONS[selMission].name));
   }
-  function renderMenu() { renderGrid(); renderGear(); renderKinds(); renderMissions(); renderTA(); renderRace(); renderCond(); renderFoot(); }
+  function renderMenu() { renderGrid(); renderGear(); renderKinds(); renderMissions(); renderTA(); renderRace(); renderCond(); renderQuiz(); renderFoot(); }
   function pickCourse() {
     var m = missionFor(selKind);
     if (m === mission) return;
@@ -416,7 +418,8 @@
     var cn = CARS[player.car].name, got = win ? scrap : Math.floor(scrap / 20) * 10, bonus, tNow = +tPlay.toFixed(2), newRec = false, snd = '', N = function (v) { return v.toLocaleString('ko-KR'); };
     var kmNow = (dist0() / 1000).toFixed(2) + ' km', half = '모은 고철의 절반 ' + got;
     $('res-next').hidden = true; $('res-ending').hidden = true;
-    if (runKind === 'race') {
+    if (runKind === 'quiz') snd = quizResult();
+    else if (runKind === 'race') {
       var rk = win ? raceRank() : 0, rr0 = save.race[runTA] || (save.race[runTA] = { rank: 0, t: 0, car: '' }), better = win && (!rr0.rank || rk < rr0.rank || (rk === rr0.rank && tNow < rr0.t));
       if (better) { rr0.rank = rk; rr0.t = tNow; rr0.car = player.car; }
       bonus = win ? RACE_REWARD[Math.min(rk, RACE_REWARD.length) - 1] : 0;
@@ -828,6 +831,9 @@
   });
   $('kinds').addEventListener('click', function (e) { var b = hit(e.target, 'data-kind'); if (!b) return; sfx('click'); setKind(b.getAttribute('data-kind')); });
   $('title-kinds').addEventListener('click', function (e) { var b = hit(e.target, 'data-kind'); if (!b) return; sfx('click'); selKind = b.getAttribute('data-kind'); toMenu(); setTab('mode'); });
+  [['dan', 'opt-dan'], ['type', 'opt-qtype'], ['pace', 'opt-pace']].forEach(function (p) {
+    $(p[1]).addEventListener('change', function () { save.quiz.sel[p[0]] = $(p[1]).value; storeSave(); sfx('click'); renderQuiz(); renderFoot(); });
+  });
   ['region', 'time', 'weather'].forEach(function (k) {
     $('opt-' + k).addEventListener('change', function () { cond[k] = $('opt-' + k).value; sfx('click'); pickCourse(); renderCond(); renderFoot(); });
   });
@@ -835,6 +841,9 @@
     var h = '';
     REGION_ORDER.forEach(function (k) { h += '<option value="' + k + '">' + REGIONS[k].name + '</option>'; }); $('opt-region').innerHTML = h; h = '';
     WEATHER_ORDER.forEach(function (k) { h += '<option value="' + k + '">' + WEATHERS[k].name + '</option>'; }); $('opt-weather').innerHTML = h; h = '';
+    DAN_OPTS.forEach(function (o) { h += '<option value="' + o[0] + '">' + o[1] + '</option>'; }); $('opt-dan').innerHTML = h; h = '';
+    for (var qk in QUIZ_TYPES) h += '<option value="' + qk + '">' + QUIZ_TYPES[qk].name + ' (보기 ' + QUIZ_TYPES[qk].opts + '개)</option>'; $('opt-qtype').innerHTML = h; h = '';
+    for (var pk in QUIZ_PACE) h += '<option value="' + pk + '">' + QUIZ_PACE[pk].name + ' (' + QUIZ_PACE[pk].t + '초)</option>'; $('opt-pace').innerHTML = h; h = '';
     KIND_ORDER.forEach(function (k) { h += '<button type="button" class="kind" data-kind="' + k + '"><b>' + KINDS[k].name + '</b><span>' + (k === 'mis' ? '이야기를 따라가는 ' + MISSIONS.length + '개 미션' : KINDS[k].sub) + '</span></button>'; });
     $('title-kinds').innerHTML = h;
   })();
@@ -948,7 +957,7 @@
   }
   function spawner(dt) {
     var agg = aggK();
-    if (mission.goal === 'tut') return;   /* driving practice: only what the lesson itself puts on the road */
+    if (mission.goal === 'tut' || mission.goal === 'quiz') return;   /* driving practice and the quiz: only what they put on the road themselves */
     if (mission.farm) {
       /* country roads: a walking tractor now and then, far slower than everything else */
       farmT -= dt * Math.max(0.75, veff / 38);
@@ -1087,6 +1096,7 @@
     if (mission.rivals) { var rl = Math.max(0, mission.n - dist0()); f = 1 - rl / mission.n; txt = '순위 ' + raceRank() + ' / ' + (rivals.length + 1) + ' · ' + mission.label + ' ' + (rl / 1000).toFixed(2) + ' km'; }
     else if (mission.goal === 'endless') { f = (tPlay % 25) / 25; txt = '단계 ' + survLevel + ' · ' + (dist0() / 1000).toFixed(1) + ' km · 격파 ' + kills + '대'; }
     else if (mission.goal === 'free') { f = 0; txt = '연습 주행 ' + (dist0() / 1000).toFixed(1) + ' km'; }
+    else if (mission.goal === 'quiz') { var qo = quizObjective(); f = qo.f; txt = qo.txt; }
     else if (mission.goal === 'tut') { f = Math.max(0, tut.i) / TUT.length; txt = '단계 ' + (Math.max(0, tut.i) + 1) + ' / ' + TUT.length; }
     else if (mission.goal === 'kill') { f = kills / mission.n; txt = mission.label + ' ' + Math.min(kills, mission.n) + ' / ' + mission.n; }
     else if (mission.goal === 'dist') { var m = dist0(); f = m / mission.n; txt = mission.label + ' ' + (Math.min(m, mission.n) / 1000).toFixed(1) + ' / ' + (mission.n / 1000).toFixed(1) + ' km'; }
@@ -1597,6 +1607,7 @@
       if (on && !player.dead && Math.abs(p.x - px) < car.hw + 0.9 && Math.abs(p.z) < car.hl + 0.9) { applyItem(crate.item); crate.active = false; crate.g.visible = false; }
       else if (p.z > 18) { crate.active = false; crate.g.visible = false; }
     }
+    if (runKind === 'quiz') quizStep(dt, px, car);
 
     /* particles, debris, rings, pickups */
     for (i = parts.length - 1; i >= 0; i--) {
@@ -1806,6 +1817,7 @@
       return { mode: mode, car: player.car, hp: Math.round(player.hp), x: +player.x.toFixed(1), kills: kills, civ: civHits, score: score, scrap: scrap, bank: save.scrap, v: +veff.toFixed(1), enemies: enemies.length, props: props.length,
         sec: s ? s.type : '-', slope: +slopeAt(dist).toFixed(3), fire: fireIn, title: titleOn, paused: paused, dist: dist0(), t: +tPlay.toFixed(1), won: won, why: failWhy, cam: save.cam, cock: cockpit.visible, ta: runTA, tun: +tunK.toFixed(2), bombs: bombs.length, hulks: hulks.length, picks: picks, hunts: hunts, dmg: dmgLog, bcd: +(player.bcd || 0).toFixed(1), dstage: dmgStage, tut: tut.i, tutSeen: save.tut, caption: $('caption').hidden ? '' : $('caption').textContent, coach: $('coach').hidden ? '' : $('coach-do').textContent, hulkList: hulks.map(function (h) { return [+h.m.position.x.toFixed(1), +h.m.position.z.toFixed(1), +h.t.toFixed(2), h.hit ? 1 : 0].join('/'); }).join(' '), eb: ebullets.length, ebNear: ebullets.reduce(function (m, b) { var q = b.m.position; return Math.min(m, Math.round(Math.sqrt((q.x - player.x) * (q.x - player.x) + q.z * q.z))); }, 999), basic: CARS[player.car].basic, horn: +hornT.toFixed(1), boost: +player.boost.toFixed(1), limit: rushLimit, tire: playerTire, agg: +aggK().toFixed(2), susp: [+susp.f.toFixed(3), +susp.r.toFixed(3), +playerRoot.rotation.x.toFixed(3)], buffs: buffText(CARS[player.car]), cd: +player.cd.toFixed(1), gfxNow: gfxNow, sfxOn: sfxOn, kind: runKind, region: region.key, wx: weather.key, surf: sfc.key, grip: +sfc.grip.toFixed(2), cap: +sfc.cap.toFixed(2), rank: rivals.length ? raceRank() : 0, level: survLevel, cover: +snowCover.toFixed(2), gust: +gust.v.toFixed(1), fade: +tr.fade.toFixed(2), scn: sceneryNow.length, thr: +player.thr.toFixed(2), sel: selKind, shot: shotName, phase: tr.phase, mis: runMission, power: power, guns: guns.map(function (g) { return g.w; }).join('+') };
     },
-    env: function () { mixEnv(1); }
+    env: function () { mixEnv(1); },
+    quiz: function () { return quiz; }
   };
 })();
