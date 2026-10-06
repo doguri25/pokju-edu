@@ -398,7 +398,7 @@ body.cine #card { bottom: 9%; }
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.3</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.4</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
     <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false" hidden>아이템</button>
@@ -442,6 +442,11 @@ body.cine #card { bottom: 9%; }
     <div class="missions" id="race-list"></div>
     <dl class="detail" id="race-brief"></dl>
   </div>
+  <div class="pane" id="pane-story" hidden>
+    <p class="premise">한울시의 관제 AI 「마성」이 계산을 까먹었다. 길마다 숫자 갈림길이 생겼고, 맞는 답이 적힌 문으로 지나가면 마성이 다시 기억한다. 전설 카센터의 막내 정비사가 운전대를 잡는다.</p>
+    <div class="missions" id="ch-list"></div>
+    <dl class="detail" id="ch-brief"></dl>
+  </div>
   <div class="pane" id="pane-quiz" hidden>
     <p class="premise">새벽: “마성이 계산을 까먹었어. 길마다 숫자 갈림길이 생겼는데, 맞는 답이 적힌 문으로 지나가면 다시 기억해.”</p>
     <label class="opt sel">단<select id="opt-dan"></select></label>
@@ -475,7 +480,7 @@ body.cine #card { bottom: 9%; }
     <button type="button" class="plain" id="opt-reset">진행 초기화</button>
     <button type="button" class="plain" id="opt-title">타이틀 화면으로</button>
     <button type="button" class="plain" id="opt-help">조작 방법 보기</button>
-    <button type="button" class="plain" id="opt-story" hidden>이야기와 운전 연습 다시 보기</button>
+    <button type="button" class="plain" id="opt-story">이야기와 운전 연습 다시 보기</button>
     <p class="keys">키보드는 방향키로 움직입니다. ↑ ↓ 는 가속과 감속, ← → 는 좌우 이동입니다. 시점 바꾸기는 C, 일시정지는 Esc, 소리 끄기는 M입니다. 터치는 왼쪽 아래 레버로 속도를 정하고 화면 오른쪽을 좌우로 끌어 이동합니다. 게임패드는 왼쪽 스틱으로 움직입니다.</p>
     <p class="keys">모은 고철, 연 차량, 기록은 이 브라우저에만 저장됩니다. 이름 같은 개인정보는 저장하지 않습니다.</p>
   </div>
@@ -532,14 +537,14 @@ body.cine #card { bottom: 9%; }
   <p class="story" id="ending-a">폭풍이 지나간 새벽, 해안도로 끝에서 서버 트럭이 멈췄다. 타워에서 들녘의 변전소로, 산속 중계소로, 바다로 달아나던 마성의 마지막 백업이 꺼졌다.</p>
   <p class="story" id="ending-b">새벽이 무전으로 말했다. “방공망도, 관제망도, 백업도 전부 꺼졌어. 이제 사람들이 돌아올 수 있어.” 오 사장은 고철 더미 위에서 다음에 고칠 차를 고르고 있다.</p>
   <p id="ending-stats"></p>
-  <div class="btns"><button type="button" class="primary" id="ending-title">타이틀로</button><button type="button" id="ending-menu">차량·미션 선택</button></div>
+  <div class="btns"><button type="button" class="primary" id="ending-title">타이틀로</button><button type="button" id="ending-menu">선택 화면으로</button></div>
 </div>
 <div id="title">
   <span class="kick">한울시 · 계산을 까먹은 관제 AI 「마성」</span>
   <b>폭주 구구단</b>
   <span class="more" id="title-more"></span>
   <div class="kinds" id="title-kinds" role="group" aria-label="모드 골라 시작"></div>
-  <div class="btns"><button type="button" class="go" id="title-start">게임 시작</button><button type="button" class="ghost" id="title-tut" hidden>이야기와 운전 연습</button><button type="button" class="ghost" id="title-trailer" hidden>예고편 보기</button></div>
+  <div class="btns"><button type="button" class="go" id="title-start">게임 시작</button><button type="button" class="ghost" id="title-tut">이야기와 운전 연습</button><button type="button" class="ghost" id="title-trailer" hidden>예고편 보기</button></div>
 </div>
 <div id="err" hidden><div class="chip">이 기기에서는 3D 그래픽(WebGL)을 켤 수 없어 장면을 표시하지 못했습니다.</div></div>
 
@@ -3678,7 +3683,7 @@ body.cine #card { bottom: 9%; }
       road: { order: ['deck', 'work', 'split', 'under', 'deck'], seed: 61544, gap: [70, 100] },
       why: '폭우와 돌풍이 몰아치는 3.2 km 해안도로. 젖은 노면과 물웅덩이, 옆바람을 견디며 해상교량을 건넌다.', aim: '옆바람과 물웅덩이를 견디며 결승선까지 달린다.', win: '3.2 km 완주', lose: '내 차량 파괴', done: '' }
   ];
-  var selTrack = 0, selKind = 'quiz', runTA = -1, kamiT = 6, sirenT = 0, fireHitT = 0, tunK = 0, tunOut = 0, tunAdapt = 0, tunGlare = 0, echoK = 0, tunCam = false, lowCam = false, minX = -9.9, sawMul = 0.5, padStartHeld = false;
+  var selTrack = 0, selKind = 'story', runTA = -1, kamiT = 6, sirenT = 0, fireHitT = 0, tunK = 0, tunOut = 0, tunAdapt = 0, tunGlare = 0, echoK = 0, tunCam = false, lowCam = false, minX = -9.9, sawMul = 0.5, padStartHeld = false;
   var mode = 'menu', mission = MISSIONS[0], selCar = 'laser', selMission = 0, runMission = 0, won = false, resultT = 0, failWhy = '';
   var player = { car: 'laser', x: 0, vx: 0, v: 35, a: 0, thr: 0.5, boost: 0, hp: 100, shield: 0, shieldT: 0, cd: 0, invuln: 0, dead: false };
   var veff = 35, time = 0, dist = 0, distStart = 0, tPlay = 0, kills = 0, civHits = 0, score = 0, scrap = 0, hitFlash = 0, boss = null;
@@ -3696,7 +3701,7 @@ body.cine #card { bottom: 9%; }
 
   /* progress: scrap, unlocked cars, cleared missions and loadouts are kept in this browser only */
   var SAVE_KEY = 'pokju-edu-v1';
-  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: false, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true, quiz: { sel: { dan: '2', type: 'seq', pace: 'mid' }, facts: {}, runs: [] } };
+  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: false, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true, quiz: { sel: { dan: '2', type: 'seq', pace: 'mid' }, facts: {}, runs: [] }, story: { open: 0, stars: {}, tries: {}, done: false } };
   var W_PRICE = { mg: 0, bolt: 500, laser: 600, shotgun: 400, flame: 500, saw: 300, water: 500, cannon: 700, missile: 800, mine: 400 }, UP_PRICE = [0, 400, 900];
   function loadSave() {
     try {
@@ -3714,6 +3719,12 @@ body.cine #card { bottom: 9%; }
         if (s.tires && typeof s.tires === 'object') save.tires = s.tires;
         if (s.tire && typeof s.tire === 'object') save.tire = s.tire;
         if (s.weapons && typeof s.weapons === 'object') save.weapons = s.weapons;
+        if (s.story && typeof s.story === 'object') {
+          if (typeof s.story.open === 'number') save.story.open = s.story.open;
+          if (s.story.stars && typeof s.story.stars === 'object') save.story.stars = s.story.stars;
+          if (s.story.tries && typeof s.story.tries === 'object') save.story.tries = s.story.tries;
+          save.story.done = !!s.story.done;
+        }
         if (s.quiz && typeof s.quiz === 'object') {
           var qs = s.quiz.sel || {};
           if (DAN_OPTS.some(function (o) { return o[0] === qs.dan; })) save.quiz.sel.dan = qs.dan;
@@ -3723,7 +3734,7 @@ body.cine #card { bottom: 9%; }
           if (Array.isArray(s.quiz.runs)) save.quiz.runs = s.quiz.runs.slice(-30);
         }
         if (s.camV === 2 && (s.cam === 'top' || s.cam === 'low' || s.cam === 'cockpit')) { save.cam = s.cam; save.camV = 2; }
-        save.unlockAll = !!s.unlockAll; save.muted = !!s.muted; save.music = s.music === true; save.sfx = s.sfx !== false; save.calm = !!s.calm; save.help = !!s.help; save.mirror = s.mirror !== false;
+        save.unlockAll = !!s.unlockAll; save.muted = !!s.muted; save.music = s.music === true; save.sfx = s.sfx !== false; save.calm = !!s.calm; save.help = !!s.help; save.tut = !!s.tut; save.mirror = s.mirror !== false;
         if (s.gfx === 'auto' || s.gfx === 'high' || s.gfx === 'mid' || s.gfx === 'low') save.gfx = s.gfx;
       }
     } catch (e) {}
@@ -3744,7 +3755,7 @@ body.cine #card { bottom: 9%; }
   function tireOf(carKey) { var k = save.tire[carKey]; return k && TIRES[k] && tireOwned(k) ? k : 'allseason'; }
   /* how hard the enemy presses: the story starts gentle and grows with every mission; the other modes sit at fixed levels */
   function aggK() {
-    if (mode === 'menu' || runKind === 'free' || runKind === 'quiz' || runKind === 'tut') return 0;
+    if (mode === 'menu' || runKind === 'free' || quizRun() || runKind === 'tut') return 0;
     if (runKind === 'mis') return runMission < 18 ? 0.65 + 0.03 * runMission : Math.min(1.3, 1.16 + 0.012 * (runMission - 17));
     if (runKind === 'surv') return Math.min(1.5, 0.7 + 0.1 * survLevel);
     return 1;
@@ -3815,7 +3826,7 @@ body.cine #card { bottom: 9%; }
     if (mode === 'demo') d *= 0.3;
     if (d <= 0) return;
     dmgLog[kind || 'etc'] = Math.round(((dmgLog[kind || 'etc'] || 0) + d) * 10) / 10;
-    if ((runKind === 'free' || runKind === 'quiz' || runKind === 'tut') && mode === 'play') { hitFlash = 0.6; shake = Math.min(1.2, shake + 0.3); sfx('hurt'); return; }   /* free driving: a knock, but no damage */
+    if ((runKind === 'free' || quizRun() || runKind === 'tut') && mode === 'play') { hitFlash = 0.6; shake = Math.min(1.2, shake + 0.3); sfx('hurt'); return; }   /* free driving: a knock, but no damage */
     if (player.shield > 0) {
       player.shield = 0; player.shieldT = 10;
       spawnP('glow', player.x, 1.4, 0, 0, 0, 0, 0.35, 5, 12, COL.blue, 0.9, 0);
@@ -4559,11 +4570,12 @@ body.cine #card { bottom: 9%; }
     ta: { name: '타임어택', sub: '같은 길에서 기록 겨루기' },
     race: { name: '레이싱', sub: '경쟁 차량 5대와 순위 다툼' },
     surv: { name: '서바이벌', sub: '쓰러질 때까지 버티기' },
+    story: { name: '이야기', sub: '고장 난 마성을 구구단으로 고치기' },
     quiz: { name: '구구단', sub: '정답이 적힌 깃발 문으로 지나가기' },
     free: { name: '연습 주행', sub: '문제 없이 길과 차에 익숙해지기' },
     tut: { name: '운전 연습', sub: '조작과 이야기 익히기' }
   };
-  var KIND_ORDER = ['quiz', 'free'],   /* learning edition: the original modes stay in the code but are not offered; the quiz modes join this list */
+  var KIND_ORDER = ['story', 'quiz', 'free'],   /* learning edition: the original modes stay in the code but are not offered; the quiz modes join this list */
       TIME_LABEL = { day: '낮', sunset: '노을', night: '밤' };
   var runKind = 'mis', rolling = false, cond = { region: 'city', time: 'day', weather: 'clear' }, raceM = [], rivals = [], finN = 0, survLevel = 1, farmT = 4;
   var RACE_REWARD = [400, 250, 150, 80, 50, 50];
@@ -4580,7 +4592,7 @@ body.cine #card { bottom: 9%; }
     m.aim = '경쟁 차량 5대보다 먼저 결승선을 지난다. 쏘거나 부딪혀 상대를 늦출 수 있다.';
     return (raceM[i] = m);
   }
-  function missionFor(kind) { return kind === 'quiz' ? quizMission() : kind === 'ta' ? TRACKS[selTrack] : (kind === 'race' ? raceOf(selTrack) : (kind === 'surv' || kind === 'free' ? condMission(kind) : MISSIONS[selMission])); }
+  function missionFor(kind) { return kind === 'story' ? storyMission(selChapter) : kind === 'quiz' ? quizMission() : kind === 'ta' ? TRACKS[selTrack] : (kind === 'race' ? raceOf(selTrack) : (kind === 'surv' || kind === 'free' ? condMission(kind) : MISSIONS[selMission])); }
   function roadText(m) {
     var R = REGIONS[m.region || 'city'], W = WEATHERS[m.weather || 'clear'];
     return R.name + ' · ' + W.name + '. ' + R.feel + (W.key === 'clear' ? '' : ' ' + W.feel);
@@ -4934,56 +4946,42 @@ body.cine #card { bottom: 9%; }
 
   /* ---------- story and driving practice: who the player is, why they drive, and the first drive that teaches the controls ---------- */
   var STORY = [
-    ['한울시의 아침', '한울시에서는 아무도 운전하지 않는다. 승용차도, 버스도, 택배 드론도 관제 AI 「마성」이 움직인다. 당신만 빼고. 당신은 전설 카센터의 막내 정비사다. 고친 차를 시운전하느라, 이 도시에서 몇 안 남은 운전대를 잡을 줄 아는 사람이다.'],
-    ['마성이 폭주한 날', '오늘 아침, 마성이 사람의 명령을 듣지 않기 시작했다. 통신망에 묶인 차와 드론이 전부 마성의 것이 되어 도로를 막았다. 시민들은 걸어서 도시를 빠져나가고 있다.'],
-    ['운전할 수 있는 사람', '통신 모듈을 뗀 차는 마성이 조종하지 못한다. 대신 사람이 직접 몰아야 한다. 오 사장은 차를 고치고 무기를 단다. 관제센터에서 빠져나온 관제사 새벽은 무전으로 길을 읽어 준다. 운전대를 잡을 사람은 당신뿐이다.'],
-    ['해야 할 일', '마성 타워까지 달려가 전원을 내린다. 오 사장은 당신을 「막내」라고 부르고, 새벽은 무전에서 「전설 하나」라고 부른다. 먼저 카센터 앞 도로에서 운전부터 익힌다.']
-  ], STORY_DONE = ['운전 연습 끝', '새벽: “전설 하나, 운전은 됐어. 마성 타워로 가는 첫 구간은 외곽 도로야. 폭주 차량 스무 대가 길을 막고 있어.” 오 사장: “막내야, 차 긁지 말고 다녀와라.”'];
+    ['한울시의 아침', '한울시에서는 승용차도, 버스도, 신호등도 관제 AI 「마성」이 움직인다. 당신은 전설 카센터의 막내 정비사다. 고친 차를 시운전하느라, 이 도시에서 몇 안 남은 운전할 줄 아는 사람이다.'],
+    ['마성이 계산을 까먹은 날', '오늘 아침, 마성이 숫자를 까먹었다. 신호등은 7초인지 70초인지 몰라 깜빡이고, 버스는 엉뚱한 정류장에 선다. 마성은 길마다 「숫자 갈림길」을 세워 놓고 누가 맞는 답을 알려 주기를 기다린다.'],
+    ['맞는 문으로 지나가기', '관제사 새벽이 무전으로 말했다. “갈림길마다 답이 적힌 문이 있어. 맞는 문으로 지나가면 마성이 다시 기억해. 틀려도 괜찮아, 다음에 또 나오니까.” 오 사장은 차 열쇠를 건넸다. 먼저 카센터 앞 길에서 운전부터 익힌다.']
+  ], STORY_DONE = ['운전 연습 끝', '새벽: “전설 하나, 운전은 됐어. 첫 갈림길은 도심이야. 신호등이 2단을 까먹었대.” 오 사장: “막내야, 천천히 다녀와라. 틀려도 혼 안 낸다.”'];
   var storyI = 0, storyMode = 'intro';
   function storyShow() {
     var done = storyMode === 'done', s = done ? STORY_DONE : STORY[storyI];
     $('story-step').textContent = done ? '전설 카센터' : '이야기 ' + (storyI + 1) + ' / ' + STORY.length;
     $('story-title').textContent = s[0]; $('story-text').textContent = s[1];
-    $('story-next').textContent = done ? '미션 1 출발' : (storyI === STORY.length - 1 ? '운전 연습 시작' : '다음');
+    $('story-next').textContent = done ? '1장 출발' : (storyI === STORY.length - 1 ? '운전 연습 시작' : '다음');
     $('story-skip').textContent = done ? '차량 고르기' : '건너뛰기';
     $('story').hidden = false; $('story-next').focus();
   }
   function openStory() { storyMode = 'intro'; storyI = 0; $('title').hidden = true; $('menu').hidden = true; storyShow(); }
   function storyNext() {
     sfx('click');
-    if (storyMode === 'done') { $('story').hidden = true; selKind = 'mis'; if (!save.cleared.length) selMission = 0; startPlay(); return; }
+    if (storyMode === 'done') { $('story').hidden = true; selKind = 'story'; selChapter = 0; startPlay(); return; }
     if (++storyI < STORY.length) storyShow(); else { $('story').hidden = true; startTutorial(); }
   }
   function storySkip() {
     sfx('click'); $('story').hidden = true;
-    if (storyMode === 'intro') { save.tut = true; storeSave(); toMenu(); }
+    if (storyMode === 'intro') { save.tut = true; storeSave(); selKind = 'story'; toMenu(); setTab('mode'); }
   }
 
   var tut = { i: -1, t: 0, L: false, R: false, k0: 0, sp: 0, item: false, cT: 0, hump: 0, tries: 0 };
   function tutMission() {
     return { kind: 'tut', name: '운전 연습', region: 'city', weather: 'clear', time: 'day', timeLabel: '낮', dir: 1, goal: 'tut', n: TUT.length, civ: 0, civLimit: 0, drones: 0, strike: 0, kami: 0, buggy: false, traffic: 1, chasers: 0, farm: 0,
-      road: { order: ['hill'], gap: [420, 560] }, label: '운전 연습', why: '전설 카센터 앞 도로. 마성의 차들이 아직 닿지 않은 곳이다.', aim: '오 사장과 새벽의 말을 따라 운전, 무기, 기술을 차례로 익힌다. 연습 중에는 차가 부서지지 않는다.', win: '', lose: '', done: '' };
+      road: { order: ['hill'], gap: [420, 560] }, label: '운전 연습', why: '전설 카센터 앞 도로. 아직 갈림길이 없는 조용한 길이다.', aim: '오 사장과 새벽의 말을 따라 속도와 차로 바꾸기를 익힌다. 연습 중에는 차가 부서지지 않는다.', win: '', lose: '', done: '' };
   }
   function tutTouch() { return touchUI || vw <= 720; }
+  /* driving practice: speed and lanes. The first gates come in chapter 1, with 2단 in order */
   var TUT = [
     { who: '오 사장', line: '막내야, 시동 걸었으면 속도부터 올려 봐. 이 차들은 밟는다고 바로 튀어 나가지 않는다.', key: '↑ 를 누르고 있기', touch: '왼쪽 아래 레버를 위로 올리기', goal: function (car) { return '시속 ' + Math.round(Math.min(100, car.vmax * 3.6 * 0.8)) + ' km 넘기기'; },
       check: function (car) { return veff * 3.6 >= Math.min(100, car.vmax * 3.6 * 0.8); } },
     { who: '새벽', line: '전설 하나, 들려? 새벽이야. 길은 내가 읽어 줄게. 먼저 차로를 바꿔 봐.', key: '← →', touch: '화면 오른쪽을 좌우로 끌기', goal: function () { return '맨 왼쪽 차로와 맨 오른쪽 차로를 한 번씩 밟기' + (tut.L ? ' (왼쪽 완료)' : '') + (tut.R ? ' (오른쪽 완료)' : ''); },
-      enter: function () { tut.L = tut.R = false; }, tick: function () { if (player.x < -4.6) tut.L = true; if (player.x > 4.6) tut.R = true; }, check: function () { return tut.L && tut.R; } },
-    { who: '오 사장', line: '무기는 공격 키를 누르고 있는 동안 나간다. 손을 떼면 총도 쉰다. 앞에 굴러다니는 마성의 오토바이로 시험해 봐.', lineT: '무기는 레버를 잡고 있는 동안에만 나간다. 손을 떼면 총도 쉰다. 앞에 굴러다니는 마성의 오토바이로 시험해 봐.', key: 'Z 를 누른 채 오토바이와 같은 차로에 서기', touch: '레버를 누른 채 오토바이와 같은 차로에 서기', goal: function () { return '오토바이 ' + Math.min(3, kills - tut.k0) + ' / 3대 부수기'; },
-      enter: function () { tut.k0 = kills; tut.sp = 0; },
-      tick: function (dt) { tut.sp -= dt; if (tut.sp <= 0 && !enemies.some(function (e) { return e.type === 'bike'; })) { tut.sp = 2.5; for (var b = 0; b < 3; b++) spawnEnemy('bike', clamp(player.x + (b - 1) * 1.4, -6.6, 6.6), -95 - b * 5, Math.max(8, veff - 9)); } },
-      check: function () { return kills - tut.k0 >= 3; } },
-    { who: '새벽', line: '앞에 보급 상자가 있어. 쏘면 내용물이 바뀌고, 지나가면서 닿으면 먹어. 필요한 게 나올 때까지 쏘는 거야.', key: '상자를 쏴서 바꾸고, 같은 차로로 지나가기', touch: '상자를 쏴서 바꾸고, 같은 차로로 지나가기', goal: function () { return '보급 상자 먹기'; },
-      enter: function () { tut.item = false; tut.cT = 0; if (!crate.active) spawnCrate(); }, tick: function (dt) { if (!crate.active && !tut.item) { tut.cT += dt; if (tut.cT > 1.2) { tut.cT = 0; spawnCrate(); } } }, check: function () { return tut.item; } },
-    { who: '오 사장', line: '급할 때는 기본 기술이다. 차 종류마다 다르고, 몇 초면 다시 쓸 수 있어.', key: 'X', touch: '오른쪽 아래의 작은 버튼', goal: function (car) { return '기본 기술 「' + BASICS[car.basic].name + '」 쓰기'; }, check: function () { return player.bcd > 0; } },
-    { who: '새벽', line: '고유 기술은 그 차만의 필살기야. 세지만 다시 쓰려면 오래 기다려야 해. 아껴 뒀다가 몰렸을 때 써.', key: 'Space', touch: '오른쪽 아래의 큰 버튼', goal: function (car) { return '고유 기술 「' + car.skillName + '」 쓰기'; }, check: function () { return player.cd > 0; } },
-    { who: '오 사장', line: '저 앞에 방지턱이다. 빠르게 넘으면 차가 튀고 속도를 잃는다. 줄여서 넘어.', key: '↓ 로 감속', touch: '레버를 아래로 내려 감속', goal: function () { return '시속 60 km 아래로 방지턱 넘기' + (tut.missed ? ' (턱을 비켜 갔다. 다음 턱은 넘어서 가기)' : (tut.tries ? ' (너무 빨랐다. 다음 턱에서 다시)' : '')); },
-      enter: function () { tut.hump = 0; tut.tries = 0; tut.missed = false; tutHump(); },
-      tick: function () {
-        if (tut.hump < 0) { tut.hump = 0; tut.tries++; tut.missed = false; tutHump(); tutCoach(); }
-        else if (tut.hump === 0 && dist > tut.humpD + 14) { tut.missed = true; tutHump(); tutCoach(); }   /* driven around it: the next one comes in the lane the car is in */
-      }, check: function () { return tut.hump > 0; } }
+      enter: function () { tut.L = tut.R = false; }, tick: function () { if (player.x < -4.6) tut.L = true; if (player.x > 4.6) tut.R = true; }, check: function () { return tut.L && tut.R; } }
   ];
   function tutHump() { tut.humpD = dist + 190; addProp('hump', tut.humpD, clamp(player.x, -6.4, 6.4), { solid: { hw: 3.4, hl: 0.2, kind: 'hump', soft: 1 } }); }
   function tutCoach() {
@@ -5224,16 +5222,17 @@ body.cine #card { bottom: 9%; }
   function quizSel() { var s = save.quiz.sel; return { dans: s.dan === 'all' ? [2, 3, 4, 5, 6, 7, 8, 9] : s.dan.split(',').map(Number), type: s.type, pace: s.pace }; }
   function quizMission() {
     var m = condMission('free'), o = quizSel();
-    m.kind = 'quiz'; m.goal = 'quiz'; m.name = '구구단 ' + danLabel(o.dans); m.label = QUIZ_TYPES[o.type].name;
+    m.kind = 'quiz'; m.goal = 'quiz'; m.name = '구구단 ' + danLabel(o.dans); m.label = QUIZ_TYPES[o.type].name; m.quiz = o;
     m.traffic = 0; m.farm = 0; m.road = { order: ['hill'], gap: [300, 420] };
     m.aim = '문제를 보고 정답이 적힌 깃발 문으로 지나간다. 틀린 문제는 끝에 한 번 더 나온다.';
     return m;
   }
+  function quizRun() { return runKind === 'quiz' || runKind === 'story'; }
   function quizBegin() {
-    var o = quizSel();
+    var o = mission.quiz || quizSel();
     quizOff();
     quiz.deck = quizDeck({ dans: o.dans, type: o.type, n: 10, stats: save.quiz.facts });
-    quiz.pace = QUIZ_PACE[o.pace] || QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0;
+    quiz.pace = QUIZ_PACE[o.pace] || QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0; quiz.hinted = false;
     quiz.phase = 'wait'; quiz.t = 0.8;
   }
   function qboxSet(kick, text, cls, q) {
@@ -5256,7 +5255,7 @@ body.cine #card { bottom: 9%; }
       if (quiz.g) quiz.g.g.visible = false;
       gatesShow(q); quiz.g.g.position.set(0, 0, dist - quiz.d);
       qboxSet(dk.i > dk.main ? '다시 풀기' : '문제 ' + dk.i + ' / ' + dk.main, q.text, '', q);
-      sfx('cycle');
+      sfx('cycle'); storyRadio(dk);
     } else if (quiz.phase === 'ask' && dist >= quiz.d) {
       var picked = clamp(Math.floor((px + QG_EDGE) / quiz.g.W), 0, q.n - 1), first = dk.i <= dk.main, ok = quizAnswer(dk, q, picked);
       if (first) factRecord(save.quiz.facts, q.key, ok);
@@ -5291,6 +5290,7 @@ body.cine #card { bottom: 9%; }
     resRows([['문제', mission.name + ' · ' + QUIZ_TYPES[quiz.deck.type].name], ['맞힌 문제', sc.right + ' / ' + sc.total], ['가장 긴 연속 정답', quiz.best + '개'],
       ['다시 볼 문제', sc.missed.length ? sc.missed.map(function (k) { var p = k.split('x'); return p[0] + '×' + p[1] + '=' + p[0] * p[1]; }).join(', ') : '없음'], ['점수', N(score)]]);
     $('res-reward').textContent = '고철 ' + got + ' (맞힌 문제마다 20) · 보유 ' + N(save.scrap);
+    if (runKind === 'story') return storyAfter(sc);
     return all ? 'record' : (sc.right >= sc.total * 0.7 ? 'win' : 'fail');
   }
   /* the 9×9 record. dans: the rows to show; now: the facts of the run just played, outlined */
@@ -5329,6 +5329,96 @@ body.cine #card { bottom: 9%; }
     $('opt-dan').value = s.dan; $('opt-qtype').value = s.type; $('opt-pace').value = s.pace;
     $('quiz-brief').innerHTML = row('문제 수', o.type === 'seq' ? o.dans.length * 9 + '문제 (단마다 1부터 9까지)' : '10문제') + row('보기', '깃발 문 ' + t.opts + '개') +
       row('생각할 시간', '문제가 나오고 문에 닿기까지 약 ' + (p.t + t.think) + '초') + row('틀리면', '차가 잠깐 느려지고 정답을 보여 준다. 그 문제는 끝에 한 번 더 나온다.');
+  }
+  /* ---------- 이야기 1부: 고장 난 마성을 구구단으로 고친다. Nine chapters in the order the 단 are taught (2·5, 3·6, 4·8, 7, 9, then 1 and everything),
+     one road each. A chapter is a quiz run: the first try goes 1 to 9 in order, later tries are mixed. Seven right out of ten (or of nine) clears it ---------- */
+  var CHAPTERS = [
+    { dans: [2], region: 'city', time: 'day', weather: 'clear', fix: '신호등', name: '깜빡이는 신호등',
+      go: '도심 신호등이 7초인지 70초인지 몰라서 다 깜빡이고 있어. 2단 갈림길부터 지나가 보자.', hint: '2단은 2씩 커져. 2, 4, 6, 8… 손가락으로 세어도 돼.',
+      done: '도심 신호등이 하나둘 제자리로 돌아왔다. 초록불이 켜지자 사람들이 건널목을 건넜다.' },
+    { dans: [5], region: 'country', time: 'day', weather: 'clear', fix: '버스 시간표', name: '엉뚱한 시골 버스',
+      go: '시골 버스가 5분마다 와야 하는데 50분째 안 와. 5단을 알려 주자.', hint: '5단은 끝자리가 늘 5 아니면 0이야.',
+      done: '정류장 시간표가 바로잡혔다. 할머니가 장바구니를 들고 제시간에 온 버스에 올랐다.' },
+    { dans: [3], region: 'creek', time: 'day', weather: 'clear', fix: '다리 차단기', name: '열리지 않는 다리',
+      go: '개울 다리 차단기가 숫자를 까먹어서 안 올라가. 3단으로 열어 보자.', hint: '3단은 3씩 커져. 3, 6, 9 다음은 12야.',
+      done: '차단기가 스르르 올라갔다. 개울 건너 마을로 우유 트럭이 지나갔다.' },
+    { dans: [6], region: 'mountain', time: 'sunset', weather: 'clear', fix: '케이블카', name: '멈춘 케이블카',
+      go: '산 위 케이블카가 몇 번째 칸인지 몰라 멈춰 버렸어. 6단이야.', hint: '6단은 3단의 두 배야. 3×4가 12니까 6×4는 24.',
+      done: '케이블카가 다시 움직였다. 노을 진 산 위에서 손을 흔드는 사람들이 보였다.' },
+    { dans: [4], region: 'highway', time: 'day', weather: 'rain', fix: '톨게이트', name: '헷갈린 톨게이트',
+      go: '고속도로 톨게이트가 요금을 엉터리로 받고 있어. 4단을 지나가 줘. 비가 오니까 천천히.', hint: '4단은 2단의 두 배야. 2×7이 14니까 4×7은 28.',
+      done: '톨게이트 화면에 숫자가 똑바로 떴다. 막혀 있던 차들이 빗속을 천천히 빠져나갔다.' },
+    { dans: [8], region: 'offroad', time: 'day', weather: 'clear', fix: '택배 창고', name: '뒤죽박죽 택배 창고',
+      go: '숲속 택배 창고가 상자 개수를 다 틀리게 세고 있어. 8단이야, 조금 어려워.', hint: '8단은 4단의 두 배야. 8×5는 40, 거기서 8씩 더하거나 빼 봐.',
+      done: '창고 로봇이 상자를 여덟 개씩 가지런히 쌓았다. 기다리던 택배가 하나씩 출발했다.' },
+    { dans: [7], region: 'snow', time: 'day', weather: 'snow', fix: '제설차', name: '길 잃은 제설차',
+      go: '눈길 제설차들이 몇 번 왔다 갔다 할지 몰라서 서 있어. 7단을 알려 주자. 눈길이라 미끄러워.', hint: '7단이 제일 헷갈려. 7×7은 49, 7×8은 56. 5, 6, 7, 8 순서로 기억해!',
+      done: '제설차가 눈을 밀며 고갯길을 올라갔다. 하얀 길 위로 까만 찻길이 열렸다.' },
+    { dans: [9], region: 'coast', time: 'sunset', weather: 'clear', fix: '등대', name: '꺼진 등대',
+      go: '바닷가 등대가 몇 초마다 깜빡일지 몰라서 꺼져 있어. 9단이야.', hint: '9단은 십의 자리와 일의 자리를 더하면 늘 9야. 9×4는 36, 3 더하기 6은 9!',
+      done: '등대 불빛이 바다를 비췄다. 멀리서 고깃배들이 불빛을 따라 돌아왔다.' },
+    { dans: [1, 2, 3, 4, 5, 6, 7, 8, 9], region: 'city', time: 'night', weather: 'clear', fix: '마성의 계산 칩', name: '마성 타워', last: true,
+      go: '마지막이야. 마성 타워 앞 갈림길에는 1단부터 9단까지 다 나와. 지금까지 한 대로만 하면 돼.', hint: '1단은 곱한 수 그대로야. 1×7은 7. 거의 다 왔어!',
+      done: '타워 꼭대기에 불이 들어왔다. 마성의 목소리가 스피커에서 흘러나왔다. “고마워요. 이제 잊지 않을게요.”' }
+  ];
+  var selChapter = 0;
+  /* 을/를 after a word, by whether its last syllable has a final consonant */
+  function objJosa(w) { var c = w.charCodeAt(w.length - 1) - 0xac00; return w + (c >= 0 && c < 11172 && c % 28 ? '을' : '를'); }
+  function chapterOpen(i) { return save.unlockAll || i <= (save.story.open || 0); }
+  function chapterStars(sc) { var r = sc.right / sc.total; return r >= 1 ? 3 : (r >= 0.9 ? 2 : (r >= 0.7 ? 1 : 0)); }
+  function storyMission(i) {
+    var ch = CHAPTERS[i] || CHAPTERS[0], m, k, keep = {};
+    for (k in cond) keep[k] = cond[k];
+    cond.region = ch.region; cond.time = ch.time; cond.weather = ch.weather;
+    m = condMission('free');
+    for (k in keep) cond[k] = keep[k];
+    m.kind = 'story'; m.goal = 'quiz'; m.name = (i + 1) + '장 ' + ch.name; m.label = ch.fix;
+    m.traffic = 0; m.farm = 0; m.road = { order: ['hill'], gap: [300, 420] };
+    m.quiz = { dans: ch.dans, type: save.story.tries && save.story.tries[i] ? 'mix' : 'seq', pace: save.quiz.sel.pace };
+    if (ch.last) m.quiz.type = 'mix';
+    m.aim = '새벽: “' + ch.go + '”';
+    m.why = REGIONS[ch.region].short + ' · ' + TIME_LABEL[ch.time] + ' · ' + WEATHERS[ch.weather].name;
+    return m;
+  }
+  /* 새벽 reads out a hint once, halfway through */
+  function storyRadio(dk) {
+    if (runKind !== 'story' || quiz.hinted || dk.i !== Math.ceil(dk.main / 2)) return;
+    quiz.hinted = radio('새벽', CHAPTERS[runMission].hint, 5);
+  }
+  /* after a chapter run: stars, the next chapter, the scene. Called from quizResult */
+  function storyAfter(sc) {
+    var i = runMission, ch = CHAPTERS[i], st = chapterStars(sc), was = save.story.stars[i] || 0;
+    save.story.tries[i] = (save.story.tries[i] || 0) + 1;
+    if (st > was) save.story.stars[i] = st;
+    if (st && i + 1 > (save.story.open || 0)) save.story.open = Math.min(CHAPTERS.length - 1, i + 1);
+    if (st && ch.last) save.story.done = true;
+    storeSave();
+    $('res-title').textContent = st ? objJosa(ch.fix) + ' 고쳤다! ' + '★★★'.slice(0, st) : '조금만 더!';
+    $('res-story').textContent = st ? ch.done : '새벽: “괜찮아, 틀린 건 다음에 더 자주 나와. 한 번 더 해 보자.” (10문제 가운데 7문제를 맞히면 다음 장이 열려요)';
+    $('res-next').textContent = '다음 장';
+    $('res-next').hidden = !(st && !ch.last);
+    $('res-ending').hidden = !(st && ch.last);
+    return st ? (st === 3 ? 'record' : 'win') : 'fail';
+  }
+  function storyEnding() {
+    var stars = 0, k; for (k in save.story.stars) stars += save.story.stars[k];
+    $('result').hidden = true; $('hud').hidden = true; $('ending').hidden = false;
+    $('ending-head').textContent = '한울시, 다시 숫자를 기억하다';
+    $('ending-a').textContent = '마성 타워의 불이 켜지자 도시의 신호등, 버스, 다리, 케이블카, 톨게이트, 택배 창고, 제설차, 등대가 한꺼번에 제자리로 돌아왔다. 마성이 말했다. “고마워요. 이제 7 곱하기 8은 56이라는 걸 잊지 않을게요.”';
+    $('ending-b').textContent = '전설 카센터로 돌아오자 오 사장이 새 작업복을 내밀었다. 가슴에는 「막내」 대신 이름표가 달려 있었다. 새벽이 무전기로 말했다. “전설 하나, 수고했어. 다음엔 글자 칩이 말썽이래.”';
+    $('ending-stats').textContent = '모은 별 ' + stars + ' / ' + CHAPTERS.length * 3 + ' · 보유 고철 ' + save.scrap.toLocaleString('ko-KR');
+  }
+  function renderChapters() {
+    var html = '', ch = CHAPTERS[selChapter];
+    CHAPTERS.forEach(function (c, i) {
+      var s = save.story.stars[i] || 0;
+      html += '<button type="button" class="mis" id="ch-' + i + '" data-chapter="' + i + '" aria-pressed="' + (i === selChapter) + '"><span class="tag">' + REGIONS[c.region].short + '</span><span class="tag">' + (c.last ? '모든 단' : c.dans[0] + '단') + '</span><b>' + (i + 1) + '장 ' + c.name + '</b>' +
+        (chapterOpen(i) ? (s ? '<span class="sub" aria-label="별 ' + s + '개">' + '★★★'.slice(0, s) + '☆☆☆'.slice(0, 3 - s) + '</span>' : '') : '<span class="lock">잠김</span>') + '</button>';
+    });
+    $('ch-list').innerHTML = html;
+    var m = storyMission(selChapter);
+    $('ch-brief').innerHTML = (chapterOpen(selChapter) ? '' : row('잠금', (selChapter) + '장 「' + CHAPTERS[selChapter - 1].name + '」을 깨면 열립니다')) +
+      row('고칠 것', ch.fix) + row('문제', (ch.last ? '1단~9단 섞어서' : ch.dans[0] + '단 ' + QUIZ_TYPES[m.quiz.type].name)) + row('길', m.why) + row('깨기', '10문제 가운데 7문제 이상 (순서대로는 9문제 가운데 7문제). 별은 7개 이상 1개, 9개 이상 2개, 모두 맞히면 3개');
   }
   /* ---------- flow ---------- */
   var aimed = true, menuTab = 'car', steerWant = null, humpT = 0, gearT = 0, susp = { f: 0, vf: 0, r: 0, vr: 0, ro: 0, vro: 0, q: [] }, picks = 0, hunts = 0, huntT = 0, stepT = 0, stepDir = 0, burstT = 0, hornT = 0, padBasic = false, nextCargoD = 0, rushLimit = 0, hitGlowK = 0, helpThen = null, touchUI = false;
@@ -5372,13 +5462,14 @@ body.cine #card { bottom: 9%; }
   function cardKick(misIdx) {
     var cw = ' · ' + REGIONS[mission.region || 'city'].short + ' · ' + WEATHERS[mission.weather || 'clear'].name;
     if (runKind === 'ta' || runKind === 'race') return KINDS[runKind].name + ' · ' + mission.timeLabel + cw + ' · ' + (mission.n / 1000).toFixed(1) + ' km';
+    if (runKind === 'story') return '이야기 ' + (misIdx + 1) + '장 · ' + mission.why;
     if (runKind === 'surv' || runKind === 'free' || runKind === 'quiz' || runKind === 'tut') return KINDS[runKind].name + ' · ' + mission.why;
     return (mission.part ? mission.part + ' · ' : '') + '미션 ' + (misIdx + 1) + ' · ' + mission.timeLabel + cw + ' · ' + dirText(mission);
   }
   function bestText() {
     if (runKind === 'race') { var q = save.race[runTA]; return q && q.rank ? '최고 ' + q.rank + '위 ' + fmtT(q.t) : '첫 도전'; }
     if (runKind === 'surv') return save.surv.best ? '최고 ' + save.surv.best.toLocaleString('ko-KR') + '점' : '첫 도전';
-    if (runKind === 'free' || runKind === 'quiz' || runKind === 'tut') return '';
+    if (runKind === 'free' || quizRun() || runKind === 'tut') return '';
     if (runTA >= 0) { var r = taRec(runTA); return r.best ? '최고 ' + fmtT(r.best) : '첫 기록 도전'; }
     if (mission.goal === 'time') return save.best[runMission] ? '최고 ' + save.best[runMission].toLocaleString('ko-KR') + '점' : '첫 도전';
     return save.bestT[runMission] ? '최고 ' + fmtT(save.bestT[runMission]) : '첫 기록 도전';
@@ -5389,7 +5480,7 @@ body.cine #card { bottom: 9%; }
     runKind = kind || (taIdx === undefined || taIdx === null ? 'mis' : 'ta');
     runTA = runKind === 'ta' || runKind === 'race' ? taIdx : -1;
     mode = isDemo ? 'demo' : 'play'; won = false; runMission = misIdx;
-    mission = runKind === 'tut' ? tutMission() : runKind === 'quiz' ? quizMission() : (runKind === 'ta' ? TRACKS[runTA] : (runKind === 'race' ? raceOf(runTA) : (runKind === 'surv' || runKind === 'free' ? condMission(runKind) : MISSIONS[misIdx])));
+    mission = runKind === 'tut' ? tutMission() : runKind === 'story' ? storyMission(misIdx) : runKind === 'quiz' ? quizMission() : (runKind === 'ta' ? TRACKS[runTA] : (runKind === 'race' ? raceOf(runTA) : (runKind === 'surv' || runKind === 'free' ? condMission(runKind) : MISSIONS[misIdx])));
     tut.i = -1; radioReset(); $('coach').hidden = true;
     target = PRESETS[mission.time]; setRegion(mission.region || 'city'); setWeather(mission.weather || 'clear', true);
     rolling = runKind === 'ta' || runKind === 'race' || mission.goal === 'duel';
@@ -5418,14 +5509,14 @@ body.cine #card { bottom: 9%; }
     $('tag-dir').textContent = kindText(); $('tag-dir').className = mission.dir > 0 ? 'tag' : 'tag rev';
     $('clock-best').textContent = bestText();
     $('car-name').textContent = car.name; $('skill-name').textContent = car.skillName; $('basic-name').textContent = BASICS[car.basic].name;
-    if (runKind === 'quiz' && !isDemo) quizBegin(); else quizOff();
+    if (quizRun() && !isDemo) quizBegin(); else quizOff();
     hudCache = {}; hud();
   }
   function rerun() { beginRun(selCar, runMission, false, runTA >= 0 ? runTA : undefined, runKind, true); }
   function startPlay() {
-    if (!carOpen(selCar) || (selKind === 'mis' && !missionOpen(selMission))) return;
+    if (!carOpen(selCar) || (selKind === 'mis' && !missionOpen(selMission)) || (selKind === 'story' && !chapterOpen(selChapter))) return;
     tr.on = false; tr.phase = ''; tr.fade = 0;
-    beginRun(selCar, selKind === 'mis' ? selMission : 0, false, selKind === 'ta' || selKind === 'race' ? selTrack : undefined, selKind);
+    beginRun(selCar, selKind === 'mis' ? selMission : (selKind === 'story' ? selChapter : 0), false, selKind === 'ta' || selKind === 'race' ? selTrack : undefined, selKind);
   }
 
   /* ---------- trailer: title card, then mission card, car card and a cut of play for one car and mission after another ---------- */
@@ -5671,18 +5762,19 @@ body.cine #card { bottom: 9%; }
       html += '<button type="button" class="kind" role="radio" id="kind-' + k + '" data-kind="' + k + '" aria-checked="' + (k === selKind) + '"><b>' + KINDS[k].name + '</b><span>' + (k === 'mis' ? '이야기를 따라가는 ' + MISSIONS.length + '개 미션' : KINDS[k].sub) + '</span></button>';
     });
     $('kinds').innerHTML = html;
-    ['mis', 'ta', 'race', 'quiz'].forEach(function (k) { $('pane-' + k).hidden = k !== selKind; });
+    ['mis', 'ta', 'race', 'quiz', 'story'].forEach(function (k) { $('pane-' + k).hidden = k !== selKind; });
     $('pane-cond').hidden = !(selKind === 'surv' || selKind === 'free' || selKind === 'quiz');
   }
   function renderFoot() {
-    var why = !carOpen(selCar) ? '아직 구입하지 않은 차량입니다.' : (selKind === 'mis' && !missionOpen(selMission) ? '이 미션은 앞 미션을 완료하면 열립니다.' : '');
+    var why = !carOpen(selCar) ? '아직 구입하지 않은 차량입니다.' : (selKind === 'mis' && !missionOpen(selMission) ? '이 미션은 앞 미션을 완료하면 열립니다.' : (selKind === 'story' && !chapterOpen(selChapter) ? '이 장은 앞 장을 깨면 열립니다.' : ''));
     $('wallet').textContent = save.scrap.toLocaleString('ko-KR');
     $('go').disabled = !!why; $('go-why').hidden = !why; $('go-why').textContent = why;
     $('go-what').textContent = CARS[selCar].name + ' · ' + (selKind === 'ta' || selKind === 'race' ? KINDS[selKind].name + ' ' + TRACKS[selTrack].name
+      : selKind === 'story' ? '이야기 ' + storyMission(selChapter).name
       : selKind === 'quiz' ? quizMission().name + ' · ' + QUIZ_TYPES[save.quiz.sel.type].name + ' · ' + REGIONS[cond.region].short
       : (selKind === 'surv' || selKind === 'free' ? KINDS[selKind].name + ' · ' + REGIONS[cond.region].short + ' · ' + TIME_LABEL[cond.time] + ' · ' + WEATHERS[cond.weather].name : '미션 ' + (selMission + 1) + ' ' + MISSIONS[selMission].name));
   }
-  function renderMenu() { renderGrid(); renderGear(); renderKinds(); renderMissions(); renderTA(); renderRace(); renderCond(); renderQuiz(); renderRec(); renderFoot(); }
+  function renderMenu() { renderGrid(); renderGear(); renderKinds(); renderMissions(); renderTA(); renderRace(); renderCond(); renderQuiz(); renderChapters(); renderRec(); renderFoot(); }
   function pickCourse() {
     var m = missionFor(selKind);
     if (m === mission) return;
@@ -5691,7 +5783,7 @@ body.cine #card { bottom: 9%; }
   /* with thirty missions the chosen one can be far down the list: keep it in view */
   function scrollSel() { var b = $('mis-' + selMission), bx0 = $('mis-list'); if (b && bx0 && b.offsetParent && b.scrollIntoView && !$('menu').hidden) b.scrollIntoView({ block: 'nearest' }); }
   function setKind(k) {
-    selKind = k; renderKinds(); renderRace(); renderCond();
+    selKind = k; renderKinds(); renderRace(); renderCond(); renderChapters();
     if (mode === 'menu') { pickCourse(); renderFoot(); }
     scrollSel();
   }
@@ -5750,7 +5842,7 @@ body.cine #card { bottom: 9%; }
     var cn = CARS[player.car].name, got = win ? scrap : Math.floor(scrap / 20) * 10, bonus, tNow = +tPlay.toFixed(2), newRec = false, snd = '', N = function (v) { return v.toLocaleString('ko-KR'); };
     var kmNow = (dist0() / 1000).toFixed(2) + ' km', half = '모은 고철의 절반 ' + got;
     $('res-next').hidden = true; $('res-ending').hidden = true;
-    if (runKind === 'quiz') snd = quizResult();
+    if (quizRun()) snd = quizResult();
     else if (runKind === 'race') {
       var rk = win ? raceRank() : 0, rr0 = save.race[runTA] || (save.race[runTA] = { rank: 0, t: 0, car: '' }), better = win && (!rr0.rank || rk < rr0.rank || (rk === rr0.rank && tNow < rr0.t));
       if (better) { rr0.rank = rk; rr0.t = tNow; rr0.car = player.car; }
@@ -6124,10 +6216,10 @@ body.cine #card { bottom: 9%; }
   $('pause-resume').addEventListener('click', function () { setPaused(false); });
   $('pause-retry').addEventListener('click', rerun);
   $('pause-menu').addEventListener('click', toMenu);
-  $('res-ending').addEventListener('click', showEnding);
+  $('res-ending').addEventListener('click', function () { if (runKind === 'story') storyEnding(); else showEnding(); });
   $('ending-title').addEventListener('click', showTitle);
   $('ending-menu').addEventListener('click', toMenu);
-  $('title-start').addEventListener('click', function () { sfx('click'); toMenu(); });
+  $('title-start').addEventListener('click', function () { sfx('click'); if (save.tut) toMenu(); else openStory(); });   /* the first start tells the story and runs the driving practice */
   $('title-tut').addEventListener('click', function () { sfx('click'); openStory(); });
   $('opt-story').addEventListener('click', function () { sfx('click'); openStory(); });
   $('story-next').addEventListener('click', storyNext); $('story-skip').addEventListener('click', storySkip);
@@ -6137,11 +6229,13 @@ body.cine #card { bottom: 9%; }
   $('opt-music').addEventListener('change', function () { setMus($('opt-music').checked); });
   $('go').addEventListener('click', function () {
     sfx('click');
-    if (!save.help && carOpen(selCar) && !(selKind === 'mis' && !missionOpen(selMission))) { save.help = true; storeSave(); openHelp(startPlay); } else startPlay();   /* the first run opens the controls once */
+    if (!save.help && carOpen(selCar) && !(selKind === 'mis' && !missionOpen(selMission)) && !(selKind === 'story' && !chapterOpen(selChapter))) { save.help = true; storeSave(); openHelp(startPlay); } else startPlay();   /* the first run opens the controls once */
   });
   $('demo-go').addEventListener('click', function () { sfx('click'); startTrailer(); });
   $('res-retry').addEventListener('click', rerun);
-  $('res-next').addEventListener('click', function () { selMission = Math.min(MISSIONS.length - 1, runMission + 1); beginRun(selCar, selMission, false, undefined, 'mis', true); });
+  $('res-next').addEventListener('click', function () {
+    if (runKind === 'story') { selChapter = Math.min(CHAPTERS.length - 1, runMission + 1); beginRun(selCar, selChapter, false, undefined, 'story', true); return; }
+    selMission = Math.min(MISSIONS.length - 1, runMission + 1); beginRun(selCar, selMission, false, undefined, 'mis', true); });
   $('res-menu').addEventListener('click', toMenu);
   $('car-grid').addEventListener('click', function (e) {
     var bb = hit(e.target, 'data-buy-car');
@@ -6200,6 +6294,10 @@ body.cine #card { bottom: 9%; }
     infoClick(e);
     var b = hit(e.target, 'data-arm'); if (!b) return;
     buyArm(b.getAttribute('data-arm'));
+  });
+  $('ch-list').addEventListener('click', function (e) {
+    var b = hit(e.target, 'data-chapter'); if (!b) return;
+    selChapter = +b.getAttribute('data-chapter'); sfx('click'); pickCourse(); renderChapters(); renderFoot();
   });
   $('mis-list').addEventListener('click', function (e) {
     var b = hit(e.target, 'data-mission'); if (!b) return;
@@ -6939,7 +7037,7 @@ body.cine #card { bottom: 9%; }
       if (on && !player.dead && Math.abs(p.x - px) < car.hw + 0.9 && Math.abs(p.z) < car.hl + 0.9) { applyItem(crate.item); crate.active = false; crate.g.visible = false; }
       else if (p.z > 18) { crate.active = false; crate.g.visible = false; }
     }
-    if (runKind === 'quiz') quizStep(dt, px, car);
+    if (quizRun()) quizStep(dt, px, car);
 
     /* particles, debris, rings, pickups */
     for (i = parts.length - 1; i >= 0; i--) {

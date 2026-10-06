@@ -6,7 +6,7 @@
 set -e
 cd "$(dirname "$0")"
 mkdir -p dist
-PARTS="head3.html part_base.js js_hill.js js_world3.js js_region.js js_audio2.js part_weapons.js js_specs.js js_cars3.js part_cartail.js part_enemy.js part_fx.js js_ga.js js_proj2.js js_extra.js js_weather.js js_modes.js js_polish.js js_story.js js_quiz.js js_gate.js js_gb.js"
+PARTS="head3.html part_base.js js_hill.js js_world3.js js_region.js js_audio2.js part_weapons.js js_specs.js js_cars3.js part_cartail.js part_enemy.js part_fx.js js_ga.js js_proj2.js js_extra.js js_weather.js js_modes.js js_polish.js js_story.js js_quiz.js js_gate.js js_chapters.js js_gb.js"
 : > dist/artifact.html
 for p in $PARTS; do cat "src/$p" >> dist/artifact.html; done
 printf '</script>\n' >> dist/artifact.html

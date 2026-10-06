@@ -55,16 +55,17 @@
   function quizSel() { var s = save.quiz.sel; return { dans: s.dan === 'all' ? [2, 3, 4, 5, 6, 7, 8, 9] : s.dan.split(',').map(Number), type: s.type, pace: s.pace }; }
   function quizMission() {
     var m = condMission('free'), o = quizSel();
-    m.kind = 'quiz'; m.goal = 'quiz'; m.name = '구구단 ' + danLabel(o.dans); m.label = QUIZ_TYPES[o.type].name;
+    m.kind = 'quiz'; m.goal = 'quiz'; m.name = '구구단 ' + danLabel(o.dans); m.label = QUIZ_TYPES[o.type].name; m.quiz = o;
     m.traffic = 0; m.farm = 0; m.road = { order: ['hill'], gap: [300, 420] };
     m.aim = '문제를 보고 정답이 적힌 깃발 문으로 지나간다. 틀린 문제는 끝에 한 번 더 나온다.';
     return m;
   }
+  function quizRun() { return runKind === 'quiz' || runKind === 'story'; }
   function quizBegin() {
-    var o = quizSel();
+    var o = mission.quiz || quizSel();
     quizOff();
     quiz.deck = quizDeck({ dans: o.dans, type: o.type, n: 10, stats: save.quiz.facts });
-    quiz.pace = QUIZ_PACE[o.pace] || QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0;
+    quiz.pace = QUIZ_PACE[o.pace] || QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0; quiz.hinted = false;
     quiz.phase = 'wait'; quiz.t = 0.8;
   }
   function qboxSet(kick, text, cls, q) {
@@ -87,7 +88,7 @@
       if (quiz.g) quiz.g.g.visible = false;
       gatesShow(q); quiz.g.g.position.set(0, 0, dist - quiz.d);
       qboxSet(dk.i > dk.main ? '다시 풀기' : '문제 ' + dk.i + ' / ' + dk.main, q.text, '', q);
-      sfx('cycle');
+      sfx('cycle'); storyRadio(dk);
     } else if (quiz.phase === 'ask' && dist >= quiz.d) {
       var picked = clamp(Math.floor((px + QG_EDGE) / quiz.g.W), 0, q.n - 1), first = dk.i <= dk.main, ok = quizAnswer(dk, q, picked);
       if (first) factRecord(save.quiz.facts, q.key, ok);
@@ -122,6 +123,7 @@
     resRows([['문제', mission.name + ' · ' + QUIZ_TYPES[quiz.deck.type].name], ['맞힌 문제', sc.right + ' / ' + sc.total], ['가장 긴 연속 정답', quiz.best + '개'],
       ['다시 볼 문제', sc.missed.length ? sc.missed.map(function (k) { var p = k.split('x'); return p[0] + '×' + p[1] + '=' + p[0] * p[1]; }).join(', ') : '없음'], ['점수', N(score)]]);
     $('res-reward').textContent = '고철 ' + got + ' (맞힌 문제마다 20) · 보유 ' + N(save.scrap);
+    if (runKind === 'story') return storyAfter(sc);
     return all ? 'record' : (sc.right >= sc.total * 0.7 ? 'win' : 'fail');
   }
   /* the 9×9 record. dans: the rows to show; now: the facts of the run just played, outlined */

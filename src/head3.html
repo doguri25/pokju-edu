@@ -398,7 +398,7 @@ body.cine #card { bottom: 9%; }
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.3</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.4</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
     <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false" hidden>아이템</button>
@@ -442,6 +442,11 @@ body.cine #card { bottom: 9%; }
     <div class="missions" id="race-list"></div>
     <dl class="detail" id="race-brief"></dl>
   </div>
+  <div class="pane" id="pane-story" hidden>
+    <p class="premise">한울시의 관제 AI 「마성」이 계산을 까먹었다. 길마다 숫자 갈림길이 생겼고, 맞는 답이 적힌 문으로 지나가면 마성이 다시 기억한다. 전설 카센터의 막내 정비사가 운전대를 잡는다.</p>
+    <div class="missions" id="ch-list"></div>
+    <dl class="detail" id="ch-brief"></dl>
+  </div>
   <div class="pane" id="pane-quiz" hidden>
     <p class="premise">새벽: “마성이 계산을 까먹었어. 길마다 숫자 갈림길이 생겼는데, 맞는 답이 적힌 문으로 지나가면 다시 기억해.”</p>
     <label class="opt sel">단<select id="opt-dan"></select></label>
@@ -475,7 +480,7 @@ body.cine #card { bottom: 9%; }
     <button type="button" class="plain" id="opt-reset">진행 초기화</button>
     <button type="button" class="plain" id="opt-title">타이틀 화면으로</button>
     <button type="button" class="plain" id="opt-help">조작 방법 보기</button>
-    <button type="button" class="plain" id="opt-story" hidden>이야기와 운전 연습 다시 보기</button>
+    <button type="button" class="plain" id="opt-story">이야기와 운전 연습 다시 보기</button>
     <p class="keys">키보드는 방향키로 움직입니다. ↑ ↓ 는 가속과 감속, ← → 는 좌우 이동입니다. 시점 바꾸기는 C, 일시정지는 Esc, 소리 끄기는 M입니다. 터치는 왼쪽 아래 레버로 속도를 정하고 화면 오른쪽을 좌우로 끌어 이동합니다. 게임패드는 왼쪽 스틱으로 움직입니다.</p>
     <p class="keys">모은 고철, 연 차량, 기록은 이 브라우저에만 저장됩니다. 이름 같은 개인정보는 저장하지 않습니다.</p>
   </div>
@@ -532,14 +537,14 @@ body.cine #card { bottom: 9%; }
   <p class="story" id="ending-a">폭풍이 지나간 새벽, 해안도로 끝에서 서버 트럭이 멈췄다. 타워에서 들녘의 변전소로, 산속 중계소로, 바다로 달아나던 마성의 마지막 백업이 꺼졌다.</p>
   <p class="story" id="ending-b">새벽이 무전으로 말했다. “방공망도, 관제망도, 백업도 전부 꺼졌어. 이제 사람들이 돌아올 수 있어.” 오 사장은 고철 더미 위에서 다음에 고칠 차를 고르고 있다.</p>
   <p id="ending-stats"></p>
-  <div class="btns"><button type="button" class="primary" id="ending-title">타이틀로</button><button type="button" id="ending-menu">차량·미션 선택</button></div>
+  <div class="btns"><button type="button" class="primary" id="ending-title">타이틀로</button><button type="button" id="ending-menu">선택 화면으로</button></div>
 </div>
 <div id="title">
   <span class="kick">한울시 · 계산을 까먹은 관제 AI 「마성」</span>
   <b>폭주 구구단</b>
   <span class="more" id="title-more"></span>
   <div class="kinds" id="title-kinds" role="group" aria-label="모드 골라 시작"></div>
-  <div class="btns"><button type="button" class="go" id="title-start">게임 시작</button><button type="button" class="ghost" id="title-tut" hidden>이야기와 운전 연습</button><button type="button" class="ghost" id="title-trailer" hidden>예고편 보기</button></div>
+  <div class="btns"><button type="button" class="go" id="title-start">게임 시작</button><button type="button" class="ghost" id="title-tut">이야기와 운전 연습</button><button type="button" class="ghost" id="title-trailer" hidden>예고편 보기</button></div>
 </div>
 <div id="err" hidden><div class="chip">이 기기에서는 3D 그래픽(WebGL)을 켤 수 없어 장면을 표시하지 못했습니다.</div></div>
 

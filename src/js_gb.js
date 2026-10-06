@@ -40,13 +40,14 @@
   function cardKick(misIdx) {
     var cw = ' · ' + REGIONS[mission.region || 'city'].short + ' · ' + WEATHERS[mission.weather || 'clear'].name;
     if (runKind === 'ta' || runKind === 'race') return KINDS[runKind].name + ' · ' + mission.timeLabel + cw + ' · ' + (mission.n / 1000).toFixed(1) + ' km';
+    if (runKind === 'story') return '이야기 ' + (misIdx + 1) + '장 · ' + mission.why;
     if (runKind === 'surv' || runKind === 'free' || runKind === 'quiz' || runKind === 'tut') return KINDS[runKind].name + ' · ' + mission.why;
     return (mission.part ? mission.part + ' · ' : '') + '미션 ' + (misIdx + 1) + ' · ' + mission.timeLabel + cw + ' · ' + dirText(mission);
   }
   function bestText() {
     if (runKind === 'race') { var q = save.race[runTA]; return q && q.rank ? '최고 ' + q.rank + '위 ' + fmtT(q.t) : '첫 도전'; }
     if (runKind === 'surv') return save.surv.best ? '최고 ' + save.surv.best.toLocaleString('ko-KR') + '점' : '첫 도전';
-    if (runKind === 'free' || runKind === 'quiz' || runKind === 'tut') return '';
+    if (runKind === 'free' || quizRun() || runKind === 'tut') return '';
     if (runTA >= 0) { var r = taRec(runTA); return r.best ? '최고 ' + fmtT(r.best) : '첫 기록 도전'; }
     if (mission.goal === 'time') return save.best[runMission] ? '최고 ' + save.best[runMission].toLocaleString('ko-KR') + '점' : '첫 도전';
     return save.bestT[runMission] ? '최고 ' + fmtT(save.bestT[runMission]) : '첫 기록 도전';
@@ -57,7 +58,7 @@
     runKind = kind || (taIdx === undefined || taIdx === null ? 'mis' : 'ta');
     runTA = runKind === 'ta' || runKind === 'race' ? taIdx : -1;
     mode = isDemo ? 'demo' : 'play'; won = false; runMission = misIdx;
-    mission = runKind === 'tut' ? tutMission() : runKind === 'quiz' ? quizMission() : (runKind === 'ta' ? TRACKS[runTA] : (runKind === 'race' ? raceOf(runTA) : (runKind === 'surv' || runKind === 'free' ? condMission(runKind) : MISSIONS[misIdx])));
+    mission = runKind === 'tut' ? tutMission() : runKind === 'story' ? storyMission(misIdx) : runKind === 'quiz' ? quizMission() : (runKind === 'ta' ? TRACKS[runTA] : (runKind === 'race' ? raceOf(runTA) : (runKind === 'surv' || runKind === 'free' ? condMission(runKind) : MISSIONS[misIdx])));
     tut.i = -1; radioReset(); $('coach').hidden = true;
     target = PRESETS[mission.time]; setRegion(mission.region || 'city'); setWeather(mission.weather || 'clear', true);
     rolling = runKind === 'ta' || runKind === 'race' || mission.goal === 'duel';
@@ -86,14 +87,14 @@
     $('tag-dir').textContent = kindText(); $('tag-dir').className = mission.dir > 0 ? 'tag' : 'tag rev';
     $('clock-best').textContent = bestText();
     $('car-name').textContent = car.name; $('skill-name').textContent = car.skillName; $('basic-name').textContent = BASICS[car.basic].name;
-    if (runKind === 'quiz' && !isDemo) quizBegin(); else quizOff();
+    if (quizRun() && !isDemo) quizBegin(); else quizOff();
     hudCache = {}; hud();
   }
   function rerun() { beginRun(selCar, runMission, false, runTA >= 0 ? runTA : undefined, runKind, true); }
   function startPlay() {
-    if (!carOpen(selCar) || (selKind === 'mis' && !missionOpen(selMission))) return;
+    if (!carOpen(selCar) || (selKind === 'mis' && !missionOpen(selMission)) || (selKind === 'story' && !chapterOpen(selChapter))) return;
     tr.on = false; tr.phase = ''; tr.fade = 0;
-    beginRun(selCar, selKind === 'mis' ? selMission : 0, false, selKind === 'ta' || selKind === 'race' ? selTrack : undefined, selKind);
+    beginRun(selCar, selKind === 'mis' ? selMission : (selKind === 'story' ? selChapter : 0), false, selKind === 'ta' || selKind === 'race' ? selTrack : undefined, selKind);
   }
 
   /* ---------- trailer: title card, then mission card, car card and a cut of play for one car and mission after another ---------- */
@@ -339,18 +340,19 @@
       html += '<button type="button" class="kind" role="radio" id="kind-' + k + '" data-kind="' + k + '" aria-checked="' + (k === selKind) + '"><b>' + KINDS[k].name + '</b><span>' + (k === 'mis' ? '이야기를 따라가는 ' + MISSIONS.length + '개 미션' : KINDS[k].sub) + '</span></button>';
     });
     $('kinds').innerHTML = html;
-    ['mis', 'ta', 'race', 'quiz'].forEach(function (k) { $('pane-' + k).hidden = k !== selKind; });
+    ['mis', 'ta', 'race', 'quiz', 'story'].forEach(function (k) { $('pane-' + k).hidden = k !== selKind; });
     $('pane-cond').hidden = !(selKind === 'surv' || selKind === 'free' || selKind === 'quiz');
   }
   function renderFoot() {
-    var why = !carOpen(selCar) ? '아직 구입하지 않은 차량입니다.' : (selKind === 'mis' && !missionOpen(selMission) ? '이 미션은 앞 미션을 완료하면 열립니다.' : '');
+    var why = !carOpen(selCar) ? '아직 구입하지 않은 차량입니다.' : (selKind === 'mis' && !missionOpen(selMission) ? '이 미션은 앞 미션을 완료하면 열립니다.' : (selKind === 'story' && !chapterOpen(selChapter) ? '이 장은 앞 장을 깨면 열립니다.' : ''));
     $('wallet').textContent = save.scrap.toLocaleString('ko-KR');
     $('go').disabled = !!why; $('go-why').hidden = !why; $('go-why').textContent = why;
     $('go-what').textContent = CARS[selCar].name + ' · ' + (selKind === 'ta' || selKind === 'race' ? KINDS[selKind].name + ' ' + TRACKS[selTrack].name
+      : selKind === 'story' ? '이야기 ' + storyMission(selChapter).name
       : selKind === 'quiz' ? quizMission().name + ' · ' + QUIZ_TYPES[save.quiz.sel.type].name + ' · ' + REGIONS[cond.region].short
       : (selKind === 'surv' || selKind === 'free' ? KINDS[selKind].name + ' · ' + REGIONS[cond.region].short + ' · ' + TIME_LABEL[cond.time] + ' · ' + WEATHERS[cond.weather].name : '미션 ' + (selMission + 1) + ' ' + MISSIONS[selMission].name));
   }
-  function renderMenu() { renderGrid(); renderGear(); renderKinds(); renderMissions(); renderTA(); renderRace(); renderCond(); renderQuiz(); renderRec(); renderFoot(); }
+  function renderMenu() { renderGrid(); renderGear(); renderKinds(); renderMissions(); renderTA(); renderRace(); renderCond(); renderQuiz(); renderChapters(); renderRec(); renderFoot(); }
   function pickCourse() {
     var m = missionFor(selKind);
     if (m === mission) return;
@@ -359,7 +361,7 @@
   /* with thirty missions the chosen one can be far down the list: keep it in view */
   function scrollSel() { var b = $('mis-' + selMission), bx0 = $('mis-list'); if (b && bx0 && b.offsetParent && b.scrollIntoView && !$('menu').hidden) b.scrollIntoView({ block: 'nearest' }); }
   function setKind(k) {
-    selKind = k; renderKinds(); renderRace(); renderCond();
+    selKind = k; renderKinds(); renderRace(); renderCond(); renderChapters();
     if (mode === 'menu') { pickCourse(); renderFoot(); }
     scrollSel();
   }
@@ -418,7 +420,7 @@
     var cn = CARS[player.car].name, got = win ? scrap : Math.floor(scrap / 20) * 10, bonus, tNow = +tPlay.toFixed(2), newRec = false, snd = '', N = function (v) { return v.toLocaleString('ko-KR'); };
     var kmNow = (dist0() / 1000).toFixed(2) + ' km', half = '모은 고철의 절반 ' + got;
     $('res-next').hidden = true; $('res-ending').hidden = true;
-    if (runKind === 'quiz') snd = quizResult();
+    if (quizRun()) snd = quizResult();
     else if (runKind === 'race') {
       var rk = win ? raceRank() : 0, rr0 = save.race[runTA] || (save.race[runTA] = { rank: 0, t: 0, car: '' }), better = win && (!rr0.rank || rk < rr0.rank || (rk === rr0.rank && tNow < rr0.t));
       if (better) { rr0.rank = rk; rr0.t = tNow; rr0.car = player.car; }
@@ -792,10 +794,10 @@
   $('pause-resume').addEventListener('click', function () { setPaused(false); });
   $('pause-retry').addEventListener('click', rerun);
   $('pause-menu').addEventListener('click', toMenu);
-  $('res-ending').addEventListener('click', showEnding);
+  $('res-ending').addEventListener('click', function () { if (runKind === 'story') storyEnding(); else showEnding(); });
   $('ending-title').addEventListener('click', showTitle);
   $('ending-menu').addEventListener('click', toMenu);
-  $('title-start').addEventListener('click', function () { sfx('click'); toMenu(); });
+  $('title-start').addEventListener('click', function () { sfx('click'); if (save.tut) toMenu(); else openStory(); });   /* the first start tells the story and runs the driving practice */
   $('title-tut').addEventListener('click', function () { sfx('click'); openStory(); });
   $('opt-story').addEventListener('click', function () { sfx('click'); openStory(); });
   $('story-next').addEventListener('click', storyNext); $('story-skip').addEventListener('click', storySkip);
@@ -805,11 +807,13 @@
   $('opt-music').addEventListener('change', function () { setMus($('opt-music').checked); });
   $('go').addEventListener('click', function () {
     sfx('click');
-    if (!save.help && carOpen(selCar) && !(selKind === 'mis' && !missionOpen(selMission))) { save.help = true; storeSave(); openHelp(startPlay); } else startPlay();   /* the first run opens the controls once */
+    if (!save.help && carOpen(selCar) && !(selKind === 'mis' && !missionOpen(selMission)) && !(selKind === 'story' && !chapterOpen(selChapter))) { save.help = true; storeSave(); openHelp(startPlay); } else startPlay();   /* the first run opens the controls once */
   });
   $('demo-go').addEventListener('click', function () { sfx('click'); startTrailer(); });
   $('res-retry').addEventListener('click', rerun);
-  $('res-next').addEventListener('click', function () { selMission = Math.min(MISSIONS.length - 1, runMission + 1); beginRun(selCar, selMission, false, undefined, 'mis', true); });
+  $('res-next').addEventListener('click', function () {
+    if (runKind === 'story') { selChapter = Math.min(CHAPTERS.length - 1, runMission + 1); beginRun(selCar, selChapter, false, undefined, 'story', true); return; }
+    selMission = Math.min(MISSIONS.length - 1, runMission + 1); beginRun(selCar, selMission, false, undefined, 'mis', true); });
   $('res-menu').addEventListener('click', toMenu);
   $('car-grid').addEventListener('click', function (e) {
     var bb = hit(e.target, 'data-buy-car');
@@ -868,6 +872,10 @@
     infoClick(e);
     var b = hit(e.target, 'data-arm'); if (!b) return;
     buyArm(b.getAttribute('data-arm'));
+  });
+  $('ch-list').addEventListener('click', function (e) {
+    var b = hit(e.target, 'data-chapter'); if (!b) return;
+    selChapter = +b.getAttribute('data-chapter'); sfx('click'); pickCourse(); renderChapters(); renderFoot();
   });
   $('mis-list').addEventListener('click', function (e) {
     var b = hit(e.target, 'data-mission'); if (!b) return;
@@ -1607,7 +1615,7 @@
       if (on && !player.dead && Math.abs(p.x - px) < car.hw + 0.9 && Math.abs(p.z) < car.hl + 0.9) { applyItem(crate.item); crate.active = false; crate.g.visible = false; }
       else if (p.z > 18) { crate.active = false; crate.g.visible = false; }
     }
-    if (runKind === 'quiz') quizStep(dt, px, car);
+    if (quizRun()) quizStep(dt, px, car);
 
     /* particles, debris, rings, pickups */
     for (i = parts.length - 1; i >= 0; i--) {

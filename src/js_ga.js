@@ -148,7 +148,7 @@
       road: { order: ['deck', 'work', 'split', 'under', 'deck'], seed: 61544, gap: [70, 100] },
       why: '폭우와 돌풍이 몰아치는 3.2 km 해안도로. 젖은 노면과 물웅덩이, 옆바람을 견디며 해상교량을 건넌다.', aim: '옆바람과 물웅덩이를 견디며 결승선까지 달린다.', win: '3.2 km 완주', lose: '내 차량 파괴', done: '' }
   ];
-  var selTrack = 0, selKind = 'quiz', runTA = -1, kamiT = 6, sirenT = 0, fireHitT = 0, tunK = 0, tunOut = 0, tunAdapt = 0, tunGlare = 0, echoK = 0, tunCam = false, lowCam = false, minX = -9.9, sawMul = 0.5, padStartHeld = false;
+  var selTrack = 0, selKind = 'story', runTA = -1, kamiT = 6, sirenT = 0, fireHitT = 0, tunK = 0, tunOut = 0, tunAdapt = 0, tunGlare = 0, echoK = 0, tunCam = false, lowCam = false, minX = -9.9, sawMul = 0.5, padStartHeld = false;
   var mode = 'menu', mission = MISSIONS[0], selCar = 'laser', selMission = 0, runMission = 0, won = false, resultT = 0, failWhy = '';
   var player = { car: 'laser', x: 0, vx: 0, v: 35, a: 0, thr: 0.5, boost: 0, hp: 100, shield: 0, shieldT: 0, cd: 0, invuln: 0, dead: false };
   var veff = 35, time = 0, dist = 0, distStart = 0, tPlay = 0, kills = 0, civHits = 0, score = 0, scrap = 0, hitFlash = 0, boss = null;
@@ -166,7 +166,7 @@
 
   /* progress: scrap, unlocked cars, cleared missions and loadouts are kept in this browser only */
   var SAVE_KEY = 'pokju-edu-v1';
-  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: false, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true, quiz: { sel: { dan: '2', type: 'seq', pace: 'mid' }, facts: {}, runs: [] } };
+  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: false, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true, quiz: { sel: { dan: '2', type: 'seq', pace: 'mid' }, facts: {}, runs: [] }, story: { open: 0, stars: {}, tries: {}, done: false } };
   var W_PRICE = { mg: 0, bolt: 500, laser: 600, shotgun: 400, flame: 500, saw: 300, water: 500, cannon: 700, missile: 800, mine: 400 }, UP_PRICE = [0, 400, 900];
   function loadSave() {
     try {
@@ -184,6 +184,12 @@
         if (s.tires && typeof s.tires === 'object') save.tires = s.tires;
         if (s.tire && typeof s.tire === 'object') save.tire = s.tire;
         if (s.weapons && typeof s.weapons === 'object') save.weapons = s.weapons;
+        if (s.story && typeof s.story === 'object') {
+          if (typeof s.story.open === 'number') save.story.open = s.story.open;
+          if (s.story.stars && typeof s.story.stars === 'object') save.story.stars = s.story.stars;
+          if (s.story.tries && typeof s.story.tries === 'object') save.story.tries = s.story.tries;
+          save.story.done = !!s.story.done;
+        }
         if (s.quiz && typeof s.quiz === 'object') {
           var qs = s.quiz.sel || {};
           if (DAN_OPTS.some(function (o) { return o[0] === qs.dan; })) save.quiz.sel.dan = qs.dan;
@@ -193,7 +199,7 @@
           if (Array.isArray(s.quiz.runs)) save.quiz.runs = s.quiz.runs.slice(-30);
         }
         if (s.camV === 2 && (s.cam === 'top' || s.cam === 'low' || s.cam === 'cockpit')) { save.cam = s.cam; save.camV = 2; }
-        save.unlockAll = !!s.unlockAll; save.muted = !!s.muted; save.music = s.music === true; save.sfx = s.sfx !== false; save.calm = !!s.calm; save.help = !!s.help; save.mirror = s.mirror !== false;
+        save.unlockAll = !!s.unlockAll; save.muted = !!s.muted; save.music = s.music === true; save.sfx = s.sfx !== false; save.calm = !!s.calm; save.help = !!s.help; save.tut = !!s.tut; save.mirror = s.mirror !== false;
         if (s.gfx === 'auto' || s.gfx === 'high' || s.gfx === 'mid' || s.gfx === 'low') save.gfx = s.gfx;
       }
     } catch (e) {}
@@ -214,7 +220,7 @@
   function tireOf(carKey) { var k = save.tire[carKey]; return k && TIRES[k] && tireOwned(k) ? k : 'allseason'; }
   /* how hard the enemy presses: the story starts gentle and grows with every mission; the other modes sit at fixed levels */
   function aggK() {
-    if (mode === 'menu' || runKind === 'free' || runKind === 'quiz' || runKind === 'tut') return 0;
+    if (mode === 'menu' || runKind === 'free' || quizRun() || runKind === 'tut') return 0;
     if (runKind === 'mis') return runMission < 18 ? 0.65 + 0.03 * runMission : Math.min(1.3, 1.16 + 0.012 * (runMission - 17));
     if (runKind === 'surv') return Math.min(1.5, 0.7 + 0.1 * survLevel);
     return 1;
@@ -285,7 +291,7 @@
     if (mode === 'demo') d *= 0.3;
     if (d <= 0) return;
     dmgLog[kind || 'etc'] = Math.round(((dmgLog[kind || 'etc'] || 0) + d) * 10) / 10;
-    if ((runKind === 'free' || runKind === 'quiz' || runKind === 'tut') && mode === 'play') { hitFlash = 0.6; shake = Math.min(1.2, shake + 0.3); sfx('hurt'); return; }   /* free driving: a knock, but no damage */
+    if ((runKind === 'free' || quizRun() || runKind === 'tut') && mode === 'play') { hitFlash = 0.6; shake = Math.min(1.2, shake + 0.3); sfx('hurt'); return; }   /* free driving: a knock, but no damage */
     if (player.shield > 0) {
       player.shield = 0; player.shieldT = 10;
       spawnP('glow', player.x, 1.4, 0, 0, 0, 0, 0.35, 5, 12, COL.blue, 0.9, 0);

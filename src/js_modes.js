@@ -4,11 +4,12 @@
     ta: { name: '타임어택', sub: '같은 길에서 기록 겨루기' },
     race: { name: '레이싱', sub: '경쟁 차량 5대와 순위 다툼' },
     surv: { name: '서바이벌', sub: '쓰러질 때까지 버티기' },
+    story: { name: '이야기', sub: '고장 난 마성을 구구단으로 고치기' },
     quiz: { name: '구구단', sub: '정답이 적힌 깃발 문으로 지나가기' },
     free: { name: '연습 주행', sub: '문제 없이 길과 차에 익숙해지기' },
     tut: { name: '운전 연습', sub: '조작과 이야기 익히기' }
   };
-  var KIND_ORDER = ['quiz', 'free'],   /* learning edition: the original modes stay in the code but are not offered; the quiz modes join this list */
+  var KIND_ORDER = ['story', 'quiz', 'free'],   /* learning edition: the original modes stay in the code but are not offered; the quiz modes join this list */
       TIME_LABEL = { day: '낮', sunset: '노을', night: '밤' };
   var runKind = 'mis', rolling = false, cond = { region: 'city', time: 'day', weather: 'clear' }, raceM = [], rivals = [], finN = 0, survLevel = 1, farmT = 4;
   var RACE_REWARD = [400, 250, 150, 80, 50, 50];
@@ -25,7 +26,7 @@
     m.aim = '경쟁 차량 5대보다 먼저 결승선을 지난다. 쏘거나 부딪혀 상대를 늦출 수 있다.';
     return (raceM[i] = m);
   }
-  function missionFor(kind) { return kind === 'quiz' ? quizMission() : kind === 'ta' ? TRACKS[selTrack] : (kind === 'race' ? raceOf(selTrack) : (kind === 'surv' || kind === 'free' ? condMission(kind) : MISSIONS[selMission])); }
+  function missionFor(kind) { return kind === 'story' ? storyMission(selChapter) : kind === 'quiz' ? quizMission() : kind === 'ta' ? TRACKS[selTrack] : (kind === 'race' ? raceOf(selTrack) : (kind === 'surv' || kind === 'free' ? condMission(kind) : MISSIONS[selMission])); }
   function roadText(m) {
     var R = REGIONS[m.region || 'city'], W = WEATHERS[m.weather || 'clear'];
     return R.name + ' · ' + W.name + '. ' + R.feel + (W.key === 'clear' ? '' : ' ' + W.feel);
