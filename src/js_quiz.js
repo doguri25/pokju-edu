@@ -18,7 +18,7 @@
   function qWrongsMul(a, b) {
     var ans = a * b, near = [a * (b + 1), a * (b - 1), (a + 1) * b, (a - 1) * b], far = [ans + 10, ans - 10, a + b, ans + 1, ans - 1, ans + 2, ans - 2];
     if (b === 1) near = [a + 1, 1, a * 2];            /* 6 × 1: adding one, or answering 1 */
-    if (b === 0 || a === 0) near = [a + b, 1, 10];    /* 6 × 0: answering 6 */
+    if (b === 0 || a === 0) return { near: [a + b], far: [1, 10, (a + b) * 2] };   /* 6 × 0: answering 6 is by far the most common slip */
     return { near: near, far: far };
   }
   /* blank and reverse questions ask for the missing factor: the wrong ones are the factors next to it, and the number that was shown */
@@ -105,13 +105,13 @@
     }
     return facts;
   }
-  /* 구구단: o = { dans: [7], type: 'mix', n: 10, stats: save.quiz.facts }. 순서대로 asks every fact of every chosen 단 once, in order; the others draw n facts.
+  /* 구구단: o = { dans: [7], type: 'mix', n: 10, stats: save.quiz.facts, zero: false }. 순서대로 asks every fact of every chosen 단 once, in order; the others draw n facts.
      맞춤법: o = { subject: 'spell', sets: ['dwae'], bank: { dwae: { items: [...] } }, n: 10, stats }. Facts are drawn the same way, weak ones first */
   function quizDeck(o, rf) {
     rf = rf || Math.random;
     var spell = o.subject === 'spell', type = spell ? 'spell' : (QUIZ_TYPES[o.type] && !QUIZ_TYPES[o.type].own ? o.type : 'mix'), dans = o.dans && o.dans.length ? o.dans.slice() : [2], sets = o.sets || [], all = [], i, j;
     if (spell) sets.forEach(function (k) { (o.bank[k] ? o.bank[k].items : []).forEach(function (it, n) { all.push({ set: k, item: it, key: 'sp:' + k + ':' + n }); }); });
-    else for (i = 0; i < dans.length; i++) for (j = 1; j <= 9; j++) all.push(mulFact(dans[i], j));
+    else for (i = 0; i < dans.length; i++) for (j = o.zero ? 0 : 1; j <= 9; j++) all.push(mulFact(dans[i], j));   /* zero: 7×0 as well (0의 곱) */
     var facts = type === 'seq' ? all : qDraw(all, o.n || 10, o.stats || null, rf), qs = facts.map(function (f) { return qMake(f, type, rf); });
     /* balance the right answer's place among questions with the same number of options */
     var byN = {};

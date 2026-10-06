@@ -26,7 +26,7 @@
       go: '바닷가 등대가 몇 초마다 깜빡일지 몰라서 꺼져 있어. 9단이야.', hint: '9단은 십의 자리와 일의 자리를 더하면 늘 9야. 9×4는 36, 3 더하기 6은 9!',
       done: '등대 불빛이 바다를 비췄다. 멀리서 고깃배들이 불빛을 따라 돌아왔다.' },
     { dans: [1, 2, 3, 4, 5, 6, 7, 8, 9], region: 'city', time: 'night', weather: 'clear', fix: '마성의 계산 칩', ending: 1, foes: { drones: 1, kami: 0.7, strike: 0.8, buggy: true, traffic: 1.1, strikes: ['lane', 'cross', 'diag', 'chase', 'cluster'] }, name: '마성 타워', last: true,
-      go: '마지막이야. 마성 타워 앞 갈림길에는 1단부터 9단까지 다 나와. 지금까지 한 대로만 하면 돼.', hint: '1단은 곱한 수 그대로야. 1×7은 7. 거의 다 왔어!',
+      go: '마지막이야. 마성 타워 앞 갈림길에는 1단부터 9단까지, 0을 곱하는 문제도 나와. 지금까지 한 대로만 하면 돼.', hint: '1단은 곱한 수 그대로, 0을 곱하면 언제나 0이야. 7×0은 0!',
       done: '타워 꼭대기에 불이 들어왔다. 마성의 목소리가 스피커에서 흘러나왔다. “고마워요. 이제 잊지 않을게요.”' },
     /* part two: the 글자 칩. The same roads again, one pair of easily confused words each */
     { part: '2부 · 글자 칩', sets: ['dwae'], region: 'city', time: 'sunset', weather: 'clear', fix: '도로 전광판', foes: { traffic: 1.3 }, name: '엉터리 전광판',
@@ -75,7 +75,7 @@
     if (ch.sets) m.quiz = { subject: 'spell', sets: ch.sets, type: 'spell', pace: save.quiz.sel.pace };
     else {
       m.quiz = { dans: ch.dans, type: save.story.tries && save.story.tries[i] ? 'mix' : 'seq', pace: save.quiz.sel.pace };
-      if (ch.last) m.quiz.type = 'mix';
+      if (ch.last) { m.quiz.type = 'mix'; m.quiz.zero = true; }
     }
     m.aim = '새벽: “' + ch.go + '”';
     m.why = REGIONS[ch.region].short + ' · ' + TIME_LABEL[ch.time] + ' · ' + WEATHERS[ch.weather].name;
@@ -126,5 +126,5 @@
     var cb = $('ch-' + selChapter); if (cb && cb.scrollIntoView && !$('menu').hidden && !$('pane-story').hidden) cb.scrollIntoView({ block: 'nearest' });
     var m = storyMission(selChapter);
     $('ch-brief').innerHTML = (chapterOpen(selChapter) ? '' : row('잠금', (selChapter) + '장 「' + CHAPTERS[selChapter - 1].name + '」' + objJosa(CHAPTERS[selChapter - 1].name).slice(CHAPTERS[selChapter - 1].name.length) + ' 깨면 열립니다')) +
-      row('고칠 것', ch.fix) + row('문제', ch.sets ? '맞춤법 ' + (ch.last ? '모든 묶음 섞어서' : SPELL_SETS[ch.sets[0]].name) : (ch.last ? '1단~9단 섞어서' : ch.dans[0] + '단 ' + QUIZ_TYPES[m.quiz.type].name)) + row('길', m.why) + row('깨기', '10문제 가운데 7문제 이상 (순서대로는 9문제 가운데 7문제). 별은 7개 이상 1개, 9개 이상 2개, 모두 맞히면 3개');
+      row('고칠 것', ch.fix) + row('문제', ch.sets ? '맞춤법 ' + (ch.last ? '모든 묶음 섞어서' : SPELL_SETS[ch.sets[0]].name) : (ch.last ? '1단~9단과 0의 곱 섞어서' : ch.dans[0] + '단 ' + QUIZ_TYPES[m.quiz.type].name)) + row('길', m.why) + row('깨기', '10문제 가운데 7문제 이상 (순서대로는 9문제 가운데 7문제). 별은 7개 이상 1개, 9개 이상 2개, 모두 맞히면 3개');
   }

@@ -257,6 +257,13 @@ body.cine #caption { bottom: calc(9% + 14px); font-size: 16px; }
 .result .btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .result .stats { text-align: left; font-size: 14px; padding: 10px 12px; border-radius: 14px; background: var(--track); font-variant-numeric: tabular-nums; }
 .result .stats dd { color: var(--chip-fg); font-weight: 700; text-align: right; }
+/* 크게 보기: the result fills the screen, for showing it on a classroom board */
+#result.big { width: min(900px, calc(100% - 32px)); max-height: calc(100% - 32px); overflow: auto; gap: 14px; }
+#result.big b#res-title { font-size: 56px; }
+#result.big p.story { font-size: 24px; }
+#result.big .stats { font-size: 22px; }
+#result.big .fgrid td { font-size: 18px; padding: 10px 0 14px; } #result.big .fgrid th { font-size: 15px; } #result.big .fgrid { max-width: 720px; }
+#result.big .stable { font-size: 18px; max-width: 720px; } #result.big .flegend { font-size: 16px; }
 .result p.reward { color: var(--chip-fg); font-weight: 700; }
 .result .quick { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; justify-content: center; }
 .result .quick .plain { align-self: center; min-height: 36px; font-size: 13px; }
@@ -410,7 +417,7 @@ body.cine #card { bottom: 9%; }
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.7</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.8</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
     <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false">아이템</button>
@@ -523,7 +530,7 @@ body.cine #card { bottom: 9%; }
   <dl class="detail stats" id="res-text"></dl>
   <div id="res-grid"></div>
   <p class="reward" id="res-reward"></p>
-  <div class="btns"><button type="button" id="res-menu">선택 화면으로</button><button type="button" id="res-retry">다시 하기</button><button type="button" class="primary" id="res-next" hidden>다음 미션</button><button type="button" class="primary" id="res-ending" hidden>엔딩 보기</button></div>
+  <div class="btns"><button type="button" id="res-menu">선택 화면으로</button><button type="button" id="res-retry">다시 하기</button><button type="button" id="res-big" aria-pressed="false">크게 보기</button><button type="button" class="primary" id="res-next" hidden>다음 미션</button><button type="button" class="primary" id="res-ending" hidden>엔딩 보기</button></div>
 </div>
 <div class="panel result" id="pause" hidden>
   <b>일시정지</b>

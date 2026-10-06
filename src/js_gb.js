@@ -419,7 +419,7 @@
       if (!tr.won) { tr.won = true; if (tr.phase === 'play' && !tr.hold) { say('미션 완료. ' + mission.done, 3); tr.t = Math.min(tr.t, 2.8); } }
       return;
     }
-    mode = 'result'; won = win; resultT = win ? 1.0 : 1.6; failWhy = why || ''; $('res-grid').innerHTML = '';
+    mode = 'result'; won = win; resultT = win ? 1.0 : 1.6; failWhy = why || ''; $('res-grid').innerHTML = ''; $('result').classList.remove('big'); $('res-big').textContent = '크게 보기'; $('res-big').setAttribute('aria-pressed', 'false');
     var cn = CARS[player.car].name, got = win ? scrap : Math.floor(scrap / 20) * 10, bonus, tNow = +tPlay.toFixed(2), newRec = false, snd = '', N = function (v) { return v.toLocaleString('ko-KR'); };
     var kmNow = (dist0() / 1000).toFixed(2) + ' km', half = '모은 고철의 절반 ' + got;
     $('res-next').hidden = true; $('res-ending').hidden = true;
@@ -818,6 +818,7 @@
     if (runKind === 'story') { selChapter = Math.min(CHAPTERS.length - 1, runMission + 1); beginRun(selCar, selChapter, false, undefined, 'story', true); return; }
     selMission = Math.min(MISSIONS.length - 1, runMission + 1); beginRun(selCar, selMission, false, undefined, 'mis', true); });
   $('res-menu').addEventListener('click', toMenu);
+  $('res-big').addEventListener('click', function () { var on = !$('result').classList.contains('big'); $('result').classList.toggle('big', on); $('res-big').setAttribute('aria-pressed', on ? 'true' : 'false'); $('res-big').textContent = on ? '작게 보기' : '크게 보기'; sfx('click'); });
   $('link-make').addEventListener('click', function () { sfx('click'); linkShow(); });
   $('car-grid').addEventListener('click', function (e) {
     var bb = hit(e.target, 'data-buy-car');

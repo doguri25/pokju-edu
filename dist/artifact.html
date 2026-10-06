@@ -257,6 +257,13 @@ body.cine #caption { bottom: calc(9% + 14px); font-size: 16px; }
 .result .btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .result .stats { text-align: left; font-size: 14px; padding: 10px 12px; border-radius: 14px; background: var(--track); font-variant-numeric: tabular-nums; }
 .result .stats dd { color: var(--chip-fg); font-weight: 700; text-align: right; }
+/* 크게 보기: the result fills the screen, for showing it on a classroom board */
+#result.big { width: min(900px, calc(100% - 32px)); max-height: calc(100% - 32px); overflow: auto; gap: 14px; }
+#result.big b#res-title { font-size: 56px; }
+#result.big p.story { font-size: 24px; }
+#result.big .stats { font-size: 22px; }
+#result.big .fgrid td { font-size: 18px; padding: 10px 0 14px; } #result.big .fgrid th { font-size: 15px; } #result.big .fgrid { max-width: 720px; }
+#result.big .stable { font-size: 18px; max-width: 720px; } #result.big .flegend { font-size: 16px; }
 .result p.reward { color: var(--chip-fg); font-weight: 700; }
 .result .quick { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; justify-content: center; }
 .result .quick .plain { align-self: center; min-height: 36px; font-size: 13px; }
@@ -410,7 +417,7 @@ body.cine #card { bottom: 9%; }
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.7</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.8</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
     <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false">아이템</button>
@@ -523,7 +530,7 @@ body.cine #card { bottom: 9%; }
   <dl class="detail stats" id="res-text"></dl>
   <div id="res-grid"></div>
   <p class="reward" id="res-reward"></p>
-  <div class="btns"><button type="button" id="res-menu">선택 화면으로</button><button type="button" id="res-retry">다시 하기</button><button type="button" class="primary" id="res-next" hidden>다음 미션</button><button type="button" class="primary" id="res-ending" hidden>엔딩 보기</button></div>
+  <div class="btns"><button type="button" id="res-menu">선택 화면으로</button><button type="button" id="res-retry">다시 하기</button><button type="button" id="res-big" aria-pressed="false">크게 보기</button><button type="button" class="primary" id="res-next" hidden>다음 미션</button><button type="button" class="primary" id="res-ending" hidden>엔딩 보기</button></div>
 </div>
 <div class="panel result" id="pause" hidden>
   <b>일시정지</b>
@@ -5100,7 +5107,7 @@ body.cine #card { bottom: 9%; }
   function qWrongsMul(a, b) {
     var ans = a * b, near = [a * (b + 1), a * (b - 1), (a + 1) * b, (a - 1) * b], far = [ans + 10, ans - 10, a + b, ans + 1, ans - 1, ans + 2, ans - 2];
     if (b === 1) near = [a + 1, 1, a * 2];            /* 6 × 1: adding one, or answering 1 */
-    if (b === 0 || a === 0) near = [a + b, 1, 10];    /* 6 × 0: answering 6 */
+    if (b === 0 || a === 0) return { near: [a + b], far: [1, 10, (a + b) * 2] };   /* 6 × 0: answering 6 is by far the most common slip */
     return { near: near, far: far };
   }
   /* blank and reverse questions ask for the missing factor: the wrong ones are the factors next to it, and the number that was shown */
@@ -5187,13 +5194,13 @@ body.cine #card { bottom: 9%; }
     }
     return facts;
   }
-  /* 구구단: o = { dans: [7], type: 'mix', n: 10, stats: save.quiz.facts }. 순서대로 asks every fact of every chosen 단 once, in order; the others draw n facts.
+  /* 구구단: o = { dans: [7], type: 'mix', n: 10, stats: save.quiz.facts, zero: false }. 순서대로 asks every fact of every chosen 단 once, in order; the others draw n facts.
      맞춤법: o = { subject: 'spell', sets: ['dwae'], bank: { dwae: { items: [...] } }, n: 10, stats }. Facts are drawn the same way, weak ones first */
   function quizDeck(o, rf) {
     rf = rf || Math.random;
     var spell = o.subject === 'spell', type = spell ? 'spell' : (QUIZ_TYPES[o.type] && !QUIZ_TYPES[o.type].own ? o.type : 'mix'), dans = o.dans && o.dans.length ? o.dans.slice() : [2], sets = o.sets || [], all = [], i, j;
     if (spell) sets.forEach(function (k) { (o.bank[k] ? o.bank[k].items : []).forEach(function (it, n) { all.push({ set: k, item: it, key: 'sp:' + k + ':' + n }); }); });
-    else for (i = 0; i < dans.length; i++) for (j = 1; j <= 9; j++) all.push(mulFact(dans[i], j));
+    else for (i = 0; i < dans.length; i++) for (j = o.zero ? 0 : 1; j <= 9; j++) all.push(mulFact(dans[i], j));   /* zero: 7×0 as well (0의 곱) */
     var facts = type === 'seq' ? all : qDraw(all, o.n || 10, o.stats || null, rf), qs = facts.map(function (f) { return qMake(f, type, rf); });
     /* balance the right answer's place among questions with the same number of options */
     var byN = {};
@@ -5405,7 +5412,7 @@ body.cine #card { bottom: 9%; }
   function quizBegin() {
     var o = mission.quiz || quizSel();
     quizOff();
-    quiz.deck = o.subject === 'spell' ? quizDeck({ subject: 'spell', sets: o.sets, bank: SPELL_SETS, n: 10, stats: save.quiz.facts }) : quizDeck({ dans: o.dans, type: o.type, n: 10, stats: save.quiz.facts });
+    quiz.deck = o.subject === 'spell' ? quizDeck({ subject: 'spell', sets: o.sets, bank: SPELL_SETS, n: 10, stats: save.quiz.facts }) : quizDeck({ dans: o.dans, type: o.type, n: 10, stats: save.quiz.facts, zero: !!o.zero });
     quiz.style = o.style === 'shoot' && EDU.arms ? 'shoot' : 'gate'; quiz.pace = QUIZ_PACE[o.pace] || QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0; quiz.hinted = false;
     quiz.phase = 'wait'; quiz.t = 0.8;
   }
@@ -5617,7 +5624,7 @@ body.cine #card { bottom: 9%; }
       go: '바닷가 등대가 몇 초마다 깜빡일지 몰라서 꺼져 있어. 9단이야.', hint: '9단은 십의 자리와 일의 자리를 더하면 늘 9야. 9×4는 36, 3 더하기 6은 9!',
       done: '등대 불빛이 바다를 비췄다. 멀리서 고깃배들이 불빛을 따라 돌아왔다.' },
     { dans: [1, 2, 3, 4, 5, 6, 7, 8, 9], region: 'city', time: 'night', weather: 'clear', fix: '마성의 계산 칩', ending: 1, foes: { drones: 1, kami: 0.7, strike: 0.8, buggy: true, traffic: 1.1, strikes: ['lane', 'cross', 'diag', 'chase', 'cluster'] }, name: '마성 타워', last: true,
-      go: '마지막이야. 마성 타워 앞 갈림길에는 1단부터 9단까지 다 나와. 지금까지 한 대로만 하면 돼.', hint: '1단은 곱한 수 그대로야. 1×7은 7. 거의 다 왔어!',
+      go: '마지막이야. 마성 타워 앞 갈림길에는 1단부터 9단까지, 0을 곱하는 문제도 나와. 지금까지 한 대로만 하면 돼.', hint: '1단은 곱한 수 그대로, 0을 곱하면 언제나 0이야. 7×0은 0!',
       done: '타워 꼭대기에 불이 들어왔다. 마성의 목소리가 스피커에서 흘러나왔다. “고마워요. 이제 잊지 않을게요.”' },
     /* part two: the 글자 칩. The same roads again, one pair of easily confused words each */
     { part: '2부 · 글자 칩', sets: ['dwae'], region: 'city', time: 'sunset', weather: 'clear', fix: '도로 전광판', foes: { traffic: 1.3 }, name: '엉터리 전광판',
@@ -5666,7 +5673,7 @@ body.cine #card { bottom: 9%; }
     if (ch.sets) m.quiz = { subject: 'spell', sets: ch.sets, type: 'spell', pace: save.quiz.sel.pace };
     else {
       m.quiz = { dans: ch.dans, type: save.story.tries && save.story.tries[i] ? 'mix' : 'seq', pace: save.quiz.sel.pace };
-      if (ch.last) m.quiz.type = 'mix';
+      if (ch.last) { m.quiz.type = 'mix'; m.quiz.zero = true; }
     }
     m.aim = '새벽: “' + ch.go + '”';
     m.why = REGIONS[ch.region].short + ' · ' + TIME_LABEL[ch.time] + ' · ' + WEATHERS[ch.weather].name;
@@ -5717,7 +5724,7 @@ body.cine #card { bottom: 9%; }
     var cb = $('ch-' + selChapter); if (cb && cb.scrollIntoView && !$('menu').hidden && !$('pane-story').hidden) cb.scrollIntoView({ block: 'nearest' });
     var m = storyMission(selChapter);
     $('ch-brief').innerHTML = (chapterOpen(selChapter) ? '' : row('잠금', (selChapter) + '장 「' + CHAPTERS[selChapter - 1].name + '」' + objJosa(CHAPTERS[selChapter - 1].name).slice(CHAPTERS[selChapter - 1].name.length) + ' 깨면 열립니다')) +
-      row('고칠 것', ch.fix) + row('문제', ch.sets ? '맞춤법 ' + (ch.last ? '모든 묶음 섞어서' : SPELL_SETS[ch.sets[0]].name) : (ch.last ? '1단~9단 섞어서' : ch.dans[0] + '단 ' + QUIZ_TYPES[m.quiz.type].name)) + row('길', m.why) + row('깨기', '10문제 가운데 7문제 이상 (순서대로는 9문제 가운데 7문제). 별은 7개 이상 1개, 9개 이상 2개, 모두 맞히면 3개');
+      row('고칠 것', ch.fix) + row('문제', ch.sets ? '맞춤법 ' + (ch.last ? '모든 묶음 섞어서' : SPELL_SETS[ch.sets[0]].name) : (ch.last ? '1단~9단과 0의 곱 섞어서' : ch.dans[0] + '단 ' + QUIZ_TYPES[m.quiz.type].name)) + row('길', m.why) + row('깨기', '10문제 가운데 7문제 이상 (순서대로는 9문제 가운데 7문제). 별은 7개 이상 1개, 9개 이상 2개, 모두 맞히면 3개');
   }
   /* ---------- 수업 링크: a teacher picks a mode and its settings, and shares one address. Opening it skips the prologue and lands on that mode,
      already set; nothing is sent anywhere, the settings ride in the address itself (?m=quiz&dan=7&type=mix…). A story link opens its chapter even if it is still locked ---------- */
@@ -6181,7 +6188,7 @@ body.cine #card { bottom: 9%; }
       if (!tr.won) { tr.won = true; if (tr.phase === 'play' && !tr.hold) { say('미션 완료. ' + mission.done, 3); tr.t = Math.min(tr.t, 2.8); } }
       return;
     }
-    mode = 'result'; won = win; resultT = win ? 1.0 : 1.6; failWhy = why || ''; $('res-grid').innerHTML = '';
+    mode = 'result'; won = win; resultT = win ? 1.0 : 1.6; failWhy = why || ''; $('res-grid').innerHTML = ''; $('result').classList.remove('big'); $('res-big').textContent = '크게 보기'; $('res-big').setAttribute('aria-pressed', 'false');
     var cn = CARS[player.car].name, got = win ? scrap : Math.floor(scrap / 20) * 10, bonus, tNow = +tPlay.toFixed(2), newRec = false, snd = '', N = function (v) { return v.toLocaleString('ko-KR'); };
     var kmNow = (dist0() / 1000).toFixed(2) + ' km', half = '모은 고철의 절반 ' + got;
     $('res-next').hidden = true; $('res-ending').hidden = true;
@@ -6580,6 +6587,7 @@ body.cine #card { bottom: 9%; }
     if (runKind === 'story') { selChapter = Math.min(CHAPTERS.length - 1, runMission + 1); beginRun(selCar, selChapter, false, undefined, 'story', true); return; }
     selMission = Math.min(MISSIONS.length - 1, runMission + 1); beginRun(selCar, selMission, false, undefined, 'mis', true); });
   $('res-menu').addEventListener('click', toMenu);
+  $('res-big').addEventListener('click', function () { var on = !$('result').classList.contains('big'); $('result').classList.toggle('big', on); $('res-big').setAttribute('aria-pressed', on ? 'true' : 'false'); $('res-big').textContent = on ? '작게 보기' : '크게 보기'; sfx('click'); });
   $('link-make').addEventListener('click', function () { sfx('click'); linkShow(); });
   $('car-grid').addEventListener('click', function (e) {
     var bb = hit(e.target, 'data-buy-car');

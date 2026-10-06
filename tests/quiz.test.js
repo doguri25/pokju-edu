@@ -133,5 +133,16 @@ test('맞춤법: 보기 2개짜리 정답 위치 반반, 틀린 문제는 같은
   assert.strictEqual(d2.items.length, 5); assert.strictEqual(again.key, first.key); assert.strictEqual(again.full, first.full);
 });
 
+test('0의 곱: zero 를 켜면 7×0 같은 문제가 섞이고, 정답은 0, 보기에 그 단의 수가 들어간다', function () {
+  var seen = 0;
+  for (var s = 1; s <= 100; s++) {
+    var d = Q.quizDeck({ dans: [7], type: 'mix', n: 10, zero: true }, seeded(s));
+    d.items.forEach(function (q) { if (q.b === 0) { seen++; assert.strictEqual(q.ans, 0); assert.ok(q.opts.indexOf(7) >= 0, '7×0 보기에 7 ' + q.opts); assert.strictEqual(q.text, '7 × 0 = ?'); } });
+  }
+  assert.ok(seen > 50, '0의 곱이 나온 횟수 ' + seen);
+  var d2 = Q.quizDeck({ dans: [7], type: 'mix', n: 30 }, seeded(3));
+  assert.ok(d2.items.every(function (q) { return q.b !== 0; }), 'zero 를 안 켜면 나오지 않는다');
+});
+
 console.log(runs - fails + ' / ' + runs + ' 통과');
 process.exit(fails ? 1 : 0);
