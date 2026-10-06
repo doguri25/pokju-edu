@@ -1,5 +1,5 @@
-  /* ---------- learning edition: one switch for what is left of the original combat. Weapons, skills and supply crates stay in the code but are off until the quiz modes bring back a gentle version ---------- */
-  var EDU = { arms: false };
+  /* ---------- learning edition: one switch for the original combat (weapons, skills, supply crates, damage). On: the quiz runs on roads with the original's enemies ---------- */
+  var EDU = { arms: true };
   if (!EDU.arms) document.body.classList.add('edu');
 
   /* ---------- textures ---------- */

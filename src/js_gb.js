@@ -420,7 +420,7 @@
     var cn = CARS[player.car].name, got = win ? scrap : Math.floor(scrap / 20) * 10, bonus, tNow = +tPlay.toFixed(2), newRec = false, snd = '', N = function (v) { return v.toLocaleString('ko-KR'); };
     var kmNow = (dist0() / 1000).toFixed(2) + ' km', half = '모은 고철의 절반 ' + got;
     $('res-next').hidden = true; $('res-ending').hidden = true;
-    if (quizRun()) snd = quizResult();
+    if (quizRun()) snd = quizResult(win);
     else if (runKind === 'race') {
       var rk = win ? raceRank() : 0, rr0 = save.race[runTA] || (save.race[runTA] = { rank: 0, t: 0, car: '' }), better = win && (!rr0.rank || rk < rr0.rank || (rk === rr0.rank && tNow < rr0.t));
       if (better) { rr0.rank = rk; rr0.t = tNow; rr0.car = player.car; }
@@ -835,7 +835,7 @@
   });
   $('kinds').addEventListener('click', function (e) { var b = hit(e.target, 'data-kind'); if (!b) return; sfx('click'); setKind(b.getAttribute('data-kind')); });
   $('title-kinds').addEventListener('click', function (e) { var b = hit(e.target, 'data-kind'); if (!b) return; sfx('click'); selKind = b.getAttribute('data-kind'); toMenu(); setTab('mode'); });
-  [['dan', 'opt-dan'], ['type', 'opt-qtype'], ['pace', 'opt-pace']].forEach(function (p) {
+  [['dan', 'opt-dan'], ['type', 'opt-qtype'], ['pace', 'opt-pace'], ['foe', 'opt-foe']].forEach(function (p) {
     $(p[1]).addEventListener('change', function () { save.quiz.sel[p[0]] = $(p[1]).value; storeSave(); sfx('click'); renderQuiz(); renderFoot(); });
   });
   ['region', 'time', 'weather'].forEach(function (k) {
@@ -965,7 +965,7 @@
   }
   function spawner(dt) {
     var agg = aggK();
-    if (mission.goal === 'tut' || mission.goal === 'quiz') return;   /* driving practice and the quiz: only what they put on the road themselves */
+    if (mission.goal === 'tut' || mission.noFoes) return;   /* driving practice, and a quiz with only the gates: nothing else on the road */
     if (mission.farm) {
       /* country roads: a walking tractor now and then, far slower than everything else */
       farmT -= dt * Math.max(0.75, veff / 38);
@@ -991,11 +991,11 @@
       kamiT -= dt;
       if (kamiT <= 0) { kamiT = rnd(7, 11) / mission.kami; spawnEnemy('kami', clamp(player.x + rnd(-4, 4), -6.5, 6.5), -125, 0); }
     }
-    if (mission.strike > 0 && !roofed) {
+    if (mission.strike > 0 && !roofed && !(quizRun() && quiz.phase === 'ask')) {   /* no bombing while the gates come: the answer's lane must be safe to take */
       strikeT -= dt;
       if (strikeT <= 0) { strikeT = rnd(5.5, 8.5) / mission.strike; airStrike(); }
     }
-    if (mission.dir > 0 && (runKind === 'mis' || runKind === 'surv') && agg >= 0.75 && mission.chasers !== 0 && mission.goal !== 'duel' && mission.goal !== 'escort') {
+    if (mission.dir > 0 && (runKind === 'mis' || runKind === 'surv' || quizRun()) && agg >= 0.75 && mission.chasers !== 0 && mission.goal !== 'duel' && mission.goal !== 'escort') {
       chaseT -= dt;
       if (chaseT <= 0) { chaseT = rnd(10, 16) / (agg * (mission.chasers || 1)); if (enemies.length < 15) spawnChaser(player.x); }
     }
@@ -1826,6 +1826,6 @@
         sec: s ? s.type : '-', slope: +slopeAt(dist).toFixed(3), fire: fireIn, title: titleOn, paused: paused, dist: dist0(), t: +tPlay.toFixed(1), won: won, why: failWhy, cam: save.cam, cock: cockpit.visible, ta: runTA, tun: +tunK.toFixed(2), bombs: bombs.length, hulks: hulks.length, picks: picks, hunts: hunts, dmg: dmgLog, bcd: +(player.bcd || 0).toFixed(1), dstage: dmgStage, tut: tut.i, tutSeen: save.tut, caption: $('caption').hidden ? '' : $('caption').textContent, coach: $('coach').hidden ? '' : $('coach-do').textContent, hulkList: hulks.map(function (h) { return [+h.m.position.x.toFixed(1), +h.m.position.z.toFixed(1), +h.t.toFixed(2), h.hit ? 1 : 0].join('/'); }).join(' '), eb: ebullets.length, ebNear: ebullets.reduce(function (m, b) { var q = b.m.position; return Math.min(m, Math.round(Math.sqrt((q.x - player.x) * (q.x - player.x) + q.z * q.z))); }, 999), basic: CARS[player.car].basic, horn: +hornT.toFixed(1), boost: +player.boost.toFixed(1), limit: rushLimit, tire: playerTire, agg: +aggK().toFixed(2), susp: [+susp.f.toFixed(3), +susp.r.toFixed(3), +playerRoot.rotation.x.toFixed(3)], buffs: buffText(CARS[player.car]), cd: +player.cd.toFixed(1), gfxNow: gfxNow, sfxOn: sfxOn, kind: runKind, region: region.key, wx: weather.key, surf: sfc.key, grip: +sfc.grip.toFixed(2), cap: +sfc.cap.toFixed(2), rank: rivals.length ? raceRank() : 0, level: survLevel, cover: +snowCover.toFixed(2), gust: +gust.v.toFixed(1), fade: +tr.fade.toFixed(2), scn: sceneryNow.length, thr: +player.thr.toFixed(2), sel: selKind, shot: shotName, phase: tr.phase, mis: runMission, power: power, guns: guns.map(function (g) { return g.w; }).join('+') };
     },
     env: function () { mixEnv(1); },
-    quiz: function () { return quiz; }
+    quiz: function () { return quiz; }, dmg: function () { return dmgLog; }
   };
 })();

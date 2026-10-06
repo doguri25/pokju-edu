@@ -52,12 +52,20 @@
     if (dans.length === 8) return '2단~9단';
     return dans.map(function (d) { return d + '단'; }).join('·');
   }
-  function quizSel() { var s = save.quiz.sel; return { dans: s.dan === 'all' ? [2, 3, 4, 5, 6, 7, 8, 9] : s.dan.split(',').map(Number), type: s.type, pace: s.pace }; }
+  function quizSel() { var s = save.quiz.sel; return { dans: s.dan === 'all' ? [2, 3, 4, 5, 6, 7, 8, 9] : s.dan.split(',').map(Number), type: s.type, pace: s.pace, foe: s.foe !== 'off' }; }
+  /* enemies on a quiz road, as in the original missions: f = { drones, kami, strike, buggy, traffic }. null: only the gates */
+  function quizFoes(m, f) {
+    m.drones = f ? f.drones || 0 : 0; m.kami = f ? f.kami || 0 : 0; m.strike = f ? f.strike || 0 : 0; m.buggy = f ? !!f.buggy : false;
+    m.strikes = f && f.strikes ? f.strikes : ['lane', 'chase'];
+    m.traffic = f ? f.traffic || 1.2 : 1; m.chasers = f ? 1 : 0; m.noFoes = !f;
+    return m;
+  }
   function quizMission() {
     var m = condMission('free'), o = quizSel();
     m.kind = 'quiz'; m.goal = 'quiz'; m.name = '구구단 ' + danLabel(o.dans); m.label = QUIZ_TYPES[o.type].name; m.quiz = o;
-    m.traffic = 0; m.farm = 0; m.road = { order: ['hill'], gap: [300, 420] };
-    m.aim = '문제를 보고 정답이 적힌 깃발 문으로 지나간다. 틀린 문제는 끝에 한 번 더 나온다.';
+    m.farm = o.foe && m.region === 'country' ? 0.6 : 0; m.road = { order: ['hill'], gap: [300, 420] };
+    quizFoes(m, o.foe ? { drones: 0.5, buggy: true, traffic: 1.2 } : null);
+    m.aim = '문제를 보고 정답이 적힌 깃발 문으로 지나간다.' + (o.foe ? ' 덤비는 폭주 차량과 드론은 쏴서 막는다.' : '') + ' 틀린 문제는 끝에 한 번 더 나온다.';
     return m;
   }
   function quizRun() { return runKind === 'quiz' || runKind === 'story'; }
@@ -96,8 +104,9 @@
       if (ok) {
         if (first) quiz.ok++; quiz.combo++; quiz.best = Math.max(quiz.best, quiz.combo); score += 100 + 20 * Math.min(quiz.combo - 1, 5); scrap += 20;
         buff.nitro = Math.max(buff.nitro, 1.2); sfx('item');
+        if (EDU.arms) player.hp = Math.min(car.hp, player.hp + car.hp * 0.2);   /* a right answer repairs a fifth of the car: solving keeps you on the road */
         spawnRing(px, 0, 9, 0.45, 0, COL.cyan); spawnP('glow', px, 1.4, 0, 0, 0, 0, 0.4, 4, 12, COL.cyan, 0.9, 0);
-        qboxSet(quiz.combo >= 3 ? quiz.combo + '개 연속 정답!' : '정답!', q.full, 'ok');
+        qboxSet((quiz.combo >= 3 ? quiz.combo + '개 연속 정답!' : '정답!') + (EDU.arms ? ' · 수리 +20%' : ''), q.full, 'ok');
       } else {
         quiz.combo = 0; player.v = Math.max(car.vmin, player.v * 0.7); sfx('thud');
         qboxSet(first ? '정답은 이거예요 · 끝에 한 번 더 나와요' : '정답은 이거예요', q.full, 'no');
@@ -112,19 +121,20 @@
     return { f: dk.log.length / dk.items.length, txt: (dk.i > dk.main ? '다시 풀기 ' + (dk.i - dk.main) + ' / ' + extra : '문제 ' + Math.max(1, n) + ' / ' + dk.main) + ' · 맞힘 ' + quiz.ok };
   }
   /* the result panel for a quiz run; returns the sound to play */
-  function quizResult() {
-    var sc = quizScore(quiz.deck), N = function (v) { return v.toLocaleString('ko-KR'); }, got = scrap, all = sc.right === sc.total;
+  function quizResult(win) {
+    var sc = quizScore(quiz.deck), N = function (v) { return v.toLocaleString('ko-KR'); }, got = win ? scrap : Math.floor(scrap / 2), all = win && sc.right === sc.total;
     var asked = {}; quiz.deck.items.forEach(function (q) { asked[q.key] = true; });
     save.quiz.runs = (save.quiz.runs || []).concat([{ day: dayText(Date.now()), name: mission.name, type: QUIZ_TYPES[quiz.deck.type].name, right: sc.right, total: sc.total }]).slice(-30);
     save.scrap += got; storeSave(); setMusic('menu'); quizOff();
     $('res-grid').innerHTML = factGrid(quiz.deck.dans.slice().sort(), asked);
-    $('res-title').textContent = all ? '모두 맞혔다!' : (sc.right >= sc.total * 0.7 ? '잘했어요' : '끝까지 달렸어요');
-    $('res-story').textContent = sc.total + '문제 가운데 ' + sc.right + '문제를 맞혔다.' + (sc.missed.length ? ' 틀린 문제는 끝에서 ' + sc.fixed + '개를 다시 맞혔다.' : '');
+    $('res-title').textContent = !win ? '차가 멈췄어요' : all ? '모두 맞혔다!' : (sc.right >= sc.total * 0.7 ? '잘했어요' : '끝까지 달렸어요');
+    $('res-story').textContent = !win ? failWhy + ' ' + quiz.deck.main + '문제 가운데 ' + sc.total + '문제까지 풀고 ' + sc.right + '문제를 맞혔다.'
+      : sc.total + '문제 가운데 ' + sc.right + '문제를 맞혔다.' + (sc.missed.length ? ' 틀린 문제는 끝에서 ' + sc.fixed + '개를 다시 맞혔다.' : '');
     resRows([['문제', mission.name + ' · ' + QUIZ_TYPES[quiz.deck.type].name], ['맞힌 문제', sc.right + ' / ' + sc.total], ['가장 긴 연속 정답', quiz.best + '개'],
       ['다시 볼 문제', sc.missed.length ? sc.missed.map(function (k) { var p = k.split('x'); return p[0] + '×' + p[1] + '=' + p[0] * p[1]; }).join(', ') : '없음'], ['점수', N(score)]]);
-    $('res-reward').textContent = '고철 ' + got + ' (맞힌 문제마다 20) · 보유 ' + N(save.scrap);
-    if (runKind === 'story') return storyAfter(sc);
-    return all ? 'record' : (sc.right >= sc.total * 0.7 ? 'win' : 'fail');
+    $('res-reward').textContent = (win ? '고철 ' + got : '모은 고철의 절반 ' + got) + ' · 보유 ' + N(save.scrap);
+    if (runKind === 'story') return storyAfter(sc, win);
+    return !win ? 'fail' : all ? 'record' : (sc.right >= sc.total * 0.7 ? 'win' : 'fail');
   }
   /* the 9×9 record. dans: the rows to show; now: the facts of the run just played, outlined */
   var LV_MARK = { good: '★', learn: '●', hard: '▲', 'new': '' };
@@ -160,6 +170,7 @@
   function renderQuiz() {
     var s = save.quiz.sel, o = quizSel(), t = QUIZ_TYPES[o.type], p = QUIZ_PACE[o.pace];
     $('opt-dan').value = s.dan; $('opt-qtype').value = s.type; $('opt-pace').value = s.pace;
+    $('opt-foe').value = s.foe === 'off' ? 'off' : 'on';
     $('quiz-brief').innerHTML = row('문제 수', o.type === 'seq' ? o.dans.length * 9 + '문제 (단마다 1부터 9까지)' : '10문제') + row('보기', '깃발 문 ' + t.opts + '개') +
       row('생각할 시간', '문제가 나오고 문에 닿기까지 약 ' + (p.t + t.think) + '초') + row('틀리면', '차가 잠깐 느려지고 정답을 보여 준다. 그 문제는 끝에 한 번 더 나온다.');
   }

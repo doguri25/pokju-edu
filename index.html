@@ -395,21 +395,21 @@ body.cine #card { bottom: 9%; }
       <div class="track" id="lever-track"><i class="fill" id="lever-fill"></i><i class="knob" id="lever-knob"></i></div>
       <span>감속</span>
     </div>
-      <div class="chip speed"><div class="top"><b id="spd">100</b><span>km/h</span><span id="spd-target">목표 100</span></div><div class="sub2"><span>감속</span><i class="acc" role="img" aria-label="가감속 게이지"><i id="acc-dn"></i><i id="acc-up"></i></i><span>가속</span></div><div class="sub2 info"><span class="tag" id="fire-state" hidden>발사 대기</span><span id="grade">평지</span></div></div>
+      <div class="chip speed"><div class="top"><b id="spd">100</b><span>km/h</span><span id="spd-target">목표 100</span></div><div class="sub2"><span>감속</span><i class="acc" role="img" aria-label="가감속 게이지"><i id="acc-dn"></i><i id="acc-up"></i></i><span>가속</span></div><div class="sub2 info"><span class="tag" id="fire-state">발사 대기</span><span id="grade">평지</span></div></div>
     </div>
     <div class="acts">
       <button type="button" class="chip skill basic fire" id="btn-fire" aria-label="공격: 누르고 있는 동안 발사" hidden><span class="kicker">공격</span><span id="fire-name">사격</span><span class="sub" id="fire-cd">누르는 동안 · Z</span></button>
-      <button type="button" class="chip skill basic" id="btn-basic" aria-label="기본 기술 쓰기" hidden><span class="kicker">기본 기술</span><span id="basic-name">퀵 스텝</span><span class="sub" id="basic-cd">준비됨</span><i id="basic-bar"></i></button>
-      <button type="button" class="chip skill" id="btn-skill" aria-label="고유 기술 쓰기" hidden><span class="kicker">고유 기술</span><span id="skill-name">틈새 대시</span><span class="sub" id="skill-cd">준비됨</span><i id="skill-bar"></i></button>
+      <button type="button" class="chip skill basic" id="btn-basic" aria-label="기본 기술 쓰기"><span class="kicker">기본 기술</span><span id="basic-name">퀵 스텝</span><span class="sub" id="basic-cd">준비됨</span><i id="basic-bar"></i></button>
+      <button type="button" class="chip skill" id="btn-skill" aria-label="고유 기술 쓰기"><span class="kicker">고유 기술</span><span id="skill-name">틈새 대시</span><span class="sub" id="skill-cd">준비됨</span><i id="skill-bar"></i></button>
     </div>
   </div>
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.4</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.5</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
-    <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false" hidden>아이템</button>
+    <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false">아이템</button>
     <button type="button" role="tab" id="tab-mode" data-tab="mode" aria-selected="false">모드</button>
     <button type="button" role="tab" id="tab-rec" data-tab="rec" aria-selected="false">기록</button>
     <button type="button" role="tab" id="tab-set" data-tab="set" aria-selected="false">설정</button>
@@ -451,7 +451,7 @@ body.cine #card { bottom: 9%; }
     <dl class="detail" id="race-brief"></dl>
   </div>
   <div class="pane" id="pane-story" hidden>
-    <p class="premise">한울시의 관제 AI 「마성」이 계산을 까먹었다. 길마다 숫자 갈림길이 생겼고, 맞는 답이 적힌 문으로 지나가면 마성이 다시 기억한다. 전설 카센터의 막내 정비사가 운전대를 잡는다.</p>
+    <p class="premise">한울시의 관제 AI 「마성」이 계산을 까먹었다. 길마다 숫자 갈림길이 생겼고, 맞는 답이 적힌 문으로 지나가면 마성이 다시 기억한다. 마성에 묶인 폭주 차량과 드론이 길을 막으니, 쏴서 막으며 달린다.</p>
     <div class="missions" id="ch-list"></div>
     <dl class="detail" id="ch-brief"></dl>
   </div>
@@ -460,6 +460,7 @@ body.cine #card { bottom: 9%; }
     <label class="opt sel">단<select id="opt-dan"></select></label>
     <label class="opt sel">문제<select id="opt-qtype"></select></label>
     <label class="opt sel">생각할 시간<select id="opt-pace"></select></label>
+    <label class="opt sel">적<select id="opt-foe"><option value="on">폭주 차량과 드론이 나온다</option><option value="off">깃발 문만 나온다</option></select></label>
     <dl class="detail" id="quiz-brief"></dl>
   </div>
   <div class="pane" id="pane-cond" hidden>
@@ -483,13 +484,13 @@ body.cine #card { bottom: 9%; }
     <label class="opt"><input type="checkbox" id="opt-mirror" checked>룸미러 (화면 위쪽에 뒤쪽 모습 표시)</label>
     <label class="opt"><input type="checkbox" id="opt-calm">화면 흔들림과 번쩍임 줄이기</label>
     <label class="opt sel">그래픽 품질<select id="opt-gfx"><option value="auto">자동 (기기에 맞춰 조절)</option><option value="high">높음</option><option value="mid">보통</option><option value="low">낮음 (그림자 끔)</option></select></label>
-    <label class="opt"><input type="checkbox" id="opt-unlock">잠금 모두 해제 (차량 전부 열기)</label>
+    <label class="opt"><input type="checkbox" id="opt-unlock">잠금 모두 해제 (차량, 미션, 무기 전부 열기)</label>
     <label class="opt sel">시점<select id="opt-cam"><option value="low">낮은 추격 뷰 (기본, 차량 뒤 낮은 시점)</option><option value="top">탑뷰 (위에서 내려다봄)</option><option value="cockpit">운전석 뷰 (1인칭)</option></select></label>
     <button type="button" class="plain" id="opt-reset">진행 초기화</button>
     <button type="button" class="plain" id="opt-title">타이틀 화면으로</button>
     <button type="button" class="plain" id="opt-help">조작 방법 보기</button>
     <button type="button" class="plain" id="opt-story">이야기와 운전 연습 다시 보기</button>
-    <p class="keys">키보드는 방향키로 움직입니다. ↑ ↓ 는 가속과 감속, ← → 는 좌우 이동입니다. 시점 바꾸기는 C, 일시정지는 Esc, 소리 끄기는 M입니다. 터치는 왼쪽 아래 레버로 속도를 정하고 화면 오른쪽을 좌우로 끌어 이동합니다. 게임패드는 왼쪽 스틱으로 움직입니다.</p>
+    <p class="keys">키보드는 방향키로 움직입니다. ↑ ↓ 는 가속과 감속, ← → 는 좌우 이동입니다. 공격은 Z(누르는 동안 발사), 기본 기술은 X, 고유 기술은 Space, 시점 바꾸기는 C, 일시정지는 Esc, 소리 끄기는 M입니다. 터치는 왼쪽 아래 레버로 속도를 정하고 화면 오른쪽을 좌우로 끌어 이동하며, 레버를 잡고 있는 동안 무기가 나갑니다. 게임패드는 왼쪽 스틱으로 움직이고 RT로 쏩니다.</p>
     <p class="keys">모은 고철, 연 차량, 기록은 이 브라우저에만 저장됩니다. 이름 같은 개인정보는 저장하지 않습니다.</p>
   </div>
   </div>
@@ -531,13 +532,13 @@ body.cine #card { bottom: 9%; }
 </div>
 <div class="panel result help" id="help" role="dialog" aria-labelledby="help-title" hidden>
   <b id="help-title">조작 방법</b>
-  <p class="story">속도를 정하고 좌우로 움직여 차로를 고릅니다.</p>
+  <p class="story">키보드와 게임패드는 이동과 공격이 따로입니다. 터치 화면에서는 왼손 레버를 잡고 있는 동안 무기가 나갑니다.</p>
   <div class="helpgrid">
-    <section><h3>키보드</h3><dl class="detail"><dt>↑ ↓</dt><dd>가속·감속 (W S도 됩니다)</dd><dt>← →</dt><dd>좌우 이동 (A D도 됩니다)</dd><dt>C</dt><dd>시점 바꾸기</dd><dt>Esc, P</dt><dd>일시정지</dd><dt>M</dt><dd>소리 전체 끄기</dd></dl></section>
-    <section><h3>터치</h3><dl class="detail"><dt>왼쪽 레버</dt><dd>위아래로 끌어 목표 속도</dd><dt>화면 오른쪽</dt><dd>좌우로 끌어 이동</dd></dl></section>
-    <section><h3>게임패드</h3><dl class="detail"><dt>왼쪽 스틱</dt><dd>위아래 속도, 좌우 이동</dd><dt>Y</dt><dd>시점 바꾸기</dd><dt>Start</dt><dd>일시정지</dd></dl></section>
+    <section><h3>키보드</h3><dl class="detail"><dt>↑ ↓</dt><dd>가속·감속 (W S도 됩니다)</dd><dt>← →</dt><dd>좌우 이동 (A D도 됩니다)</dd><dt>Z, J</dt><dd>공격 (누르는 동안 발사). 화면 오른쪽 아래 공격 버튼을 마우스로 누르고 있어도 됩니다</dd><dt>X, E, F</dt><dd>기본 기술</dd><dt>Space, Shift</dt><dd>고유 기술</dd><dt>C</dt><dd>시점 바꾸기</dd><dt>Esc, P</dt><dd>일시정지</dd><dt>M</dt><dd>소리 전체 끄기</dd></dl></section>
+    <section><h3>터치</h3><dl class="detail"><dt>왼쪽 레버</dt><dd>위아래로 끌어 목표 속도 (누르는 동안 발사)</dd><dt>화면 오른쪽</dt><dd>좌우로 끌어 이동</dd><dt>오른쪽 아래 버튼</dt><dd>큰 버튼은 고유 기술, 그 위 작은 버튼은 기본 기술. 다른 손가락을 떼지 않고 눌러도 됩니다</dd></dl></section>
+    <section><h3>게임패드</h3><dl class="detail"><dt>왼쪽 스틱</dt><dd>위아래 속도, 좌우 이동</dd><dt>RT, RB</dt><dd>공격 (누르는 동안 발사)</dd><dt>A, B</dt><dd>고유 기술</dd><dt>X</dt><dd>기본 기술</dd><dt>Y</dt><dd>시점 바꾸기</dd><dt>Start</dt><dd>일시정지</dd></dl></section>
   </div>
-  <p>흙길·눈길·빗길에서는 속도와 접지력이 떨어집니다. 방지턱과 포트홀은 속도를 줄여 넘습니다. 앞차에 부딪히지 않게 빈 차로로 비켜 갑니다.</p>
+  <p>보급 상자는 쏘면 내용물이 바뀌고 지나가며 먹습니다. 갓길은 폭격과 공사 구간을 피하는 비상 차선입니다. 흙길·눈길·빗길에서는 속도와 접지력이 떨어집니다. 방지턱과 포트홀은 속도를 줄여 넘고, 화면 위 룸미러로 뒤에서 따라붙는 추격차를 확인합니다.</p>
   <div class="btns"><button type="button" class="primary" id="help-close">확인</button></div>
 </div>
 <div class="panel result ending" id="ending" hidden>
@@ -586,8 +587,8 @@ body.cine #card { bottom: 9%; }
   function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }
   var lerp = T.MathUtils.lerp, clamp = T.MathUtils.clamp;
 
-  /* ---------- learning edition: one switch for what is left of the original combat. Weapons, skills and supply crates stay in the code but are off until the quiz modes bring back a gentle version ---------- */
-  var EDU = { arms: false };
+  /* ---------- learning edition: one switch for the original combat (weapons, skills, supply crates, damage). On: the quiz runs on roads with the original's enemies ---------- */
+  var EDU = { arms: true };
   if (!EDU.arms) document.body.classList.add('edu');
 
   /* ---------- textures ---------- */
@@ -3709,7 +3710,7 @@ body.cine #card { bottom: 9%; }
 
   /* progress: scrap, unlocked cars, cleared missions and loadouts are kept in this browser only */
   var SAVE_KEY = 'pokju-edu-v1';
-  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: false, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true, quiz: { sel: { dan: '2', type: 'seq', pace: 'mid' }, facts: {}, runs: [] }, story: { open: 0, stars: {}, tries: {}, done: false } };
+  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: false, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true, quiz: { sel: { dan: '2', type: 'seq', pace: 'mid', foe: 'on' }, facts: {}, runs: [] }, story: { open: 0, stars: {}, tries: {}, done: false } };
   var W_PRICE = { mg: 0, bolt: 500, laser: 600, shotgun: 400, flame: 500, saw: 300, water: 500, cannon: 700, missile: 800, mine: 400 }, UP_PRICE = [0, 400, 900];
   function loadSave() {
     try {
@@ -3738,6 +3739,7 @@ body.cine #card { bottom: 9%; }
           if (DAN_OPTS.some(function (o) { return o[0] === qs.dan; })) save.quiz.sel.dan = qs.dan;
           if (QUIZ_TYPES[qs.type]) save.quiz.sel.type = qs.type;
           if (QUIZ_PACE[qs.pace]) save.quiz.sel.pace = qs.pace;
+          if (qs.foe === 'off') save.quiz.sel.foe = 'off';
           if (s.quiz.facts && typeof s.quiz.facts === 'object') save.quiz.facts = s.quiz.facts;
           if (Array.isArray(s.quiz.runs)) save.quiz.runs = s.quiz.runs.slice(-30);
         }
@@ -3763,7 +3765,9 @@ body.cine #card { bottom: 9%; }
   function tireOf(carKey) { var k = save.tire[carKey]; return k && TIRES[k] && tireOwned(k) ? k : 'allseason'; }
   /* how hard the enemy presses: the story starts gentle and grows with every mission; the other modes sit at fixed levels */
   function aggK() {
-    if (mode === 'menu' || runKind === 'free' || quizRun() || runKind === 'tut') return 0;
+    if (mode === 'menu' || runKind === 'free' || runKind === 'tut') return 0;
+    if (runKind === 'story') return 0.62 + 0.05 * runMission;   /* the chapters grow like the missions did */
+    if (runKind === 'quiz') return 0.8;
     if (runKind === 'mis') return runMission < 18 ? 0.65 + 0.03 * runMission : Math.min(1.3, 1.16 + 0.012 * (runMission - 17));
     if (runKind === 'surv') return Math.min(1.5, 0.7 + 0.1 * survLevel);
     return 1;
@@ -3834,7 +3838,7 @@ body.cine #card { bottom: 9%; }
     if (mode === 'demo') d *= 0.3;
     if (d <= 0) return;
     dmgLog[kind || 'etc'] = Math.round(((dmgLog[kind || 'etc'] || 0) + d) * 10) / 10;
-    if ((runKind === 'free' || quizRun() || runKind === 'tut') && mode === 'play') { hitFlash = 0.6; shake = Math.min(1.2, shake + 0.3); sfx('hurt'); return; }   /* free driving: a knock, but no damage */
+    if ((runKind === 'free' || runKind === 'tut') && mode === 'play') { hitFlash = 0.6; shake = Math.min(1.2, shake + 0.3); sfx('hurt'); return; }   /* free driving: a knock, but no damage */
     if (player.shield > 0) {
       player.shield = 0; player.shieldT = 10;
       spawnP('glow', player.x, 1.4, 0, 0, 0, 0, 0.35, 5, 12, COL.blue, 0.9, 0);
@@ -4955,8 +4959,8 @@ body.cine #card { bottom: 9%; }
   /* ---------- story and driving practice: who the player is, why they drive, and the first drive that teaches the controls ---------- */
   var STORY = [
     ['한울시의 아침', '한울시에서는 승용차도, 버스도, 신호등도 관제 AI 「마성」이 움직인다. 당신은 전설 카센터의 막내 정비사다. 고친 차를 시운전하느라, 이 도시에서 몇 안 남은 운전할 줄 아는 사람이다.'],
-    ['마성이 계산을 까먹은 날', '오늘 아침, 마성이 숫자를 까먹었다. 신호등은 7초인지 70초인지 몰라 깜빡이고, 버스는 엉뚱한 정류장에 선다. 마성은 길마다 「숫자 갈림길」을 세워 놓고 누가 맞는 답을 알려 주기를 기다린다.'],
-    ['맞는 문으로 지나가기', '관제사 새벽이 무전으로 말했다. “갈림길마다 답이 적힌 문이 있어. 맞는 문으로 지나가면 마성이 다시 기억해. 틀려도 괜찮아, 다음에 또 나오니까.” 오 사장은 차 열쇠를 건넸다. 먼저 카센터 앞 길에서 운전부터 익힌다.']
+    ['마성이 계산을 까먹은 날', '오늘 아침, 마성이 숫자를 까먹었다. 신호등은 7초인지 70초인지 몰라 깜빡이고, 버스는 엉뚱한 정류장에 선다. 마성은 길마다 「숫자 갈림길」을 세웠고, 마성에 묶인 차와 드론은 엉뚱하게 날뛰며 지나가는 차에 덤벼든다.'],
+    ['맞는 문으로 지나가기', '관제사 새벽이 무전으로 말했다. “갈림길마다 답이 적힌 문이 있어. 맞는 문으로 지나가면 마성이 다시 기억해. 틀려도 괜찮아, 다음에 또 나오니까.” 오 사장은 통신 모듈을 뗀 차에 방어 장비를 달아 주었다. “덤비는 놈들은 쏴서 멈춰 세워. 그래도 문은 꼭 맞는 데로 지나가라.” 먼저 카센터 앞 길에서 운전부터 익힌다.']
   ], STORY_DONE = ['운전 연습 끝', '새벽: “전설 하나, 운전은 됐어. 첫 갈림길은 도심이야. 신호등이 2단을 까먹었대.” 오 사장: “막내야, 천천히 다녀와라. 틀려도 혼 안 낸다.”'];
   var storyI = 0, storyMode = 'intro';
   function storyShow() {
@@ -4981,15 +4985,28 @@ body.cine #card { bottom: 9%; }
   var tut = { i: -1, t: 0, L: false, R: false, k0: 0, sp: 0, item: false, cT: 0, hump: 0, tries: 0 };
   function tutMission() {
     return { kind: 'tut', name: '운전 연습', region: 'city', weather: 'clear', time: 'day', timeLabel: '낮', dir: 1, goal: 'tut', n: TUT.length, civ: 0, civLimit: 0, drones: 0, strike: 0, kami: 0, buggy: false, traffic: 1, chasers: 0, farm: 0,
-      road: { order: ['hill'], gap: [420, 560] }, label: '운전 연습', why: '전설 카센터 앞 도로. 아직 갈림길이 없는 조용한 길이다.', aim: '오 사장과 새벽의 말을 따라 속도와 차로 바꾸기를 익힌다. 연습 중에는 차가 부서지지 않는다.', win: '', lose: '', done: '' };
+      road: { order: ['hill'], gap: [420, 560] }, label: '운전 연습', why: '전설 카센터 앞 도로. 아직 갈림길도, 날뛰는 차도 없는 조용한 길이다.', aim: '오 사장과 새벽의 말을 따라 운전, 무기, 기술을 차례로 익힌다. 연습 중에는 차가 부서지지 않는다.', win: '', lose: '', done: '' };
   }
   function tutTouch() { return touchUI || vw <= 720; }
-  /* driving practice: speed and lanes. The first gates come in chapter 1, with 2단 in order */
   var TUT = [
     { who: '오 사장', line: '막내야, 시동 걸었으면 속도부터 올려 봐. 이 차들은 밟는다고 바로 튀어 나가지 않는다.', key: '↑ 를 누르고 있기', touch: '왼쪽 아래 레버를 위로 올리기', goal: function (car) { return '시속 ' + Math.round(Math.min(100, car.vmax * 3.6 * 0.8)) + ' km 넘기기'; },
       check: function (car) { return veff * 3.6 >= Math.min(100, car.vmax * 3.6 * 0.8); } },
     { who: '새벽', line: '전설 하나, 들려? 새벽이야. 길은 내가 읽어 줄게. 먼저 차로를 바꿔 봐.', key: '← →', touch: '화면 오른쪽을 좌우로 끌기', goal: function () { return '맨 왼쪽 차로와 맨 오른쪽 차로를 한 번씩 밟기' + (tut.L ? ' (왼쪽 완료)' : '') + (tut.R ? ' (오른쪽 완료)' : ''); },
-      enter: function () { tut.L = tut.R = false; }, tick: function () { if (player.x < -4.6) tut.L = true; if (player.x > 4.6) tut.R = true; }, check: function () { return tut.L && tut.R; } }
+      enter: function () { tut.L = tut.R = false; }, tick: function () { if (player.x < -4.6) tut.L = true; if (player.x > 4.6) tut.R = true; }, check: function () { return tut.L && tut.R; } },
+    { who: '오 사장', line: '무기는 공격 키를 누르고 있는 동안 나간다. 손을 떼면 총도 쉰다. 앞에 굴러다니는 마성의 오토바이로 시험해 봐.', lineT: '무기는 레버를 잡고 있는 동안에만 나간다. 손을 떼면 총도 쉰다. 앞에 굴러다니는 마성의 오토바이로 시험해 봐.', key: 'Z 를 누른 채 오토바이와 같은 차로에 서기', touch: '레버를 누른 채 오토바이와 같은 차로에 서기', goal: function () { return '오토바이 ' + Math.min(3, kills - tut.k0) + ' / 3대 부수기'; },
+      enter: function () { tut.k0 = kills; tut.sp = 0; },
+      tick: function (dt) { tut.sp -= dt; if (tut.sp <= 0 && !enemies.some(function (e) { return e.type === 'bike'; })) { tut.sp = 2.5; for (var b = 0; b < 3; b++) spawnEnemy('bike', clamp(player.x + (b - 1) * 1.4, -6.6, 6.6), -95 - b * 5, Math.max(8, veff - 9)); } },
+      check: function () { return kills - tut.k0 >= 3; } },
+    { who: '새벽', line: '앞에 보급 상자가 있어. 쏘면 내용물이 바뀌고, 지나가면서 닿으면 먹어. 필요한 게 나올 때까지 쏘는 거야.', key: '상자를 쏴서 바꾸고, 같은 차로로 지나가기', touch: '상자를 쏴서 바꾸고, 같은 차로로 지나가기', goal: function () { return '보급 상자 먹기'; },
+      enter: function () { tut.item = false; tut.cT = 0; if (!crate.active) spawnCrate(); }, tick: function (dt) { if (!crate.active && !tut.item) { tut.cT += dt; if (tut.cT > 1.2) { tut.cT = 0; spawnCrate(); } } }, check: function () { return tut.item; } },
+    { who: '오 사장', line: '급할 때는 기본 기술이다. 차 종류마다 다르고, 몇 초면 다시 쓸 수 있어.', key: 'X', touch: '오른쪽 아래의 작은 버튼', goal: function (car) { return '기본 기술 「' + BASICS[car.basic].name + '」 쓰기'; }, check: function () { return player.bcd > 0; } },
+    { who: '새벽', line: '고유 기술은 그 차만의 필살기야. 세지만 다시 쓰려면 오래 기다려야 해. 아껴 뒀다가 몰렸을 때 써.', key: 'Space', touch: '오른쪽 아래의 큰 버튼', goal: function (car) { return '고유 기술 「' + car.skillName + '」 쓰기'; }, check: function () { return player.cd > 0; } },
+    { who: '오 사장', line: '저 앞에 방지턱이다. 빠르게 넘으면 차가 튀고 속도를 잃는다. 줄여서 넘어.', key: '↓ 로 감속', touch: '레버를 아래로 내려 감속', goal: function () { return '시속 60 km 아래로 방지턱 넘기' + (tut.missed ? ' (턱을 비켜 갔다. 다음 턱은 넘어서 가기)' : (tut.tries ? ' (너무 빨랐다. 다음 턱에서 다시)' : '')); },
+      enter: function () { tut.hump = 0; tut.tries = 0; tut.missed = false; tutHump(); },
+      tick: function () {
+        if (tut.hump < 0) { tut.hump = 0; tut.tries++; tut.missed = false; tutHump(); tutCoach(); }
+        else if (tut.hump === 0 && dist > tut.humpD + 14) { tut.missed = true; tutHump(); tutCoach(); }   /* driven around it: the next one comes in the lane the car is in */
+      }, check: function () { return tut.hump > 0; } }
   ];
   function tutHump() { tut.humpD = dist + 190; addProp('hump', tut.humpD, clamp(player.x, -6.4, 6.4), { solid: { hw: 3.4, hl: 0.2, kind: 'hump', soft: 1 } }); }
   function tutCoach() {
@@ -5227,12 +5244,20 @@ body.cine #card { bottom: 9%; }
     if (dans.length === 8) return '2단~9단';
     return dans.map(function (d) { return d + '단'; }).join('·');
   }
-  function quizSel() { var s = save.quiz.sel; return { dans: s.dan === 'all' ? [2, 3, 4, 5, 6, 7, 8, 9] : s.dan.split(',').map(Number), type: s.type, pace: s.pace }; }
+  function quizSel() { var s = save.quiz.sel; return { dans: s.dan === 'all' ? [2, 3, 4, 5, 6, 7, 8, 9] : s.dan.split(',').map(Number), type: s.type, pace: s.pace, foe: s.foe !== 'off' }; }
+  /* enemies on a quiz road, as in the original missions: f = { drones, kami, strike, buggy, traffic }. null: only the gates */
+  function quizFoes(m, f) {
+    m.drones = f ? f.drones || 0 : 0; m.kami = f ? f.kami || 0 : 0; m.strike = f ? f.strike || 0 : 0; m.buggy = f ? !!f.buggy : false;
+    m.strikes = f && f.strikes ? f.strikes : ['lane', 'chase'];
+    m.traffic = f ? f.traffic || 1.2 : 1; m.chasers = f ? 1 : 0; m.noFoes = !f;
+    return m;
+  }
   function quizMission() {
     var m = condMission('free'), o = quizSel();
     m.kind = 'quiz'; m.goal = 'quiz'; m.name = '구구단 ' + danLabel(o.dans); m.label = QUIZ_TYPES[o.type].name; m.quiz = o;
-    m.traffic = 0; m.farm = 0; m.road = { order: ['hill'], gap: [300, 420] };
-    m.aim = '문제를 보고 정답이 적힌 깃발 문으로 지나간다. 틀린 문제는 끝에 한 번 더 나온다.';
+    m.farm = o.foe && m.region === 'country' ? 0.6 : 0; m.road = { order: ['hill'], gap: [300, 420] };
+    quizFoes(m, o.foe ? { drones: 0.5, buggy: true, traffic: 1.2 } : null);
+    m.aim = '문제를 보고 정답이 적힌 깃발 문으로 지나간다.' + (o.foe ? ' 덤비는 폭주 차량과 드론은 쏴서 막는다.' : '') + ' 틀린 문제는 끝에 한 번 더 나온다.';
     return m;
   }
   function quizRun() { return runKind === 'quiz' || runKind === 'story'; }
@@ -5271,8 +5296,9 @@ body.cine #card { bottom: 9%; }
       if (ok) {
         if (first) quiz.ok++; quiz.combo++; quiz.best = Math.max(quiz.best, quiz.combo); score += 100 + 20 * Math.min(quiz.combo - 1, 5); scrap += 20;
         buff.nitro = Math.max(buff.nitro, 1.2); sfx('item');
+        if (EDU.arms) player.hp = Math.min(car.hp, player.hp + car.hp * 0.2);   /* a right answer repairs a fifth of the car: solving keeps you on the road */
         spawnRing(px, 0, 9, 0.45, 0, COL.cyan); spawnP('glow', px, 1.4, 0, 0, 0, 0, 0.4, 4, 12, COL.cyan, 0.9, 0);
-        qboxSet(quiz.combo >= 3 ? quiz.combo + '개 연속 정답!' : '정답!', q.full, 'ok');
+        qboxSet((quiz.combo >= 3 ? quiz.combo + '개 연속 정답!' : '정답!') + (EDU.arms ? ' · 수리 +20%' : ''), q.full, 'ok');
       } else {
         quiz.combo = 0; player.v = Math.max(car.vmin, player.v * 0.7); sfx('thud');
         qboxSet(first ? '정답은 이거예요 · 끝에 한 번 더 나와요' : '정답은 이거예요', q.full, 'no');
@@ -5287,19 +5313,20 @@ body.cine #card { bottom: 9%; }
     return { f: dk.log.length / dk.items.length, txt: (dk.i > dk.main ? '다시 풀기 ' + (dk.i - dk.main) + ' / ' + extra : '문제 ' + Math.max(1, n) + ' / ' + dk.main) + ' · 맞힘 ' + quiz.ok };
   }
   /* the result panel for a quiz run; returns the sound to play */
-  function quizResult() {
-    var sc = quizScore(quiz.deck), N = function (v) { return v.toLocaleString('ko-KR'); }, got = scrap, all = sc.right === sc.total;
+  function quizResult(win) {
+    var sc = quizScore(quiz.deck), N = function (v) { return v.toLocaleString('ko-KR'); }, got = win ? scrap : Math.floor(scrap / 2), all = win && sc.right === sc.total;
     var asked = {}; quiz.deck.items.forEach(function (q) { asked[q.key] = true; });
     save.quiz.runs = (save.quiz.runs || []).concat([{ day: dayText(Date.now()), name: mission.name, type: QUIZ_TYPES[quiz.deck.type].name, right: sc.right, total: sc.total }]).slice(-30);
     save.scrap += got; storeSave(); setMusic('menu'); quizOff();
     $('res-grid').innerHTML = factGrid(quiz.deck.dans.slice().sort(), asked);
-    $('res-title').textContent = all ? '모두 맞혔다!' : (sc.right >= sc.total * 0.7 ? '잘했어요' : '끝까지 달렸어요');
-    $('res-story').textContent = sc.total + '문제 가운데 ' + sc.right + '문제를 맞혔다.' + (sc.missed.length ? ' 틀린 문제는 끝에서 ' + sc.fixed + '개를 다시 맞혔다.' : '');
+    $('res-title').textContent = !win ? '차가 멈췄어요' : all ? '모두 맞혔다!' : (sc.right >= sc.total * 0.7 ? '잘했어요' : '끝까지 달렸어요');
+    $('res-story').textContent = !win ? failWhy + ' ' + quiz.deck.main + '문제 가운데 ' + sc.total + '문제까지 풀고 ' + sc.right + '문제를 맞혔다.'
+      : sc.total + '문제 가운데 ' + sc.right + '문제를 맞혔다.' + (sc.missed.length ? ' 틀린 문제는 끝에서 ' + sc.fixed + '개를 다시 맞혔다.' : '');
     resRows([['문제', mission.name + ' · ' + QUIZ_TYPES[quiz.deck.type].name], ['맞힌 문제', sc.right + ' / ' + sc.total], ['가장 긴 연속 정답', quiz.best + '개'],
       ['다시 볼 문제', sc.missed.length ? sc.missed.map(function (k) { var p = k.split('x'); return p[0] + '×' + p[1] + '=' + p[0] * p[1]; }).join(', ') : '없음'], ['점수', N(score)]]);
-    $('res-reward').textContent = '고철 ' + got + ' (맞힌 문제마다 20) · 보유 ' + N(save.scrap);
-    if (runKind === 'story') return storyAfter(sc);
-    return all ? 'record' : (sc.right >= sc.total * 0.7 ? 'win' : 'fail');
+    $('res-reward').textContent = (win ? '고철 ' + got : '모은 고철의 절반 ' + got) + ' · 보유 ' + N(save.scrap);
+    if (runKind === 'story') return storyAfter(sc, win);
+    return !win ? 'fail' : all ? 'record' : (sc.right >= sc.total * 0.7 ? 'win' : 'fail');
   }
   /* the 9×9 record. dans: the rows to show; now: the facts of the run just played, outlined */
   var LV_MARK = { good: '★', learn: '●', hard: '▲', 'new': '' };
@@ -5335,37 +5362,38 @@ body.cine #card { bottom: 9%; }
   function renderQuiz() {
     var s = save.quiz.sel, o = quizSel(), t = QUIZ_TYPES[o.type], p = QUIZ_PACE[o.pace];
     $('opt-dan').value = s.dan; $('opt-qtype').value = s.type; $('opt-pace').value = s.pace;
+    $('opt-foe').value = s.foe === 'off' ? 'off' : 'on';
     $('quiz-brief').innerHTML = row('문제 수', o.type === 'seq' ? o.dans.length * 9 + '문제 (단마다 1부터 9까지)' : '10문제') + row('보기', '깃발 문 ' + t.opts + '개') +
       row('생각할 시간', '문제가 나오고 문에 닿기까지 약 ' + (p.t + t.think) + '초') + row('틀리면', '차가 잠깐 느려지고 정답을 보여 준다. 그 문제는 끝에 한 번 더 나온다.');
   }
   /* ---------- 이야기 1부: 고장 난 마성을 구구단으로 고친다. Nine chapters in the order the 단 are taught (2·5, 3·6, 4·8, 7, 9, then 1 and everything),
      one road each. A chapter is a quiz run: the first try goes 1 to 9 in order, later tries are mixed. Seven right out of ten (or of nine) clears it ---------- */
   var CHAPTERS = [
-    { dans: [2], region: 'city', time: 'day', weather: 'clear', fix: '신호등', name: '깜빡이는 신호등',
+    { dans: [2], region: 'city', time: 'day', weather: 'clear', fix: '신호등', foes: { traffic: 1.4 }, name: '깜빡이는 신호등',
       go: '도심 신호등이 7초인지 70초인지 몰라서 다 깜빡이고 있어. 2단 갈림길부터 지나가 보자.', hint: '2단은 2씩 커져. 2, 4, 6, 8… 손가락으로 세어도 돼.',
       done: '도심 신호등이 하나둘 제자리로 돌아왔다. 초록불이 켜지자 사람들이 건널목을 건넜다.' },
-    { dans: [5], region: 'country', time: 'day', weather: 'clear', fix: '버스 시간표', name: '엉뚱한 시골 버스',
+    { dans: [5], region: 'country', time: 'day', weather: 'clear', fix: '버스 시간표', foes: { buggy: true, traffic: 1.3 }, name: '엉뚱한 시골 버스',
       go: '시골 버스가 5분마다 와야 하는데 50분째 안 와. 5단을 알려 주자.', hint: '5단은 끝자리가 늘 5 아니면 0이야.',
       done: '정류장 시간표가 바로잡혔다. 할머니가 장바구니를 들고 제시간에 온 버스에 올랐다.' },
-    { dans: [3], region: 'creek', time: 'day', weather: 'clear', fix: '다리 차단기', name: '열리지 않는 다리',
+    { dans: [3], region: 'creek', time: 'day', weather: 'clear', fix: '다리 차단기', foes: { drones: 0.4, traffic: 1.3 }, name: '열리지 않는 다리',
       go: '개울 다리 차단기가 숫자를 까먹어서 안 올라가. 3단으로 열어 보자.', hint: '3단은 3씩 커져. 3, 6, 9 다음은 12야.',
       done: '차단기가 스르르 올라갔다. 개울 건너 마을로 우유 트럭이 지나갔다.' },
-    { dans: [6], region: 'mountain', time: 'sunset', weather: 'clear', fix: '케이블카', name: '멈춘 케이블카',
+    { dans: [6], region: 'mountain', time: 'sunset', weather: 'clear', fix: '케이블카', foes: { drones: 0.5, buggy: true, traffic: 1.25 }, name: '멈춘 케이블카',
       go: '산 위 케이블카가 몇 번째 칸인지 몰라 멈춰 버렸어. 6단이야.', hint: '6단은 3단의 두 배야. 3×4가 12니까 6×4는 24.',
       done: '케이블카가 다시 움직였다. 노을 진 산 위에서 손을 흔드는 사람들이 보였다.' },
-    { dans: [4], region: 'highway', time: 'day', weather: 'rain', fix: '톨게이트', name: '헷갈린 톨게이트',
+    { dans: [4], region: 'highway', time: 'day', weather: 'rain', fix: '톨게이트', foes: { drones: 0.6, strike: 0.3, traffic: 1.2 }, name: '헷갈린 톨게이트',
       go: '고속도로 톨게이트가 요금을 엉터리로 받고 있어. 4단을 지나가 줘. 비가 오니까 천천히.', hint: '4단은 2단의 두 배야. 2×7이 14니까 4×7은 28.',
       done: '톨게이트 화면에 숫자가 똑바로 떴다. 막혀 있던 차들이 빗속을 천천히 빠져나갔다.' },
-    { dans: [8], region: 'offroad', time: 'day', weather: 'clear', fix: '택배 창고', name: '뒤죽박죽 택배 창고',
+    { dans: [8], region: 'offroad', time: 'day', weather: 'clear', fix: '택배 창고', foes: { drones: 0.6, kami: 0.4, buggy: true, traffic: 1.2 }, name: '뒤죽박죽 택배 창고',
       go: '숲속 택배 창고가 상자 개수를 다 틀리게 세고 있어. 8단이야, 조금 어려워.', hint: '8단은 4단의 두 배야. 8×5는 40, 거기서 8씩 더하거나 빼 봐.',
       done: '창고 로봇이 상자를 여덟 개씩 가지런히 쌓았다. 기다리던 택배가 하나씩 출발했다.' },
-    { dans: [7], region: 'snow', time: 'day', weather: 'snow', fix: '제설차', name: '길 잃은 제설차',
+    { dans: [7], region: 'snow', time: 'day', weather: 'snow', fix: '제설차', foes: { drones: 0.7, kami: 0.5, strike: 0.4, traffic: 1.2 }, name: '길 잃은 제설차',
       go: '눈길 제설차들이 몇 번 왔다 갔다 할지 몰라서 서 있어. 7단을 알려 주자. 눈길이라 미끄러워.', hint: '7단이 제일 헷갈려. 7×7은 49, 7×8은 56. 5, 6, 7, 8 순서로 기억해!',
       done: '제설차가 눈을 밀며 고갯길을 올라갔다. 하얀 길 위로 까만 찻길이 열렸다.' },
-    { dans: [9], region: 'coast', time: 'sunset', weather: 'clear', fix: '등대', name: '꺼진 등대',
+    { dans: [9], region: 'coast', time: 'sunset', weather: 'clear', fix: '등대', foes: { drones: 0.8, kami: 0.6, strike: 0.6, buggy: true, traffic: 1.1 }, name: '꺼진 등대',
       go: '바닷가 등대가 몇 초마다 깜빡일지 몰라서 꺼져 있어. 9단이야.', hint: '9단은 십의 자리와 일의 자리를 더하면 늘 9야. 9×4는 36, 3 더하기 6은 9!',
       done: '등대 불빛이 바다를 비췄다. 멀리서 고깃배들이 불빛을 따라 돌아왔다.' },
-    { dans: [1, 2, 3, 4, 5, 6, 7, 8, 9], region: 'city', time: 'night', weather: 'clear', fix: '마성의 계산 칩', name: '마성 타워', last: true,
+    { dans: [1, 2, 3, 4, 5, 6, 7, 8, 9], region: 'city', time: 'night', weather: 'clear', fix: '마성의 계산 칩', foes: { drones: 1, kami: 0.7, strike: 0.8, buggy: true, traffic: 1.1, strikes: ['lane', 'cross', 'diag', 'chase', 'cluster'] }, name: '마성 타워', last: true,
       go: '마지막이야. 마성 타워 앞 갈림길에는 1단부터 9단까지 다 나와. 지금까지 한 대로만 하면 돼.', hint: '1단은 곱한 수 그대로야. 1×7은 7. 거의 다 왔어!',
       done: '타워 꼭대기에 불이 들어왔다. 마성의 목소리가 스피커에서 흘러나왔다. “고마워요. 이제 잊지 않을게요.”' }
   ];
@@ -5381,7 +5409,8 @@ body.cine #card { bottom: 9%; }
     m = condMission('free');
     for (k in keep) cond[k] = keep[k];
     m.kind = 'story'; m.goal = 'quiz'; m.name = (i + 1) + '장 ' + ch.name; m.label = ch.fix;
-    m.traffic = 0; m.farm = 0; m.road = { order: ['hill'], gap: [300, 420] };
+    m.farm = ch.region === 'country' ? 1 : 0; m.road = { order: ['hill'], gap: [300, 420] };
+    quizFoes(m, ch.foes);
     m.quiz = { dans: ch.dans, type: save.story.tries && save.story.tries[i] ? 'mix' : 'seq', pace: save.quiz.sel.pace };
     if (ch.last) m.quiz.type = 'mix';
     m.aim = '새벽: “' + ch.go + '”';
@@ -5394,15 +5423,15 @@ body.cine #card { bottom: 9%; }
     quiz.hinted = radio('새벽', CHAPTERS[runMission].hint, 5);
   }
   /* after a chapter run: stars, the next chapter, the scene. Called from quizResult */
-  function storyAfter(sc) {
-    var i = runMission, ch = CHAPTERS[i], st = chapterStars(sc), was = save.story.stars[i] || 0;
+  function storyAfter(sc, win) {
+    var i = runMission, ch = CHAPTERS[i], st = win ? chapterStars(sc) : 0, was = save.story.stars[i] || 0;
     save.story.tries[i] = (save.story.tries[i] || 0) + 1;
     if (st > was) save.story.stars[i] = st;
     if (st && i + 1 > (save.story.open || 0)) save.story.open = Math.min(CHAPTERS.length - 1, i + 1);
     if (st && ch.last) save.story.done = true;
     storeSave();
     $('res-title').textContent = st ? objJosa(ch.fix) + ' 고쳤다! ' + '★★★'.slice(0, st) : '조금만 더!';
-    $('res-story').textContent = st ? ch.done : '새벽: “괜찮아, 틀린 건 다음에 더 자주 나와. 한 번 더 해 보자.” (10문제 가운데 7문제를 맞히면 다음 장이 열려요)';
+    $('res-story').textContent = st ? ch.done : !win ? '오 사장: “막내야, 차는 내가 금방 고친다. 다시 가 봐.” (' + failWhy + ')' : '새벽: “괜찮아, 틀린 건 다음에 더 자주 나와. 한 번 더 해 보자.” (10문제 가운데 7문제를 맞히면 다음 장이 열려요)';
     $('res-next').textContent = '다음 장';
     $('res-next').hidden = !(st && !ch.last);
     $('res-ending').hidden = !(st && ch.last);
@@ -5850,7 +5879,7 @@ body.cine #card { bottom: 9%; }
     var cn = CARS[player.car].name, got = win ? scrap : Math.floor(scrap / 20) * 10, bonus, tNow = +tPlay.toFixed(2), newRec = false, snd = '', N = function (v) { return v.toLocaleString('ko-KR'); };
     var kmNow = (dist0() / 1000).toFixed(2) + ' km', half = '모은 고철의 절반 ' + got;
     $('res-next').hidden = true; $('res-ending').hidden = true;
-    if (quizRun()) snd = quizResult();
+    if (quizRun()) snd = quizResult(win);
     else if (runKind === 'race') {
       var rk = win ? raceRank() : 0, rr0 = save.race[runTA] || (save.race[runTA] = { rank: 0, t: 0, car: '' }), better = win && (!rr0.rank || rk < rr0.rank || (rk === rr0.rank && tNow < rr0.t));
       if (better) { rr0.rank = rk; rr0.t = tNow; rr0.car = player.car; }
@@ -6265,7 +6294,7 @@ body.cine #card { bottom: 9%; }
   });
   $('kinds').addEventListener('click', function (e) { var b = hit(e.target, 'data-kind'); if (!b) return; sfx('click'); setKind(b.getAttribute('data-kind')); });
   $('title-kinds').addEventListener('click', function (e) { var b = hit(e.target, 'data-kind'); if (!b) return; sfx('click'); selKind = b.getAttribute('data-kind'); toMenu(); setTab('mode'); });
-  [['dan', 'opt-dan'], ['type', 'opt-qtype'], ['pace', 'opt-pace']].forEach(function (p) {
+  [['dan', 'opt-dan'], ['type', 'opt-qtype'], ['pace', 'opt-pace'], ['foe', 'opt-foe']].forEach(function (p) {
     $(p[1]).addEventListener('change', function () { save.quiz.sel[p[0]] = $(p[1]).value; storeSave(); sfx('click'); renderQuiz(); renderFoot(); });
   });
   ['region', 'time', 'weather'].forEach(function (k) {
@@ -6395,7 +6424,7 @@ body.cine #card { bottom: 9%; }
   }
   function spawner(dt) {
     var agg = aggK();
-    if (mission.goal === 'tut' || mission.goal === 'quiz') return;   /* driving practice and the quiz: only what they put on the road themselves */
+    if (mission.goal === 'tut' || mission.noFoes) return;   /* driving practice, and a quiz with only the gates: nothing else on the road */
     if (mission.farm) {
       /* country roads: a walking tractor now and then, far slower than everything else */
       farmT -= dt * Math.max(0.75, veff / 38);
@@ -6421,11 +6450,11 @@ body.cine #card { bottom: 9%; }
       kamiT -= dt;
       if (kamiT <= 0) { kamiT = rnd(7, 11) / mission.kami; spawnEnemy('kami', clamp(player.x + rnd(-4, 4), -6.5, 6.5), -125, 0); }
     }
-    if (mission.strike > 0 && !roofed) {
+    if (mission.strike > 0 && !roofed && !(quizRun() && quiz.phase === 'ask')) {   /* no bombing while the gates come: the answer's lane must be safe to take */
       strikeT -= dt;
       if (strikeT <= 0) { strikeT = rnd(5.5, 8.5) / mission.strike; airStrike(); }
     }
-    if (mission.dir > 0 && (runKind === 'mis' || runKind === 'surv') && agg >= 0.75 && mission.chasers !== 0 && mission.goal !== 'duel' && mission.goal !== 'escort') {
+    if (mission.dir > 0 && (runKind === 'mis' || runKind === 'surv' || quizRun()) && agg >= 0.75 && mission.chasers !== 0 && mission.goal !== 'duel' && mission.goal !== 'escort') {
       chaseT -= dt;
       if (chaseT <= 0) { chaseT = rnd(10, 16) / (agg * (mission.chasers || 1)); if (enemies.length < 15) spawnChaser(player.x); }
     }
@@ -7256,7 +7285,7 @@ body.cine #card { bottom: 9%; }
         sec: s ? s.type : '-', slope: +slopeAt(dist).toFixed(3), fire: fireIn, title: titleOn, paused: paused, dist: dist0(), t: +tPlay.toFixed(1), won: won, why: failWhy, cam: save.cam, cock: cockpit.visible, ta: runTA, tun: +tunK.toFixed(2), bombs: bombs.length, hulks: hulks.length, picks: picks, hunts: hunts, dmg: dmgLog, bcd: +(player.bcd || 0).toFixed(1), dstage: dmgStage, tut: tut.i, tutSeen: save.tut, caption: $('caption').hidden ? '' : $('caption').textContent, coach: $('coach').hidden ? '' : $('coach-do').textContent, hulkList: hulks.map(function (h) { return [+h.m.position.x.toFixed(1), +h.m.position.z.toFixed(1), +h.t.toFixed(2), h.hit ? 1 : 0].join('/'); }).join(' '), eb: ebullets.length, ebNear: ebullets.reduce(function (m, b) { var q = b.m.position; return Math.min(m, Math.round(Math.sqrt((q.x - player.x) * (q.x - player.x) + q.z * q.z))); }, 999), basic: CARS[player.car].basic, horn: +hornT.toFixed(1), boost: +player.boost.toFixed(1), limit: rushLimit, tire: playerTire, agg: +aggK().toFixed(2), susp: [+susp.f.toFixed(3), +susp.r.toFixed(3), +playerRoot.rotation.x.toFixed(3)], buffs: buffText(CARS[player.car]), cd: +player.cd.toFixed(1), gfxNow: gfxNow, sfxOn: sfxOn, kind: runKind, region: region.key, wx: weather.key, surf: sfc.key, grip: +sfc.grip.toFixed(2), cap: +sfc.cap.toFixed(2), rank: rivals.length ? raceRank() : 0, level: survLevel, cover: +snowCover.toFixed(2), gust: +gust.v.toFixed(1), fade: +tr.fade.toFixed(2), scn: sceneryNow.length, thr: +player.thr.toFixed(2), sel: selKind, shot: shotName, phase: tr.phase, mis: runMission, power: power, guns: guns.map(function (g) { return g.w; }).join('+') };
     },
     env: function () { mixEnv(1); },
-    quiz: function () { return quiz; }
+    quiz: function () { return quiz; }, dmg: function () { return dmgLog; }
   };
 })();
 </script>

@@ -2,8 +2,8 @@
   /* ---------- story and driving practice: who the player is, why they drive, and the first drive that teaches the controls ---------- */
   var STORY = [
     ['한울시의 아침', '한울시에서는 승용차도, 버스도, 신호등도 관제 AI 「마성」이 움직인다. 당신은 전설 카센터의 막내 정비사다. 고친 차를 시운전하느라, 이 도시에서 몇 안 남은 운전할 줄 아는 사람이다.'],
-    ['마성이 계산을 까먹은 날', '오늘 아침, 마성이 숫자를 까먹었다. 신호등은 7초인지 70초인지 몰라 깜빡이고, 버스는 엉뚱한 정류장에 선다. 마성은 길마다 「숫자 갈림길」을 세워 놓고 누가 맞는 답을 알려 주기를 기다린다.'],
-    ['맞는 문으로 지나가기', '관제사 새벽이 무전으로 말했다. “갈림길마다 답이 적힌 문이 있어. 맞는 문으로 지나가면 마성이 다시 기억해. 틀려도 괜찮아, 다음에 또 나오니까.” 오 사장은 차 열쇠를 건넸다. 먼저 카센터 앞 길에서 운전부터 익힌다.']
+    ['마성이 계산을 까먹은 날', '오늘 아침, 마성이 숫자를 까먹었다. 신호등은 7초인지 70초인지 몰라 깜빡이고, 버스는 엉뚱한 정류장에 선다. 마성은 길마다 「숫자 갈림길」을 세웠고, 마성에 묶인 차와 드론은 엉뚱하게 날뛰며 지나가는 차에 덤벼든다.'],
+    ['맞는 문으로 지나가기', '관제사 새벽이 무전으로 말했다. “갈림길마다 답이 적힌 문이 있어. 맞는 문으로 지나가면 마성이 다시 기억해. 틀려도 괜찮아, 다음에 또 나오니까.” 오 사장은 통신 모듈을 뗀 차에 방어 장비를 달아 주었다. “덤비는 놈들은 쏴서 멈춰 세워. 그래도 문은 꼭 맞는 데로 지나가라.” 먼저 카센터 앞 길에서 운전부터 익힌다.']
   ], STORY_DONE = ['운전 연습 끝', '새벽: “전설 하나, 운전은 됐어. 첫 갈림길은 도심이야. 신호등이 2단을 까먹었대.” 오 사장: “막내야, 천천히 다녀와라. 틀려도 혼 안 낸다.”'];
   var storyI = 0, storyMode = 'intro';
   function storyShow() {
@@ -28,15 +28,28 @@
   var tut = { i: -1, t: 0, L: false, R: false, k0: 0, sp: 0, item: false, cT: 0, hump: 0, tries: 0 };
   function tutMission() {
     return { kind: 'tut', name: '운전 연습', region: 'city', weather: 'clear', time: 'day', timeLabel: '낮', dir: 1, goal: 'tut', n: TUT.length, civ: 0, civLimit: 0, drones: 0, strike: 0, kami: 0, buggy: false, traffic: 1, chasers: 0, farm: 0,
-      road: { order: ['hill'], gap: [420, 560] }, label: '운전 연습', why: '전설 카센터 앞 도로. 아직 갈림길이 없는 조용한 길이다.', aim: '오 사장과 새벽의 말을 따라 속도와 차로 바꾸기를 익힌다. 연습 중에는 차가 부서지지 않는다.', win: '', lose: '', done: '' };
+      road: { order: ['hill'], gap: [420, 560] }, label: '운전 연습', why: '전설 카센터 앞 도로. 아직 갈림길도, 날뛰는 차도 없는 조용한 길이다.', aim: '오 사장과 새벽의 말을 따라 운전, 무기, 기술을 차례로 익힌다. 연습 중에는 차가 부서지지 않는다.', win: '', lose: '', done: '' };
   }
   function tutTouch() { return touchUI || vw <= 720; }
-  /* driving practice: speed and lanes. The first gates come in chapter 1, with 2단 in order */
   var TUT = [
     { who: '오 사장', line: '막내야, 시동 걸었으면 속도부터 올려 봐. 이 차들은 밟는다고 바로 튀어 나가지 않는다.', key: '↑ 를 누르고 있기', touch: '왼쪽 아래 레버를 위로 올리기', goal: function (car) { return '시속 ' + Math.round(Math.min(100, car.vmax * 3.6 * 0.8)) + ' km 넘기기'; },
       check: function (car) { return veff * 3.6 >= Math.min(100, car.vmax * 3.6 * 0.8); } },
     { who: '새벽', line: '전설 하나, 들려? 새벽이야. 길은 내가 읽어 줄게. 먼저 차로를 바꿔 봐.', key: '← →', touch: '화면 오른쪽을 좌우로 끌기', goal: function () { return '맨 왼쪽 차로와 맨 오른쪽 차로를 한 번씩 밟기' + (tut.L ? ' (왼쪽 완료)' : '') + (tut.R ? ' (오른쪽 완료)' : ''); },
-      enter: function () { tut.L = tut.R = false; }, tick: function () { if (player.x < -4.6) tut.L = true; if (player.x > 4.6) tut.R = true; }, check: function () { return tut.L && tut.R; } }
+      enter: function () { tut.L = tut.R = false; }, tick: function () { if (player.x < -4.6) tut.L = true; if (player.x > 4.6) tut.R = true; }, check: function () { return tut.L && tut.R; } },
+    { who: '오 사장', line: '무기는 공격 키를 누르고 있는 동안 나간다. 손을 떼면 총도 쉰다. 앞에 굴러다니는 마성의 오토바이로 시험해 봐.', lineT: '무기는 레버를 잡고 있는 동안에만 나간다. 손을 떼면 총도 쉰다. 앞에 굴러다니는 마성의 오토바이로 시험해 봐.', key: 'Z 를 누른 채 오토바이와 같은 차로에 서기', touch: '레버를 누른 채 오토바이와 같은 차로에 서기', goal: function () { return '오토바이 ' + Math.min(3, kills - tut.k0) + ' / 3대 부수기'; },
+      enter: function () { tut.k0 = kills; tut.sp = 0; },
+      tick: function (dt) { tut.sp -= dt; if (tut.sp <= 0 && !enemies.some(function (e) { return e.type === 'bike'; })) { tut.sp = 2.5; for (var b = 0; b < 3; b++) spawnEnemy('bike', clamp(player.x + (b - 1) * 1.4, -6.6, 6.6), -95 - b * 5, Math.max(8, veff - 9)); } },
+      check: function () { return kills - tut.k0 >= 3; } },
+    { who: '새벽', line: '앞에 보급 상자가 있어. 쏘면 내용물이 바뀌고, 지나가면서 닿으면 먹어. 필요한 게 나올 때까지 쏘는 거야.', key: '상자를 쏴서 바꾸고, 같은 차로로 지나가기', touch: '상자를 쏴서 바꾸고, 같은 차로로 지나가기', goal: function () { return '보급 상자 먹기'; },
+      enter: function () { tut.item = false; tut.cT = 0; if (!crate.active) spawnCrate(); }, tick: function (dt) { if (!crate.active && !tut.item) { tut.cT += dt; if (tut.cT > 1.2) { tut.cT = 0; spawnCrate(); } } }, check: function () { return tut.item; } },
+    { who: '오 사장', line: '급할 때는 기본 기술이다. 차 종류마다 다르고, 몇 초면 다시 쓸 수 있어.', key: 'X', touch: '오른쪽 아래의 작은 버튼', goal: function (car) { return '기본 기술 「' + BASICS[car.basic].name + '」 쓰기'; }, check: function () { return player.bcd > 0; } },
+    { who: '새벽', line: '고유 기술은 그 차만의 필살기야. 세지만 다시 쓰려면 오래 기다려야 해. 아껴 뒀다가 몰렸을 때 써.', key: 'Space', touch: '오른쪽 아래의 큰 버튼', goal: function (car) { return '고유 기술 「' + car.skillName + '」 쓰기'; }, check: function () { return player.cd > 0; } },
+    { who: '오 사장', line: '저 앞에 방지턱이다. 빠르게 넘으면 차가 튀고 속도를 잃는다. 줄여서 넘어.', key: '↓ 로 감속', touch: '레버를 아래로 내려 감속', goal: function () { return '시속 60 km 아래로 방지턱 넘기' + (tut.missed ? ' (턱을 비켜 갔다. 다음 턱은 넘어서 가기)' : (tut.tries ? ' (너무 빨랐다. 다음 턱에서 다시)' : '')); },
+      enter: function () { tut.hump = 0; tut.tries = 0; tut.missed = false; tutHump(); },
+      tick: function () {
+        if (tut.hump < 0) { tut.hump = 0; tut.tries++; tut.missed = false; tutHump(); tutCoach(); }
+        else if (tut.hump === 0 && dist > tut.humpD + 14) { tut.missed = true; tutHump(); tutCoach(); }   /* driven around it: the next one comes in the lane the car is in */
+      }, check: function () { return tut.hump > 0; } }
   ];
   function tutHump() { tut.humpD = dist + 190; addProp('hump', tut.humpD, clamp(player.x, -6.4, 6.4), { solid: { hw: 3.4, hl: 0.2, kind: 'hump', soft: 1 } }); }
   function tutCoach() {

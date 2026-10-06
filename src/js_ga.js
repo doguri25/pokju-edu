@@ -166,7 +166,7 @@
 
   /* progress: scrap, unlocked cars, cleared missions and loadouts are kept in this browser only */
   var SAVE_KEY = 'pokju-edu-v1';
-  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: false, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true, quiz: { sel: { dan: '2', type: 'seq', pace: 'mid' }, facts: {}, runs: [] }, story: { open: 0, stars: {}, tries: {}, done: false } };
+  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: false, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true, quiz: { sel: { dan: '2', type: 'seq', pace: 'mid', foe: 'on' }, facts: {}, runs: [] }, story: { open: 0, stars: {}, tries: {}, done: false } };
   var W_PRICE = { mg: 0, bolt: 500, laser: 600, shotgun: 400, flame: 500, saw: 300, water: 500, cannon: 700, missile: 800, mine: 400 }, UP_PRICE = [0, 400, 900];
   function loadSave() {
     try {
@@ -195,6 +195,7 @@
           if (DAN_OPTS.some(function (o) { return o[0] === qs.dan; })) save.quiz.sel.dan = qs.dan;
           if (QUIZ_TYPES[qs.type]) save.quiz.sel.type = qs.type;
           if (QUIZ_PACE[qs.pace]) save.quiz.sel.pace = qs.pace;
+          if (qs.foe === 'off') save.quiz.sel.foe = 'off';
           if (s.quiz.facts && typeof s.quiz.facts === 'object') save.quiz.facts = s.quiz.facts;
           if (Array.isArray(s.quiz.runs)) save.quiz.runs = s.quiz.runs.slice(-30);
         }
@@ -220,7 +221,9 @@
   function tireOf(carKey) { var k = save.tire[carKey]; return k && TIRES[k] && tireOwned(k) ? k : 'allseason'; }
   /* how hard the enemy presses: the story starts gentle and grows with every mission; the other modes sit at fixed levels */
   function aggK() {
-    if (mode === 'menu' || runKind === 'free' || quizRun() || runKind === 'tut') return 0;
+    if (mode === 'menu' || runKind === 'free' || runKind === 'tut') return 0;
+    if (runKind === 'story') return 0.62 + 0.05 * runMission;   /* the chapters grow like the missions did */
+    if (runKind === 'quiz') return 0.8;
     if (runKind === 'mis') return runMission < 18 ? 0.65 + 0.03 * runMission : Math.min(1.3, 1.16 + 0.012 * (runMission - 17));
     if (runKind === 'surv') return Math.min(1.5, 0.7 + 0.1 * survLevel);
     return 1;
@@ -291,7 +294,7 @@
     if (mode === 'demo') d *= 0.3;
     if (d <= 0) return;
     dmgLog[kind || 'etc'] = Math.round(((dmgLog[kind || 'etc'] || 0) + d) * 10) / 10;
-    if ((runKind === 'free' || quizRun() || runKind === 'tut') && mode === 'play') { hitFlash = 0.6; shake = Math.min(1.2, shake + 0.3); sfx('hurt'); return; }   /* free driving: a knock, but no damage */
+    if ((runKind === 'free' || runKind === 'tut') && mode === 'play') { hitFlash = 0.6; shake = Math.min(1.2, shake + 0.3); sfx('hurt'); return; }   /* free driving: a knock, but no damage */
     if (player.shield > 0) {
       player.shield = 0; player.shieldT = 10;
       spawnP('glow', player.x, 1.4, 0, 0, 0, 0, 0.35, 5, 12, COL.blue, 0.9, 0);
