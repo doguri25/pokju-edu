@@ -37,6 +37,7 @@
       if (!gone && crate.active && b.hits.indexOf(crate) < 0 && Math.abs(p.x - crate.g.position.x) < 1.0 && Math.abs(p.z - crate.g.position.z) < 1.6 && p.y < 3) {
         b.hits.push(crate); crateHit(b.dmg); if (!b.K.pierce) gone = true;
       }
+      if (!gone && quizShot(p, b) && !b.K.pierce) gone = true;
       for (k = enemies.length - 1; k >= 0 && !gone; k--) {
         e = enemies[k];
         if (e.cfg.civ || (e.cfg.air ? p.y < 3.2 : p.y > 3.4)) continue;

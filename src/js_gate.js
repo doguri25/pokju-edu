@@ -45,14 +45,16 @@
     quiz.g.banners.forEach(function (b, i) { if (i !== q.slot) { gateTex(b.c, q.opts[i], QG_COL[i], true); b.tx.needsUpdate = true; } });
   }
   function quizOff() {
-    for (var k in gateSets) gateSets[k].g.visible = false;
-    quiz.phase = 'off'; quiz.g = null; quiz.q = null; $('qbox').hidden = true;
+    var k;
+    for (k in gateSets) gateSets[k].g.visible = false;
+    for (k in balloonSets) balloonSets[k].g.visible = false;
+    quiz.phase = 'off'; quiz.g = null; quiz.b = null; quiz.q = null; $('qbox').hidden = true;
   }
   function danLabel(dans) {
     if (dans.length === 8) return '2단~9단';
     return dans.map(function (d) { return d + '단'; }).join('·');
   }
-  function quizSel() { var s = save.quiz.sel; return { dans: s.dan === 'all' ? [2, 3, 4, 5, 6, 7, 8, 9] : s.dan.split(',').map(Number), type: s.type, pace: s.pace, foe: s.foe !== 'off' }; }
+  function quizSel() { var s = save.quiz.sel; return { dans: s.dan === 'all' ? [2, 3, 4, 5, 6, 7, 8, 9] : s.dan.split(',').map(Number), type: s.type, pace: s.pace, foe: s.foe !== 'off', style: s.style === 'shoot' ? 'shoot' : 'gate' }; }
   /* enemies on a quiz road, as in the original missions: f = { drones, kami, strike, buggy, traffic }. null: only the gates */
   function quizFoes(m, f) {
     m.drones = f ? f.drones || 0 : 0; m.kami = f ? f.kami || 0 : 0; m.strike = f ? f.strike || 0 : 0; m.buggy = f ? !!f.buggy : false;
@@ -65,7 +67,7 @@
     m.kind = 'quiz'; m.goal = 'quiz'; m.name = '구구단 ' + danLabel(o.dans); m.label = QUIZ_TYPES[o.type].name; m.quiz = o;
     m.farm = o.foe && m.region === 'country' ? 0.6 : 0; m.road = { order: ['hill'], gap: [300, 420] };
     quizFoes(m, o.foe ? { drones: 0.5, buggy: true, traffic: 1.2 } : null);
-    m.aim = '문제를 보고 정답이 적힌 깃발 문으로 지나간다.' + (o.foe ? ' 덤비는 폭주 차량과 드론은 쏴서 막는다.' : '') + ' 틀린 문제는 끝에 한 번 더 나온다.';
+    m.aim = (o.style === 'shoot' ? '문제를 보고 정답이 적힌 풍선을 쏘아 맞힌다.' : '문제를 보고 정답이 적힌 깃발 문으로 지나간다.') + (o.foe ? ' 덤비는 폭주 차량과 드론은 쏴서 막는다.' : '') + ' 틀린 문제는 끝에 한 번 더 나온다.';
     return m;
   }
   function quizRun() { return runKind === 'quiz' || runKind === 'story'; }
@@ -73,7 +75,7 @@
     var o = mission.quiz || quizSel();
     quizOff();
     quiz.deck = quizDeck({ dans: o.dans, type: o.type, n: 10, stats: save.quiz.facts });
-    quiz.pace = QUIZ_PACE[o.pace] || QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0; quiz.hinted = false;
+    quiz.style = o.style === 'shoot' && EDU.arms ? 'shoot' : 'gate'; quiz.pace = QUIZ_PACE[o.pace] || QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0; quiz.hinted = false;
     quiz.phase = 'wait'; quiz.t = 0.8;
   }
   function qboxSet(kick, text, cls, q) {
@@ -83,36 +85,92 @@
     $('q-opts').innerHTML = h; $('q-opts').hidden = !q;
     $('qbox').hidden = false;
   }
+  /* 맞히기: the options come as numbered balloons, one over each part of the road. They drift in, hover ahead for the time to think, then come on;
+     shooting one picks it, and if none is shot the one the car drives into is the pick (so a car with only a saw or missiles can still answer) */
+  var QB_HOLD = -27, balloonSets = {};
+  function balloonSet(n) {
+    if (balloonSets[n]) return balloonSets[n];
+    var g = new T.Group(), W = 2 * QG_EDGE / n, s = { g: g, n: n, W: W, items: [] }, i;
+    for (i = 0; i < n; i++) {
+      var col = parseInt(QG_COL[i].slice(1), 16), b = new T.Group(), x = -QG_EDGE + W * (i + 0.5);
+      var ball = new T.Mesh(new T.SphereGeometry(0.85, 16, 12), std(col, 0.35)); ball.scale.y = 1.15; ball.position.y = 3.3; ball.castShadow = true; b.add(ball);
+      b.add(cyl(0.02, 0.02, 1.3, 4, M.white, 0, 2.05, 0));
+      var c = document.createElement('canvas'); c.width = 256; c.height = 128;
+      var tx = new T.CanvasTexture(c); tx.encoding = T.sRGBEncoding;
+      var bw = Math.min(W - 0.6, 3.2), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
+      m.position.y = 1.35; b.add(m);
+      b.position.x = x; g.add(b);
+      s.items.push({ g: b, c: c, tx: tx, x: x, hw: bw / 2, hp: 0, popped: false });
+    }
+    g.visible = false; scene.add(g);
+    return (balloonSets[n] = s);
+  }
+  function balloonsShow(q) {
+    var s = balloonSet(q.n);
+    s.items.forEach(function (it, i) { gateTex(it.c, q.opts[i], QG_COL[i], false); it.tx.needsUpdate = true; it.hp = 0; it.popped = false; it.g.visible = true; });
+    s.g.visible = true; s.g.position.set(0, 0, -95); quiz.b = s;
+  }
+  /* called for every player bullet: true when it hit a balloon */
+  function quizShot(p, b) {
+    var s = quiz.b, i;
+    if (!s || quiz.phase !== 'ask' || p.y > 3.9) return false;
+    var z = s.g.position.z;
+    if (Math.abs(p.z - z) > 1.6) return false;
+    for (i = 0; i < s.items.length; i++) {
+      var it = s.items[i];
+      if (it.popped || b.hits.indexOf(it) >= 0 || Math.abs(p.x - it.x) > it.hw) continue;
+      b.hits.push(it); it.hp += b.dmg;
+      spawnP('glow', it.x, 1.4, z, 0, 0, 0, 0.15, 1.5, 3, COL.white, 0.8, 0);
+      if (it.hp >= 3) quiz.shotPick = i;
+      return true;
+    }
+    return false;
+  }
+  function quizJudge(picked, px, car) {
+    var dk = quiz.deck, q = quiz.q, first = dk.i <= dk.main, ok = quizAnswer(dk, q, picked);
+    if (first) factRecord(save.quiz.facts, q.key, ok);
+    if (quiz.g) gatesDim(q, picked);
+    if (quiz.b) quiz.b.items.forEach(function (it, i) { if (i !== q.slot) { gateTex(it.c, q.opts[i], QG_COL[i], true); it.tx.needsUpdate = true; } if (i === picked) { it.popped = true; it.g.visible = false; spawnRing(it.x, quiz.b.g.position.z, 5, 0.35, veff, i === q.slot ? COL.cyan : COL.orange); } });
+    if (ok) {
+      if (first) quiz.ok++; quiz.combo++; quiz.best = Math.max(quiz.best, quiz.combo); score += 100 + 20 * Math.min(quiz.combo - 1, 5); scrap += 20;
+      buff.nitro = Math.max(buff.nitro, 1.2); sfx('item');
+      if (EDU.arms) player.hp = Math.min(car.hp, player.hp + car.hp * 0.2);   /* a right answer repairs a fifth of the car: solving keeps you on the road */
+      spawnRing(px, 0, 9, 0.45, 0, COL.cyan); spawnP('glow', px, 1.4, 0, 0, 0, 0, 0.4, 4, 12, COL.cyan, 0.9, 0);
+      qboxSet((quiz.combo >= 3 ? quiz.combo + '개 연속 정답!' : '정답!') + (EDU.arms ? ' · 수리 +20%' : ''), q.full, 'ok');
+    } else {
+      quiz.combo = 0; player.v = Math.max(car.vmin, player.v * 0.7); sfx('thud');
+      qboxSet(first ? '정답은 이거예요 · 끝에 한 번 더 나와요' : '정답은 이거예요', q.full, 'no');
+    }
+    quiz.phase = 'show'; quiz.t = ok ? 1.6 : 2.4;
+  }
   function quizStep(dt, px, car) {
     if (quiz.phase === 'off' || mode !== 'play' || briefT > 0 || player.dead) return;
-    var dk = quiz.deck, q = quiz.q;
+    var dk = quiz.deck, q = quiz.q, bs = quiz.b;
     if (quiz.g) { quiz.g.g.position.z = dist - quiz.d; if (quiz.phase !== 'ask' && quiz.g.g.position.z > 40) { quiz.g.g.visible = false; quiz.g = null; } }
+    if (bs) {
+      var bz = bs.g.position.z;
+      if (quiz.phase === 'ask') {
+        if (bz < QB_HOLD && quiz.hold > 0) bs.g.position.z = Math.min(QB_HOLD, bz + Math.max(18, veff) * dt);   /* drift in */
+        else if ((quiz.hold -= dt) <= 0) bs.g.position.z = bz + veff * dt;                                       /* time is up: they come on */
+      } else { bs.g.position.z = bz + veff * dt; if (bs.g.position.z > 30) { bs.g.visible = false; quiz.b = null; } }
+      bs.items.forEach(function (it, i) { it.g.position.y = Math.sin(time * 2 + i) * 0.15; });
+    }
     quiz.t -= dt;
     if (quiz.phase === 'wait' && quiz.t <= 0) {
       q = quiz.q = quizNext(dk);
       if (!q) { quiz.phase = 'done'; finish(true); return; }
       var think = quiz.pace.t + QUIZ_TYPES[q.type].think;
-      quiz.d = dist + Math.max(70, veff * think); quiz.phase = 'ask';
-      if (quiz.g) quiz.g.g.visible = false;
-      gatesShow(q); quiz.g.g.position.set(0, 0, dist - quiz.d);
+      quiz.phase = 'ask'; quiz.shotPick = -1;
+      if (quiz.g) { quiz.g.g.visible = false; quiz.g = null; }
+      if (quiz.b) { quiz.b.g.visible = false; quiz.b = null; }
+      if (quiz.style === 'shoot') { balloonsShow(q); quiz.hold = think; }
+      else { quiz.d = dist + Math.max(70, veff * think); gatesShow(q); quiz.g.g.position.set(0, 0, dist - quiz.d); }
       qboxSet(dk.i > dk.main ? '다시 풀기' : '문제 ' + dk.i + ' / ' + dk.main, q.text, '', q);
       sfx('cycle'); storyRadio(dk);
-    } else if (quiz.phase === 'ask' && dist >= quiz.d) {
-      var picked = clamp(Math.floor((px + QG_EDGE) / quiz.g.W), 0, q.n - 1), first = dk.i <= dk.main, ok = quizAnswer(dk, q, picked);
-      if (first) factRecord(save.quiz.facts, q.key, ok);
-      gatesDim(q, picked);
-      if (ok) {
-        if (first) quiz.ok++; quiz.combo++; quiz.best = Math.max(quiz.best, quiz.combo); score += 100 + 20 * Math.min(quiz.combo - 1, 5); scrap += 20;
-        buff.nitro = Math.max(buff.nitro, 1.2); sfx('item');
-        if (EDU.arms) player.hp = Math.min(car.hp, player.hp + car.hp * 0.2);   /* a right answer repairs a fifth of the car: solving keeps you on the road */
-        spawnRing(px, 0, 9, 0.45, 0, COL.cyan); spawnP('glow', px, 1.4, 0, 0, 0, 0, 0.4, 4, 12, COL.cyan, 0.9, 0);
-        qboxSet((quiz.combo >= 3 ? quiz.combo + '개 연속 정답!' : '정답!') + (EDU.arms ? ' · 수리 +20%' : ''), q.full, 'ok');
-      } else {
-        quiz.combo = 0; player.v = Math.max(car.vmin, player.v * 0.7); sfx('thud');
-        qboxSet(first ? '정답은 이거예요 · 끝에 한 번 더 나와요' : '정답은 이거예요', q.full, 'no');
-      }
-      quiz.phase = 'show'; quiz.t = ok ? 1.6 : 2.4;
-    } else if (quiz.phase === 'show' && quiz.t <= 0) { quiz.phase = 'wait'; quiz.t = 0.6; $('qbox').hidden = true; }
+    } else if (quiz.phase === 'ask' && quiz.g && dist >= quiz.d) quizJudge(clamp(Math.floor((px + QG_EDGE) / quiz.g.W), 0, q.n - 1), px, car);
+    else if (quiz.phase === 'ask' && quiz.b && quiz.shotPick >= 0) quizJudge(quiz.shotPick, px, car);
+    else if (quiz.phase === 'ask' && quiz.b && quiz.b.g.position.z > -1.5) quizJudge(clamp(Math.floor((px + QG_EDGE) / quiz.b.W), 0, q.n - 1), px, car);
+    else if (quiz.phase === 'show' && quiz.t <= 0) { quiz.phase = 'wait'; quiz.t = 0.6; $('qbox').hidden = true; }
   }
   function quizObjective() {
     var dk = quiz.deck;
@@ -170,7 +228,7 @@
   function renderQuiz() {
     var s = save.quiz.sel, o = quizSel(), t = QUIZ_TYPES[o.type], p = QUIZ_PACE[o.pace];
     $('opt-dan').value = s.dan; $('opt-qtype').value = s.type; $('opt-pace').value = s.pace;
-    $('opt-foe').value = s.foe === 'off' ? 'off' : 'on';
-    $('quiz-brief').innerHTML = row('문제 수', o.type === 'seq' ? o.dans.length * 9 + '문제 (단마다 1부터 9까지)' : '10문제') + row('보기', '깃발 문 ' + t.opts + '개') +
-      row('생각할 시간', '문제가 나오고 문에 닿기까지 약 ' + (p.t + t.think) + '초') + row('틀리면', '차가 잠깐 느려지고 정답을 보여 준다. 그 문제는 끝에 한 번 더 나온다.');
+    $('opt-foe').value = s.foe === 'off' ? 'off' : 'on'; $('opt-style').value = o.style;
+    $('quiz-brief').innerHTML = row('문제 수', o.type === 'seq' ? o.dans.length * 9 + '문제 (단마다 1부터 9까지)' : '10문제') + row('보기', (o.style === 'shoot' ? '숫자 풍선 ' : '깃발 문 ') + t.opts + '개') + row('푸는 법', o.style === 'shoot' ? '정답 풍선을 쏘아 맞힌다. 못 쏘면 차가 들이받는 풍선이 답이 된다' : '정답이 적힌 문으로 지나간다') +
+      row('생각할 시간', (o.style === 'shoot' ? '풍선이 앞에 멈춰 기다리는 시간 약 ' : '문제가 나오고 문에 닿기까지 약 ') + (p.t + t.think) + '초') + row('틀리면', '차가 잠깐 느려지고 정답을 보여 준다. 그 문제는 끝에 한 번 더 나온다.');
   }

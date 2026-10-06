@@ -835,7 +835,7 @@
   });
   $('kinds').addEventListener('click', function (e) { var b = hit(e.target, 'data-kind'); if (!b) return; sfx('click'); setKind(b.getAttribute('data-kind')); });
   $('title-kinds').addEventListener('click', function (e) { var b = hit(e.target, 'data-kind'); if (!b) return; sfx('click'); selKind = b.getAttribute('data-kind'); toMenu(); setTab('mode'); });
-  [['dan', 'opt-dan'], ['type', 'opt-qtype'], ['pace', 'opt-pace'], ['foe', 'opt-foe']].forEach(function (p) {
+  [['dan', 'opt-dan'], ['type', 'opt-qtype'], ['pace', 'opt-pace'], ['foe', 'opt-foe'], ['style', 'opt-style']].forEach(function (p) {
     $(p[1]).addEventListener('change', function () { save.quiz.sel[p[0]] = $(p[1]).value; storeSave(); sfx('click'); renderQuiz(); renderFoot(); });
   });
   ['region', 'time', 'weather'].forEach(function (k) {
