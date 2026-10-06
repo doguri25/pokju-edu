@@ -4,17 +4,18 @@
     ta: { name: '타임어택', sub: '같은 길에서 기록 겨루기' },
     race: { name: '레이싱', sub: '경쟁 차량 5대와 순위 다툼' },
     surv: { name: '서바이벌', sub: '쓰러질 때까지 버티기' },
-    free: { name: '자유 주행', sub: '적 없이 마음대로 달리기' },
+    free: { name: '연습 주행', sub: '문제 없이 길과 차에 익숙해지기' },
     tut: { name: '운전 연습', sub: '조작과 이야기 익히기' }
   };
-  var KIND_ORDER = ['mis', 'ta', 'race', 'surv', 'free'], TIME_LABEL = { day: '낮', sunset: '노을', night: '밤' };
+  var KIND_ORDER = ['free'],   /* learning edition: the original modes stay in the code but are not offered; the quiz modes join this list */
+      TIME_LABEL = { day: '낮', sunset: '노을', night: '밤' };
   var runKind = 'mis', rolling = false, cond = { region: 'city', time: 'day', weather: 'clear' }, raceM = [], rivals = [], finN = 0, survLevel = 1, farmT = 4;
   var RACE_REWARD = [400, 250, 150, 80, 50, 50];
   function condMission(kind) {
     var R = REGIONS[cond.region] || REGIONS.city, W = WEATHERS[cond.weather] || WEATHERS.clear, surv = kind === 'surv';
-    return { kind: kind, name: surv ? '서바이벌' : '자유 주행', region: R.key, weather: W.key, time: cond.time, timeLabel: TIME_LABEL[cond.time], dir: 1, goal: surv ? 'endless' : 'free', n: 0, civ: 0, civLimit: 0,
-      drones: 0, strike: 0, kami: 0, buggy: false, strikes: ['lane', 'cross', 'diag', 'chase', 'napalm', 'cluster'], traffic: 1.2, farm: R.key === 'country' ? (surv ? 0.5 : 1) : 0, label: surv ? '생존' : '자유 주행',
-      why: R.name + ' · ' + TIME_LABEL[cond.time] + ' · ' + W.name, aim: surv ? '단계가 오를수록 거세지는 공격을 버티며 최대한 멀리 달린다.' : '적 없이 길과 날씨, 차량의 주행 특성을 느껴 본다.', win: '', lose: '', done: '' };
+    return { kind: kind, name: surv ? '서바이벌' : '연습 주행', region: R.key, weather: W.key, time: cond.time, timeLabel: TIME_LABEL[cond.time], dir: 1, goal: surv ? 'endless' : 'free', n: 0, civ: 0, civLimit: 0,
+      drones: 0, strike: 0, kami: 0, buggy: false, strikes: ['lane', 'cross', 'diag', 'chase', 'napalm', 'cluster'], traffic: 1.2, farm: R.key === 'country' ? (surv ? 0.5 : 1) : 0, label: surv ? '생존' : '연습 주행',
+      why: R.name + ' · ' + TIME_LABEL[cond.time] + ' · ' + W.name, aim: surv ? '단계가 오를수록 거세지는 공격을 버티며 최대한 멀리 달린다.' : '문제 없이 길과 날씨, 차의 움직임에 익숙해진다. 앞차를 피해 빈 차로로 달린다.', win: '', lose: '', done: '' };
   }
   function raceOf(i) {
     if (raceM[i]) return raceM[i];

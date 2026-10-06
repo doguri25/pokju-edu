@@ -148,7 +148,7 @@
       road: { order: ['deck', 'work', 'split', 'under', 'deck'], seed: 61544, gap: [70, 100] },
       why: '폭우와 돌풍이 몰아치는 3.2 km 해안도로. 젖은 노면과 물웅덩이, 옆바람을 견디며 해상교량을 건넌다.', aim: '옆바람과 물웅덩이를 견디며 결승선까지 달린다.', win: '3.2 km 완주', lose: '내 차량 파괴', done: '' }
   ];
-  var selTrack = 0, selKind = 'mis', runTA = -1, kamiT = 6, sirenT = 0, fireHitT = 0, tunK = 0, tunOut = 0, tunAdapt = 0, tunGlare = 0, echoK = 0, tunCam = false, lowCam = false, minX = -9.9, sawMul = 0.5, padStartHeld = false;
+  var selTrack = 0, selKind = 'free', runTA = -1, kamiT = 6, sirenT = 0, fireHitT = 0, tunK = 0, tunOut = 0, tunAdapt = 0, tunGlare = 0, echoK = 0, tunCam = false, lowCam = false, minX = -9.9, sawMul = 0.5, padStartHeld = false;
   var mode = 'menu', mission = MISSIONS[0], selCar = 'laser', selMission = 0, runMission = 0, won = false, resultT = 0, failWhy = '';
   var player = { car: 'laser', x: 0, vx: 0, v: 35, a: 0, thr: 0.5, boost: 0, hp: 100, shield: 0, shieldT: 0, cd: 0, invuln: 0, dead: false };
   var veff = 35, time = 0, dist = 0, distStart = 0, tPlay = 0, kills = 0, civHits = 0, score = 0, scrap = 0, hitFlash = 0, boss = null;
@@ -165,8 +165,8 @@
   function dist0() { return Math.round(dist - distStart); }
 
   /* progress: scrap, unlocked cars, cleared missions and loadouts are kept in this browser only */
-  var SAVE_KEY = 'pokju-save-v1';
-  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: true, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true };
+  var SAVE_KEY = 'pokju-edu-v1';
+  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: false, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true };
   var W_PRICE = { mg: 0, bolt: 500, laser: 600, shotgun: 400, flame: 500, saw: 300, water: 500, cannon: 700, missile: 800, mine: 400 }, UP_PRICE = [0, 400, 900];
   function loadSave() {
     try {
@@ -185,7 +185,7 @@
         if (s.tire && typeof s.tire === 'object') save.tire = s.tire;
         if (s.weapons && typeof s.weapons === 'object') save.weapons = s.weapons;
         if (s.camV === 2 && (s.cam === 'top' || s.cam === 'low' || s.cam === 'cockpit')) { save.cam = s.cam; save.camV = 2; }
-        save.unlockAll = !!s.unlockAll; save.muted = !!s.muted; save.music = s.music !== false; save.sfx = s.sfx !== false; save.calm = !!s.calm; save.help = !!s.help; save.mirror = s.mirror !== false;
+        save.unlockAll = !!s.unlockAll; save.muted = !!s.muted; save.music = s.music === true; save.sfx = s.sfx !== false; save.calm = !!s.calm; save.help = !!s.help; save.mirror = s.mirror !== false;
         if (s.gfx === 'auto' || s.gfx === 'high' || s.gfx === 'mid' || s.gfx === 'low') save.gfx = s.gfx;
       }
     } catch (e) {}

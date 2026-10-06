@@ -186,7 +186,7 @@
     x.fillStyle = '#ffffff'; x.fillRect(14, 49, 18, 2);
     var hp = clamp(player.hp / car.hp, 0, 1); x.fillStyle = hp < 0.3 ? '#ff6a5a' : '#4fd8ff'; x.fillRect(W - 28, 80 - 60 * hp, 10, 60 * hp);
     x.fillStyle = '#9fb4c8'; x.font = '700 10px "Noto Sans KR", system-ui, sans-serif'; x.fillText('가감속', 23, 94); x.fillText('내구', W - 23, 94);
-    x.fillStyle = fireIn ? '#3ddc84' : '#5a6678'; x.fillText(fireIn ? '발사 중' : '발사 대기', W / 2, 94);
+    if (EDU.arms) { x.fillStyle = fireIn ? '#3ddc84' : '#5a6678'; x.fillText(fireIn ? '발사 중' : '발사 대기', W / 2, 94); }
     ckp.cl.tx.needsUpdate = true;
     x = ckp.sc.x; W = 420; H = 230;
     x.fillStyle = '#0d1420'; x.fillRect(0, 0, W, H);

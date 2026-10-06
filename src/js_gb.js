@@ -23,7 +23,7 @@
     player.car = key;
     equipCar(key, lo);
     guns = []; hasSaw = false; aimed = false;
-    for (s in lo) {
+    if (EDU.arms) for (s in lo) {
       if (!lo[s]) continue;
       if (lo[s] === 'saw') { hasSaw = true; sawMul = plain ? 0.5 : [0.5, 0.5, 0.4, 0.3][Math.max(1, wLevel('saw'))]; continue; }
       guns.push({ w: lo[s], kind: slotKind(s), a: car.anchors[s], t: rnd(0, 0.25), side: 1, mul: plain ? 1 : wMul(lo[s]) });
@@ -194,7 +194,8 @@
       row('오르막', '10% 경사에서 ' + c.climb + ' km/h 유지' + meter(c.climb / SPEC_MAX.climb)) +
       row('핸들링', '민첩성 ' + c.agility.toFixed(1) + meter(c.agility / 10) + '고속 안정성 ' + c.stability.toFixed(1) + meter(c.stability / 10)) +
       row('험로·눈길', '험로 주파 ' + (c.rough * 10).toFixed(1) + meter(c.rough) + (sp.drive === '사륜' ? '사륜구동이라 미끄러운 길에서 접지력을 덜 잃는다' : (sp.drive === '후륜' ? '후륜구동이라 눈길과 빗길에서 가장 많이 미끄러진다' : '전륜구동, 미끄러운 길에서는 보통이다'))) +
-      row('주행 느낌', c.feel) + row('내구', c.hp) + row('무기', loadoutText(lo) + ' (슬롯 ' + n + '개)') + row('타이어', TIRES[tireOf(selCar)].name) + row('특성', c.trait) + row('고유 기술', c.skillName + ': ' + c.skillDesc + ' (쿨타임 ' + c.cd + '초)') + row('기본 기술', BASICS[c.basic].name + ': ' + BASICS[c.basic].desc + ' (쿨타임 ' + BASICS[c.basic].cd + '초)') + '</dl></div>';
+      row('주행 느낌', c.feel) + row('타이어', TIRES[tireOf(selCar)].name) +
+      (EDU.arms ? row('내구', c.hp) + row('무기', loadoutText(lo) + ' (슬롯 ' + n + '개)') + row('특성', c.trait) + row('고유 기술', c.skillName + ': ' + c.skillDesc + ' (쿨타임 ' + c.cd + '초)') + row('기본 기술', BASICS[c.basic].name + ': ' + BASICS[c.basic].desc + ' (쿨타임 ' + BASICS[c.basic].cd + '초)') : '') + '</dl></div>';
   }
   function renderGrid() {
     var html = '', lastG = '', col = 0, pend = false;
@@ -380,12 +381,12 @@
   }
   function showTitle() {
     toMenu(); titleOn = true; $('menu').hidden = true; $('title').hidden = false;
-    $('title-more').textContent = '실제 제원으로 달리는 차량 ' + CAR_ORDER.length + '종, 무기 10종, 미션 ' + MISSIONS.length + '개, 배경 ' + REGION_ORDER.length + '곳과 날씨 5가지. 모드를 골라 바로 시작할 수 있습니다.';
+    $('title-more').textContent = '정답이 적힌 깃발 문을 지나가며 푸는 구구단 주행. 차량 ' + CAR_ORDER.length + '종, 배경 ' + REGION_ORDER.length + '곳과 날씨 5가지.';
   }
   function setPaused(p) {
     if (mode !== 'play' || briefT > 0) return;
     paused = p; $('pause').hidden = !p; if (p) engineOff();
-    if (p) $('pause-text').textContent = mission.name + ' · ' + CARS[player.car].name + ' · 시간 ' + fmtT(tPlay) + ' · 점수 ' + score.toLocaleString('ko-KR');
+    if (p) $('pause-text').textContent = mission.name + ' · ' + CARS[player.car].name + ' · 시간 ' + fmtT(tPlay);
     for (var k in keys) keys[k] = false;
   }
   var ENDINGS = [
@@ -465,7 +466,7 @@
   }
   /* basic skill: a small move on a short cooldown, the same for every car of one kind */
   function useBasic() {
-    if (!live() || player.dead || player.bcd > 0) return;
+    if (!EDU.arms || !live() || player.dead || player.bcd > 0) return;
     var car = CARS[player.car], k = car.basic, i, e, p, px = player.x, dir, id;
     player.bcd = BASICS[k].cd;
     if (k === 'step') {
@@ -502,7 +503,7 @@
     }
   }
   function useSkill() {
-    if (!live() || player.dead || player.cd > 0) return;
+    if (!EDU.arms || !live() || player.dead || player.cd > 0) return;
     var car = CARS[player.car], i, e, k = car.skill, pw = 1 + 0.25 * power;
     player.cd = car.cd; sfx('skill');
     if (mode === 'demo') say('고유 기술 ' + car.skillName + ': ' + car.skillDesc + '.', 3.2);
@@ -791,7 +792,7 @@
   $('res-ending').addEventListener('click', showEnding);
   $('ending-title').addEventListener('click', showTitle);
   $('ending-menu').addEventListener('click', toMenu);
-  $('title-start').addEventListener('click', function () { sfx('click'); if (save.tut) toMenu(); else openStory(); });   /* the first start tells the story and runs the driving practice */
+  $('title-start').addEventListener('click', function () { sfx('click'); toMenu(); });
   $('title-tut').addEventListener('click', function () { sfx('click'); openStory(); });
   $('opt-story').addEventListener('click', function () { sfx('click'); openStory(); });
   $('story-next').addEventListener('click', storyNext); $('story-skip').addEventListener('click', storySkip);
@@ -879,7 +880,7 @@
   $('opt-unlock').addEventListener('change', function () { save.unlockAll = $('opt-unlock').checked; storeSave(); renderMenu(); });
   $('opt-reset').addEventListener('click', function () {
     save.scrap = 500; save.cars = { laser: true }; save.cleared = []; save.loadouts = {}; save.best = {}; save.bestT = {}; save.ta = {}; save.race = {}; save.surv = {}; save.tires = { allseason: 1 }; save.tire = {}; save.weapons = { mg: 1 }; save.unlockAll = false; grantStock(); storeSave();
-    $('opt-unlock').checked = false; selCar = 'laser'; selMission = 0; selTrack = 0; selKind = 'mis'; toMenu(); setTab('car');
+    $('opt-unlock').checked = false; selCar = 'laser'; selMission = 0; selTrack = 0; selKind = 'free'; toMenu(); setTab('car');
   });
 
   /* ---------- camera and resize ---------- */
@@ -1003,7 +1004,7 @@
       addProp('cargo', dist + 150, pick(openLanes(dist + 150)), { solid: { hw: 0.9, hl: 0.9, kind: 'pick', soft: 1 } });
     }
     crateT -= dt;
-    if (crateT <= 0 && !crate.active) { crateT = rnd(15, 22); spawnCrate(); }
+    if (EDU.arms && crateT <= 0 && !crate.active) { crateT = rnd(15, 22); spawnCrate(); }
   }
 
   /* ---------- autopilot for the trailer, the selection screen and the 자율주행 skill: score every lane and pick the safest useful one ---------- */
@@ -1085,7 +1086,7 @@
     var f = 0, txt = '';
     if (mission.rivals) { var rl = Math.max(0, mission.n - dist0()); f = 1 - rl / mission.n; txt = '순위 ' + raceRank() + ' / ' + (rivals.length + 1) + ' · ' + mission.label + ' ' + (rl / 1000).toFixed(2) + ' km'; }
     else if (mission.goal === 'endless') { f = (tPlay % 25) / 25; txt = '단계 ' + survLevel + ' · ' + (dist0() / 1000).toFixed(1) + ' km · 격파 ' + kills + '대'; }
-    else if (mission.goal === 'free') { f = 0; txt = '자유 주행 ' + (dist0() / 1000).toFixed(1) + ' km'; }
+    else if (mission.goal === 'free') { f = 0; txt = '연습 주행 ' + (dist0() / 1000).toFixed(1) + ' km'; }
     else if (mission.goal === 'tut') { f = Math.max(0, tut.i) / TUT.length; txt = '단계 ' + (Math.max(0, tut.i) + 1) + ' / ' + TUT.length; }
     else if (mission.goal === 'kill') { f = kills / mission.n; txt = mission.label + ' ' + Math.min(kills, mission.n) + ' / ' + mission.n; }
     else if (mission.goal === 'dist') { var m = dist0(); f = m / mission.n; txt = mission.label + ' ' + (Math.min(m, mission.n) / 1000).toFixed(1) + ' / ' + (mission.n / 1000).toFixed(1) + ' km'; }
@@ -1143,7 +1144,7 @@
     setStyle('skill-bar', 'transform', 'scaleX(' + (1 - player.cd / car.cd).toFixed(2) + ')');
     var bcd = player.bcd || 0;
     setText('basic-cd', bcd > 0 ? Math.ceil(bcd) + '초 뒤' : (touchUI || vw <= 720 ? '준비됨' : '준비됨 · X'));
-    var pcFire = finePtr && !touchUI;
+    var pcFire = EDU.arms && finePtr && !touchUI;
     if (hudCache.pcFire !== pcFire) { hudCache.pcFire = pcFire; $('btn-fire').hidden = !pcFire; }
     if (pcFire) { setText('fire-cd', fireIn ? '발사 중' : (vw <= 720 ? 'Z' : '누르는 동안 · Z')); if (hudCache.firing !== fireIn) { hudCache.firing = fireIn; $('btn-fire').classList.toggle('on', fireIn); } }
     if (hudCache.bcool !== (bcd > 0)) { hudCache.bcool = bcd > 0; $('btn-basic').classList.toggle('cool', hudCache.bcool); $('btn-basic').setAttribute('aria-disabled', hudCache.bcool ? 'true' : 'false'); }
@@ -1374,7 +1375,7 @@
     else fireIn = mode === 'menu' && menuTab === 'gear' && !titleOn;
     var armed = fireIn && !player.dead, pw = 1 + 0.25 * power, rate = (buff.nitro > 0 ? 1.5 : 1) * (overT > 0 ? 2 : 1);
     muzzle.material.opacity = Math.max(0, muzzle.material.opacity - dt * 14);
-    if (armed) for (i = 0; i < guns.length; i++) fireGun(guns[i], dt * rate, px, car, pw, on);
+    if (armed && EDU.arms) for (i = 0; i < guns.length; i++) fireGun(guns[i], dt * rate, px, car, pw, on);
     if (on && !player.dead) {
       if (salvoN > 0) {
         salvoT -= dt;

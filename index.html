@@ -6,7 +6,7 @@
 <style>html, body { margin: 0; height: 100%; } body { font: 14px system-ui, sans-serif; }</style>
 </head>
 <body>
-<title>폭주전설 정식 버전</title>
+<title>폭주 구구단</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@500;700&display=swap">
 <style>
 /* Layout: full-bleed live 3D scene where the car always drives up the screen. A tabbed selection panel sits on the left (bottom sheet on phones) with the view shifted so the car stays visible; the chosen car's detail opens under its own card. In play (top-down, low chase or driver's-seat view, switchable) small HUD chips hug the edges (objective with a run clock, status, speed with a centred gain/loss gauge) and a throttle lever sits at the left hand; no guidance text is drawn over the road. The trailer shows large title cards between letterbox bars. */
@@ -371,27 +371,27 @@ body.cine #card { bottom: 9%; }
       <div class="track" id="lever-track"><i class="fill" id="lever-fill"></i><i class="knob" id="lever-knob"></i></div>
       <span>감속</span>
     </div>
-      <div class="chip speed"><div class="top"><b id="spd">100</b><span>km/h</span><span id="spd-target">목표 100</span></div><div class="sub2"><span>감속</span><i class="acc" role="img" aria-label="가감속 게이지"><i id="acc-dn"></i><i id="acc-up"></i></i><span>가속</span></div><div class="sub2 info"><span class="tag" id="fire-state">발사 대기</span><span id="grade">평지</span></div></div>
+      <div class="chip speed"><div class="top"><b id="spd">100</b><span>km/h</span><span id="spd-target">목표 100</span></div><div class="sub2"><span>감속</span><i class="acc" role="img" aria-label="가감속 게이지"><i id="acc-dn"></i><i id="acc-up"></i></i><span>가속</span></div><div class="sub2 info"><span class="tag" id="fire-state" hidden>발사 대기</span><span id="grade">평지</span></div></div>
     </div>
     <div class="acts">
       <button type="button" class="chip skill basic fire" id="btn-fire" aria-label="공격: 누르고 있는 동안 발사" hidden><span class="kicker">공격</span><span id="fire-name">사격</span><span class="sub" id="fire-cd">누르는 동안 · Z</span></button>
-      <button type="button" class="chip skill basic" id="btn-basic" aria-label="기본 기술 쓰기"><span class="kicker">기본 기술</span><span id="basic-name">퀵 스텝</span><span class="sub" id="basic-cd">준비됨</span><i id="basic-bar"></i></button>
-      <button type="button" class="chip skill" id="btn-skill" aria-label="고유 기술 쓰기"><span class="kicker">고유 기술</span><span id="skill-name">틈새 대시</span><span class="sub" id="skill-cd">준비됨</span><i id="skill-bar"></i></button>
+      <button type="button" class="chip skill basic" id="btn-basic" aria-label="기본 기술 쓰기" hidden><span class="kicker">기본 기술</span><span id="basic-name">퀵 스텝</span><span class="sub" id="basic-cd">준비됨</span><i id="basic-bar"></i></button>
+      <button type="button" class="chip skill" id="btn-skill" aria-label="고유 기술 쓰기" hidden><span class="kicker">고유 기술</span><span id="skill-name">틈새 대시</span><span class="sub" id="skill-cd">준비됨</span><i id="skill-bar"></i></button>
     </div>
   </div>
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><b>폭주전설</b><span>정식 버전 1.6</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.1</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
-    <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false">아이템</button>
+    <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false" hidden>아이템</button>
     <button type="button" role="tab" id="tab-mode" data-tab="mode" aria-selected="false">모드</button>
     <button type="button" role="tab" id="tab-set" data-tab="set" aria-selected="false">설정</button>
   </div>
   <div class="scroll">
   <div class="pane" id="pane-car" role="tabpanel" aria-labelledby="tab-car">
-    <p class="premise">오 사장: “막내야, 통신 모듈은 다 뗐다. 마음에 드는 놈으로 골라. 제원은 실차 그대로야.”</p>
+    <p class="premise">오 사장: “막내야, 마음에 드는 놈으로 골라. 제원은 실차 그대로야.”</p>
     <div class="cars" id="car-grid"></div>
   </div>
   <div class="pane" id="pane-gear" role="tabpanel" aria-labelledby="tab-gear" hidden>
@@ -435,21 +435,21 @@ body.cine #card { bottom: 9%; }
   </div>
   <div class="pane" id="pane-set" role="tabpanel" aria-labelledby="tab-set" hidden>
     <label class="opt"><input type="checkbox" id="opt-sound" checked>효과음</label>
-    <label class="opt"><input type="checkbox" id="opt-music" checked>배경음악</label>
+    <label class="opt"><input type="checkbox" id="opt-music">배경음악</label>
     <label class="opt"><input type="checkbox" id="opt-mirror" checked>룸미러 (화면 위쪽에 뒤쪽 모습 표시)</label>
     <label class="opt"><input type="checkbox" id="opt-calm">화면 흔들림과 번쩍임 줄이기</label>
     <label class="opt sel">그래픽 품질<select id="opt-gfx"><option value="auto">자동 (기기에 맞춰 조절)</option><option value="high">높음</option><option value="mid">보통</option><option value="low">낮음 (그림자 끔)</option></select></label>
-    <label class="opt"><input type="checkbox" id="opt-unlock">잠금 모두 해제 (차량, 미션, 무기 전부 열기)</label>
+    <label class="opt"><input type="checkbox" id="opt-unlock">잠금 모두 해제 (차량 전부 열기)</label>
     <label class="opt sel">시점<select id="opt-cam"><option value="low">낮은 추격 뷰 (기본, 차량 뒤 낮은 시점)</option><option value="top">탑뷰 (위에서 내려다봄)</option><option value="cockpit">운전석 뷰 (1인칭)</option></select></label>
     <button type="button" class="plain" id="opt-reset">진행 초기화</button>
     <button type="button" class="plain" id="opt-title">타이틀 화면으로</button>
     <button type="button" class="plain" id="opt-help">조작 방법 보기</button>
-    <button type="button" class="plain" id="opt-story">이야기와 운전 연습 다시 보기</button>
-    <p class="keys">키보드는 방향키로 움직입니다. ↑ ↓ 는 가속과 감속, ← → 는 좌우 이동입니다. 공격은 Z(누르는 동안 발사), 기본 기술은 X, 고유 기술은 Space, 시점 바꾸기는 C, 일시정지는 Esc, 소리 끄기는 M입니다. 터치는 왼쪽 아래 레버로 속도를 정하고 화면 오른쪽을 좌우로 끌어 이동하며, 레버를 잡고 있는 동안 무기가 나갑니다. 게임패드는 왼쪽 스틱으로 움직이고 RT로 쏩니다.</p>
-    <p class="keys">고철, 구입한 차량과 무기, 완료한 미션, 기록은 이 브라우저에만 저장됩니다.</p>
+    <button type="button" class="plain" id="opt-story" hidden>이야기와 운전 연습 다시 보기</button>
+    <p class="keys">키보드는 방향키로 움직입니다. ↑ ↓ 는 가속과 감속, ← → 는 좌우 이동입니다. 시점 바꾸기는 C, 일시정지는 Esc, 소리 끄기는 M입니다. 터치는 왼쪽 아래 레버로 속도를 정하고 화면 오른쪽을 좌우로 끌어 이동합니다. 게임패드는 왼쪽 스틱으로 움직입니다.</p>
+    <p class="keys">모은 고철, 연 차량, 기록은 이 브라우저에만 저장됩니다. 이름 같은 개인정보는 저장하지 않습니다.</p>
   </div>
   </div>
-  <div class="foot"><p class="what" id="go-what"></p><p class="sub" id="go-why" hidden></p><div><button type="button" id="demo-go" class="ghost">예고편 보기</button><button type="button" id="go" class="go">출발</button></div></div>
+  <div class="foot"><p class="what" id="go-what"></p><p class="sub" id="go-why" hidden></p><div><button type="button" id="demo-go" class="ghost" hidden>예고편 보기</button><button type="button" id="go" class="go">출발</button></div></div>
 </aside>
 
 <div class="panel result info" id="info" role="dialog" aria-labelledby="info-title" hidden>
@@ -486,13 +486,13 @@ body.cine #card { bottom: 9%; }
 </div>
 <div class="panel result help" id="help" role="dialog" aria-labelledby="help-title" hidden>
   <b id="help-title">조작 방법</b>
-  <p class="story">키보드와 게임패드는 이동과 공격이 따로입니다. 터치 화면에서는 왼손 레버를 잡고 있는 동안 무기가 나갑니다.</p>
+  <p class="story">속도를 정하고 좌우로 움직여 차로를 고릅니다.</p>
   <div class="helpgrid">
-    <section><h3>키보드</h3><dl class="detail"><dt>↑ ↓</dt><dd>가속·감속 (W S도 됩니다)</dd><dt>← →</dt><dd>좌우 이동 (A D도 됩니다)</dd><dt>Z, J</dt><dd>공격 (누르는 동안 발사). 화면 오른쪽 아래 공격 버튼을 마우스로 누르고 있어도 됩니다</dd><dt>X, E, F</dt><dd>기본 기술</dd><dt>Space, Shift</dt><dd>고유 기술</dd><dt>C</dt><dd>시점 바꾸기</dd><dt>Esc, P</dt><dd>일시정지</dd><dt>M</dt><dd>소리 전체 끄기</dd></dl></section>
-    <section><h3>터치</h3><dl class="detail"><dt>왼쪽 레버</dt><dd>위아래로 끌어 목표 속도 (누르는 동안 발사)</dd><dt>화면 오른쪽</dt><dd>좌우로 끌어 이동</dd><dt>오른쪽 아래 버튼</dt><dd>큰 버튼은 고유 기술, 그 위 작은 버튼은 기본 기술. 다른 손가락을 떼지 않고 눌러도 됩니다</dd></dl></section>
-    <section><h3>게임패드</h3><dl class="detail"><dt>왼쪽 스틱</dt><dd>위아래 속도, 좌우 이동</dd><dt>RT, RB</dt><dd>공격 (누르는 동안 발사)</dd><dt>A, B</dt><dd>고유 기술</dd><dt>X</dt><dd>기본 기술</dd><dt>Y</dt><dd>시점 바꾸기</dd><dt>Start</dt><dd>일시정지</dd></dl></section>
+    <section><h3>키보드</h3><dl class="detail"><dt>↑ ↓</dt><dd>가속·감속 (W S도 됩니다)</dd><dt>← →</dt><dd>좌우 이동 (A D도 됩니다)</dd><dt>C</dt><dd>시점 바꾸기</dd><dt>Esc, P</dt><dd>일시정지</dd><dt>M</dt><dd>소리 전체 끄기</dd></dl></section>
+    <section><h3>터치</h3><dl class="detail"><dt>왼쪽 레버</dt><dd>위아래로 끌어 목표 속도</dd><dt>화면 오른쪽</dt><dd>좌우로 끌어 이동</dd></dl></section>
+    <section><h3>게임패드</h3><dl class="detail"><dt>왼쪽 스틱</dt><dd>위아래 속도, 좌우 이동</dd><dt>Y</dt><dd>시점 바꾸기</dd><dt>Start</dt><dd>일시정지</dd></dl></section>
   </div>
-  <p>보급 상자는 쏘면 내용물이 바뀌고 지나가며 먹습니다. 갓길은 폭격과 공사 구간을 피하는 비상 차선입니다. 흙길·눈길·빗길에서는 속도와 접지력이 떨어집니다. 방지턱과 포트홀은 속도를 줄여 넘고, 화면 위 룸미러로 뒤에서 따라붙는 추격차를 확인합니다.</p>
+  <p>흙길·눈길·빗길에서는 속도와 접지력이 떨어집니다. 방지턱과 포트홀은 속도를 줄여 넘습니다. 앞차에 부딪히지 않게 빈 차로로 비켜 갑니다.</p>
   <div class="btns"><button type="button" class="primary" id="help-close">확인</button></div>
 </div>
 <div class="panel result ending" id="ending" hidden>
@@ -503,11 +503,11 @@ body.cine #card { bottom: 9%; }
   <div class="btns"><button type="button" class="primary" id="ending-title">타이틀로</button><button type="button" id="ending-menu">차량·미션 선택</button></div>
 </div>
 <div id="title">
-  <span class="kick">한울시 · 관제 AI 「마성」이 도로를 빼앗은 날</span>
-  <b>폭주전설</b>
+  <span class="kick">한울시 · 계산을 까먹은 관제 AI 「마성」</span>
+  <b>폭주 구구단</b>
   <span class="more" id="title-more"></span>
   <div class="kinds" id="title-kinds" role="group" aria-label="모드 골라 시작"></div>
-  <div class="btns"><button type="button" class="go" id="title-start">게임 시작</button><button type="button" class="ghost" id="title-tut">이야기와 운전 연습</button><button type="button" class="ghost" id="title-trailer">예고편 보기</button></div>
+  <div class="btns"><button type="button" class="go" id="title-start">게임 시작</button><button type="button" class="ghost" id="title-tut" hidden>이야기와 운전 연습</button><button type="button" class="ghost" id="title-trailer" hidden>예고편 보기</button></div>
 </div>
 <div id="err" hidden><div class="chip">이 기기에서는 3D 그래픽(WebGL)을 켤 수 없어 장면을 표시하지 못했습니다.</div></div>
 
@@ -540,6 +540,9 @@ body.cine #card { bottom: 9%; }
   function rnd(a, b) { return a + Math.random() * (b - a); }
   function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }
   var lerp = T.MathUtils.lerp, clamp = T.MathUtils.clamp;
+
+  /* ---------- learning edition: one switch for what is left of the original combat. Weapons, skills and supply crates stay in the code but are off until the quiz modes bring back a gentle version ---------- */
+  var EDU = { arms: false };
 
   /* ---------- textures ---------- */
   function radialTex(stops) {
@@ -2414,7 +2417,7 @@ body.cine #card { bottom: 9%; }
     var car = CARS[key];
     for (var k in car.mounts) car.mounts[k].forEach(function (m) {
       while (m.children.length) m.remove(m.children[0]);
-      if (loadout[k]) m.add(weaponMesh(loadout[k], slotKind(k), car.W));
+      if (EDU.arms && loadout[k]) m.add(weaponMesh(loadout[k], slotKind(k), car.W));
     });
   }
   /* wheel: tyre, rim face and spokes; st = { rim, spoke, n, cover } */
@@ -3642,7 +3645,7 @@ body.cine #card { bottom: 9%; }
       road: { order: ['deck', 'work', 'split', 'under', 'deck'], seed: 61544, gap: [70, 100] },
       why: '폭우와 돌풍이 몰아치는 3.2 km 해안도로. 젖은 노면과 물웅덩이, 옆바람을 견디며 해상교량을 건넌다.', aim: '옆바람과 물웅덩이를 견디며 결승선까지 달린다.', win: '3.2 km 완주', lose: '내 차량 파괴', done: '' }
   ];
-  var selTrack = 0, selKind = 'mis', runTA = -1, kamiT = 6, sirenT = 0, fireHitT = 0, tunK = 0, tunOut = 0, tunAdapt = 0, tunGlare = 0, echoK = 0, tunCam = false, lowCam = false, minX = -9.9, sawMul = 0.5, padStartHeld = false;
+  var selTrack = 0, selKind = 'free', runTA = -1, kamiT = 6, sirenT = 0, fireHitT = 0, tunK = 0, tunOut = 0, tunAdapt = 0, tunGlare = 0, echoK = 0, tunCam = false, lowCam = false, minX = -9.9, sawMul = 0.5, padStartHeld = false;
   var mode = 'menu', mission = MISSIONS[0], selCar = 'laser', selMission = 0, runMission = 0, won = false, resultT = 0, failWhy = '';
   var player = { car: 'laser', x: 0, vx: 0, v: 35, a: 0, thr: 0.5, boost: 0, hp: 100, shield: 0, shieldT: 0, cd: 0, invuln: 0, dead: false };
   var veff = 35, time = 0, dist = 0, distStart = 0, tPlay = 0, kills = 0, civHits = 0, score = 0, scrap = 0, hitFlash = 0, boss = null;
@@ -3659,8 +3662,8 @@ body.cine #card { bottom: 9%; }
   function dist0() { return Math.round(dist - distStart); }
 
   /* progress: scrap, unlocked cars, cleared missions and loadouts are kept in this browser only */
-  var SAVE_KEY = 'pokju-save-v1';
-  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: true, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true };
+  var SAVE_KEY = 'pokju-edu-v1';
+  var save = { scrap: 500, cars: { laser: true }, cleared: [], loadouts: {}, best: {}, bestT: {}, ta: {}, race: {}, surv: {}, tires: { allseason: 1 }, tire: {}, weapons: { mg: 1 }, cam: 'low', camV: 0, unlockAll: false, tut: false, muted: false, music: false, sfx: true, gfx: 'auto', calm: false, help: false, mirror: true };
   var W_PRICE = { mg: 0, bolt: 500, laser: 600, shotgun: 400, flame: 500, saw: 300, water: 500, cannon: 700, missile: 800, mine: 400 }, UP_PRICE = [0, 400, 900];
   function loadSave() {
     try {
@@ -3679,7 +3682,7 @@ body.cine #card { bottom: 9%; }
         if (s.tire && typeof s.tire === 'object') save.tire = s.tire;
         if (s.weapons && typeof s.weapons === 'object') save.weapons = s.weapons;
         if (s.camV === 2 && (s.cam === 'top' || s.cam === 'low' || s.cam === 'cockpit')) { save.cam = s.cam; save.camV = 2; }
-        save.unlockAll = !!s.unlockAll; save.muted = !!s.muted; save.music = s.music !== false; save.sfx = s.sfx !== false; save.calm = !!s.calm; save.help = !!s.help; save.mirror = s.mirror !== false;
+        save.unlockAll = !!s.unlockAll; save.muted = !!s.muted; save.music = s.music === true; save.sfx = s.sfx !== false; save.calm = !!s.calm; save.help = !!s.help; save.mirror = s.mirror !== false;
         if (s.gfx === 'auto' || s.gfx === 'high' || s.gfx === 'mid' || s.gfx === 'low') save.gfx = s.gfx;
       }
     } catch (e) {}
@@ -4291,7 +4294,7 @@ body.cine #card { bottom: 9%; }
     x.fillStyle = '#ffffff'; x.fillRect(14, 49, 18, 2);
     var hp = clamp(player.hp / car.hp, 0, 1); x.fillStyle = hp < 0.3 ? '#ff6a5a' : '#4fd8ff'; x.fillRect(W - 28, 80 - 60 * hp, 10, 60 * hp);
     x.fillStyle = '#9fb4c8'; x.font = '700 10px "Noto Sans KR", system-ui, sans-serif'; x.fillText('가감속', 23, 94); x.fillText('내구', W - 23, 94);
-    x.fillStyle = fireIn ? '#3ddc84' : '#5a6678'; x.fillText(fireIn ? '발사 중' : '발사 대기', W / 2, 94);
+    if (EDU.arms) { x.fillStyle = fireIn ? '#3ddc84' : '#5a6678'; x.fillText(fireIn ? '발사 중' : '발사 대기', W / 2, 94); }
     ckp.cl.tx.needsUpdate = true;
     x = ckp.sc.x; W = 420; H = 230;
     x.fillStyle = '#0d1420'; x.fillRect(0, 0, W, H);
@@ -4515,17 +4518,18 @@ body.cine #card { bottom: 9%; }
     ta: { name: '타임어택', sub: '같은 길에서 기록 겨루기' },
     race: { name: '레이싱', sub: '경쟁 차량 5대와 순위 다툼' },
     surv: { name: '서바이벌', sub: '쓰러질 때까지 버티기' },
-    free: { name: '자유 주행', sub: '적 없이 마음대로 달리기' },
+    free: { name: '연습 주행', sub: '문제 없이 길과 차에 익숙해지기' },
     tut: { name: '운전 연습', sub: '조작과 이야기 익히기' }
   };
-  var KIND_ORDER = ['mis', 'ta', 'race', 'surv', 'free'], TIME_LABEL = { day: '낮', sunset: '노을', night: '밤' };
+  var KIND_ORDER = ['free'],   /* learning edition: the original modes stay in the code but are not offered; the quiz modes join this list */
+      TIME_LABEL = { day: '낮', sunset: '노을', night: '밤' };
   var runKind = 'mis', rolling = false, cond = { region: 'city', time: 'day', weather: 'clear' }, raceM = [], rivals = [], finN = 0, survLevel = 1, farmT = 4;
   var RACE_REWARD = [400, 250, 150, 80, 50, 50];
   function condMission(kind) {
     var R = REGIONS[cond.region] || REGIONS.city, W = WEATHERS[cond.weather] || WEATHERS.clear, surv = kind === 'surv';
-    return { kind: kind, name: surv ? '서바이벌' : '자유 주행', region: R.key, weather: W.key, time: cond.time, timeLabel: TIME_LABEL[cond.time], dir: 1, goal: surv ? 'endless' : 'free', n: 0, civ: 0, civLimit: 0,
-      drones: 0, strike: 0, kami: 0, buggy: false, strikes: ['lane', 'cross', 'diag', 'chase', 'napalm', 'cluster'], traffic: 1.2, farm: R.key === 'country' ? (surv ? 0.5 : 1) : 0, label: surv ? '생존' : '자유 주행',
-      why: R.name + ' · ' + TIME_LABEL[cond.time] + ' · ' + W.name, aim: surv ? '단계가 오를수록 거세지는 공격을 버티며 최대한 멀리 달린다.' : '적 없이 길과 날씨, 차량의 주행 특성을 느껴 본다.', win: '', lose: '', done: '' };
+    return { kind: kind, name: surv ? '서바이벌' : '연습 주행', region: R.key, weather: W.key, time: cond.time, timeLabel: TIME_LABEL[cond.time], dir: 1, goal: surv ? 'endless' : 'free', n: 0, civ: 0, civLimit: 0,
+      drones: 0, strike: 0, kami: 0, buggy: false, strikes: ['lane', 'cross', 'diag', 'chase', 'napalm', 'cluster'], traffic: 1.2, farm: R.key === 'country' ? (surv ? 0.5 : 1) : 0, label: surv ? '생존' : '연습 주행',
+      why: R.name + ' · ' + TIME_LABEL[cond.time] + ' · ' + W.name, aim: surv ? '단계가 오를수록 거세지는 공격을 버티며 최대한 멀리 달린다.' : '문제 없이 길과 날씨, 차의 움직임에 익숙해진다. 앞차를 피해 빈 차로로 달린다.', win: '', lose: '', done: '' };
   }
   function raceOf(i) {
     if (raceM[i]) return raceM[i];
@@ -5019,7 +5023,7 @@ body.cine #card { bottom: 9%; }
     player.car = key;
     equipCar(key, lo);
     guns = []; hasSaw = false; aimed = false;
-    for (s in lo) {
+    if (EDU.arms) for (s in lo) {
       if (!lo[s]) continue;
       if (lo[s] === 'saw') { hasSaw = true; sawMul = plain ? 0.5 : [0.5, 0.5, 0.4, 0.3][Math.max(1, wLevel('saw'))]; continue; }
       guns.push({ w: lo[s], kind: slotKind(s), a: car.anchors[s], t: rnd(0, 0.25), side: 1, mul: plain ? 1 : wMul(lo[s]) });
@@ -5190,7 +5194,8 @@ body.cine #card { bottom: 9%; }
       row('오르막', '10% 경사에서 ' + c.climb + ' km/h 유지' + meter(c.climb / SPEC_MAX.climb)) +
       row('핸들링', '민첩성 ' + c.agility.toFixed(1) + meter(c.agility / 10) + '고속 안정성 ' + c.stability.toFixed(1) + meter(c.stability / 10)) +
       row('험로·눈길', '험로 주파 ' + (c.rough * 10).toFixed(1) + meter(c.rough) + (sp.drive === '사륜' ? '사륜구동이라 미끄러운 길에서 접지력을 덜 잃는다' : (sp.drive === '후륜' ? '후륜구동이라 눈길과 빗길에서 가장 많이 미끄러진다' : '전륜구동, 미끄러운 길에서는 보통이다'))) +
-      row('주행 느낌', c.feel) + row('내구', c.hp) + row('무기', loadoutText(lo) + ' (슬롯 ' + n + '개)') + row('타이어', TIRES[tireOf(selCar)].name) + row('특성', c.trait) + row('고유 기술', c.skillName + ': ' + c.skillDesc + ' (쿨타임 ' + c.cd + '초)') + row('기본 기술', BASICS[c.basic].name + ': ' + BASICS[c.basic].desc + ' (쿨타임 ' + BASICS[c.basic].cd + '초)') + '</dl></div>';
+      row('주행 느낌', c.feel) + row('타이어', TIRES[tireOf(selCar)].name) +
+      (EDU.arms ? row('내구', c.hp) + row('무기', loadoutText(lo) + ' (슬롯 ' + n + '개)') + row('특성', c.trait) + row('고유 기술', c.skillName + ': ' + c.skillDesc + ' (쿨타임 ' + c.cd + '초)') + row('기본 기술', BASICS[c.basic].name + ': ' + BASICS[c.basic].desc + ' (쿨타임 ' + BASICS[c.basic].cd + '초)') : '') + '</dl></div>';
   }
   function renderGrid() {
     var html = '', lastG = '', col = 0, pend = false;
@@ -5376,12 +5381,12 @@ body.cine #card { bottom: 9%; }
   }
   function showTitle() {
     toMenu(); titleOn = true; $('menu').hidden = true; $('title').hidden = false;
-    $('title-more').textContent = '실제 제원으로 달리는 차량 ' + CAR_ORDER.length + '종, 무기 10종, 미션 ' + MISSIONS.length + '개, 배경 ' + REGION_ORDER.length + '곳과 날씨 5가지. 모드를 골라 바로 시작할 수 있습니다.';
+    $('title-more').textContent = '정답이 적힌 깃발 문을 지나가며 푸는 구구단 주행. 차량 ' + CAR_ORDER.length + '종, 배경 ' + REGION_ORDER.length + '곳과 날씨 5가지.';
   }
   function setPaused(p) {
     if (mode !== 'play' || briefT > 0) return;
     paused = p; $('pause').hidden = !p; if (p) engineOff();
-    if (p) $('pause-text').textContent = mission.name + ' · ' + CARS[player.car].name + ' · 시간 ' + fmtT(tPlay) + ' · 점수 ' + score.toLocaleString('ko-KR');
+    if (p) $('pause-text').textContent = mission.name + ' · ' + CARS[player.car].name + ' · 시간 ' + fmtT(tPlay);
     for (var k in keys) keys[k] = false;
   }
   var ENDINGS = [
@@ -5461,7 +5466,7 @@ body.cine #card { bottom: 9%; }
   }
   /* basic skill: a small move on a short cooldown, the same for every car of one kind */
   function useBasic() {
-    if (!live() || player.dead || player.bcd > 0) return;
+    if (!EDU.arms || !live() || player.dead || player.bcd > 0) return;
     var car = CARS[player.car], k = car.basic, i, e, p, px = player.x, dir, id;
     player.bcd = BASICS[k].cd;
     if (k === 'step') {
@@ -5498,7 +5503,7 @@ body.cine #card { bottom: 9%; }
     }
   }
   function useSkill() {
-    if (!live() || player.dead || player.cd > 0) return;
+    if (!EDU.arms || !live() || player.dead || player.cd > 0) return;
     var car = CARS[player.car], i, e, k = car.skill, pw = 1 + 0.25 * power;
     player.cd = car.cd; sfx('skill');
     if (mode === 'demo') say('고유 기술 ' + car.skillName + ': ' + car.skillDesc + '.', 3.2);
@@ -5787,7 +5792,7 @@ body.cine #card { bottom: 9%; }
   $('res-ending').addEventListener('click', showEnding);
   $('ending-title').addEventListener('click', showTitle);
   $('ending-menu').addEventListener('click', toMenu);
-  $('title-start').addEventListener('click', function () { sfx('click'); if (save.tut) toMenu(); else openStory(); });   /* the first start tells the story and runs the driving practice */
+  $('title-start').addEventListener('click', function () { sfx('click'); toMenu(); });
   $('title-tut').addEventListener('click', function () { sfx('click'); openStory(); });
   $('opt-story').addEventListener('click', function () { sfx('click'); openStory(); });
   $('story-next').addEventListener('click', storyNext); $('story-skip').addEventListener('click', storySkip);
@@ -5875,7 +5880,7 @@ body.cine #card { bottom: 9%; }
   $('opt-unlock').addEventListener('change', function () { save.unlockAll = $('opt-unlock').checked; storeSave(); renderMenu(); });
   $('opt-reset').addEventListener('click', function () {
     save.scrap = 500; save.cars = { laser: true }; save.cleared = []; save.loadouts = {}; save.best = {}; save.bestT = {}; save.ta = {}; save.race = {}; save.surv = {}; save.tires = { allseason: 1 }; save.tire = {}; save.weapons = { mg: 1 }; save.unlockAll = false; grantStock(); storeSave();
-    $('opt-unlock').checked = false; selCar = 'laser'; selMission = 0; selTrack = 0; selKind = 'mis'; toMenu(); setTab('car');
+    $('opt-unlock').checked = false; selCar = 'laser'; selMission = 0; selTrack = 0; selKind = 'free'; toMenu(); setTab('car');
   });
 
   /* ---------- camera and resize ---------- */
@@ -5999,7 +6004,7 @@ body.cine #card { bottom: 9%; }
       addProp('cargo', dist + 150, pick(openLanes(dist + 150)), { solid: { hw: 0.9, hl: 0.9, kind: 'pick', soft: 1 } });
     }
     crateT -= dt;
-    if (crateT <= 0 && !crate.active) { crateT = rnd(15, 22); spawnCrate(); }
+    if (EDU.arms && crateT <= 0 && !crate.active) { crateT = rnd(15, 22); spawnCrate(); }
   }
 
   /* ---------- autopilot for the trailer, the selection screen and the 자율주행 skill: score every lane and pick the safest useful one ---------- */
@@ -6081,7 +6086,7 @@ body.cine #card { bottom: 9%; }
     var f = 0, txt = '';
     if (mission.rivals) { var rl = Math.max(0, mission.n - dist0()); f = 1 - rl / mission.n; txt = '순위 ' + raceRank() + ' / ' + (rivals.length + 1) + ' · ' + mission.label + ' ' + (rl / 1000).toFixed(2) + ' km'; }
     else if (mission.goal === 'endless') { f = (tPlay % 25) / 25; txt = '단계 ' + survLevel + ' · ' + (dist0() / 1000).toFixed(1) + ' km · 격파 ' + kills + '대'; }
-    else if (mission.goal === 'free') { f = 0; txt = '자유 주행 ' + (dist0() / 1000).toFixed(1) + ' km'; }
+    else if (mission.goal === 'free') { f = 0; txt = '연습 주행 ' + (dist0() / 1000).toFixed(1) + ' km'; }
     else if (mission.goal === 'tut') { f = Math.max(0, tut.i) / TUT.length; txt = '단계 ' + (Math.max(0, tut.i) + 1) + ' / ' + TUT.length; }
     else if (mission.goal === 'kill') { f = kills / mission.n; txt = mission.label + ' ' + Math.min(kills, mission.n) + ' / ' + mission.n; }
     else if (mission.goal === 'dist') { var m = dist0(); f = m / mission.n; txt = mission.label + ' ' + (Math.min(m, mission.n) / 1000).toFixed(1) + ' / ' + (mission.n / 1000).toFixed(1) + ' km'; }
@@ -6139,7 +6144,7 @@ body.cine #card { bottom: 9%; }
     setStyle('skill-bar', 'transform', 'scaleX(' + (1 - player.cd / car.cd).toFixed(2) + ')');
     var bcd = player.bcd || 0;
     setText('basic-cd', bcd > 0 ? Math.ceil(bcd) + '초 뒤' : (touchUI || vw <= 720 ? '준비됨' : '준비됨 · X'));
-    var pcFire = finePtr && !touchUI;
+    var pcFire = EDU.arms && finePtr && !touchUI;
     if (hudCache.pcFire !== pcFire) { hudCache.pcFire = pcFire; $('btn-fire').hidden = !pcFire; }
     if (pcFire) { setText('fire-cd', fireIn ? '발사 중' : (vw <= 720 ? 'Z' : '누르는 동안 · Z')); if (hudCache.firing !== fireIn) { hudCache.firing = fireIn; $('btn-fire').classList.toggle('on', fireIn); } }
     if (hudCache.bcool !== (bcd > 0)) { hudCache.bcool = bcd > 0; $('btn-basic').classList.toggle('cool', hudCache.bcool); $('btn-basic').setAttribute('aria-disabled', hudCache.bcool ? 'true' : 'false'); }
@@ -6370,7 +6375,7 @@ body.cine #card { bottom: 9%; }
     else fireIn = mode === 'menu' && menuTab === 'gear' && !titleOn;
     var armed = fireIn && !player.dead, pw = 1 + 0.25 * power, rate = (buff.nitro > 0 ? 1.5 : 1) * (overT > 0 ? 2 : 1);
     muzzle.material.opacity = Math.max(0, muzzle.material.opacity - dt * 14);
-    if (armed) for (i = 0; i < guns.length; i++) fireGun(guns[i], dt * rate, px, car, pw, on);
+    if (armed && EDU.arms) for (i = 0; i < guns.length; i++) fireGun(guns[i], dt * rate, px, car, pw, on);
     if (on && !player.dead) {
       if (salvoN > 0) {
         salvoT -= dt;

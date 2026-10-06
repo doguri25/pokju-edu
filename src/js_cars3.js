@@ -181,7 +181,7 @@
     var car = CARS[key];
     for (var k in car.mounts) car.mounts[k].forEach(function (m) {
       while (m.children.length) m.remove(m.children[0]);
-      if (loadout[k]) m.add(weaponMesh(loadout[k], slotKind(k), car.W));
+      if (EDU.arms && loadout[k]) m.add(weaponMesh(loadout[k], slotKind(k), car.W));
     });
   }
   /* wheel: tyre, rim face and spokes; st = { rim, spoke, n, cover } */

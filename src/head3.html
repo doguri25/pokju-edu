@@ -1,4 +1,4 @@
-<title>폭주전설 정식 버전</title>
+<title>폭주 구구단</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@500;700&display=swap">
 <style>
 /* Layout: full-bleed live 3D scene where the car always drives up the screen. A tabbed selection panel sits on the left (bottom sheet on phones) with the view shifted so the car stays visible; the chosen car's detail opens under its own card. In play (top-down, low chase or driver's-seat view, switchable) small HUD chips hug the edges (objective with a run clock, status, speed with a centred gain/loss gauge) and a throttle lever sits at the left hand; no guidance text is drawn over the road. The trailer shows large title cards between letterbox bars. */
@@ -363,27 +363,27 @@ body.cine #card { bottom: 9%; }
       <div class="track" id="lever-track"><i class="fill" id="lever-fill"></i><i class="knob" id="lever-knob"></i></div>
       <span>감속</span>
     </div>
-      <div class="chip speed"><div class="top"><b id="spd">100</b><span>km/h</span><span id="spd-target">목표 100</span></div><div class="sub2"><span>감속</span><i class="acc" role="img" aria-label="가감속 게이지"><i id="acc-dn"></i><i id="acc-up"></i></i><span>가속</span></div><div class="sub2 info"><span class="tag" id="fire-state">발사 대기</span><span id="grade">평지</span></div></div>
+      <div class="chip speed"><div class="top"><b id="spd">100</b><span>km/h</span><span id="spd-target">목표 100</span></div><div class="sub2"><span>감속</span><i class="acc" role="img" aria-label="가감속 게이지"><i id="acc-dn"></i><i id="acc-up"></i></i><span>가속</span></div><div class="sub2 info"><span class="tag" id="fire-state" hidden>발사 대기</span><span id="grade">평지</span></div></div>
     </div>
     <div class="acts">
       <button type="button" class="chip skill basic fire" id="btn-fire" aria-label="공격: 누르고 있는 동안 발사" hidden><span class="kicker">공격</span><span id="fire-name">사격</span><span class="sub" id="fire-cd">누르는 동안 · Z</span></button>
-      <button type="button" class="chip skill basic" id="btn-basic" aria-label="기본 기술 쓰기"><span class="kicker">기본 기술</span><span id="basic-name">퀵 스텝</span><span class="sub" id="basic-cd">준비됨</span><i id="basic-bar"></i></button>
-      <button type="button" class="chip skill" id="btn-skill" aria-label="고유 기술 쓰기"><span class="kicker">고유 기술</span><span id="skill-name">틈새 대시</span><span class="sub" id="skill-cd">준비됨</span><i id="skill-bar"></i></button>
+      <button type="button" class="chip skill basic" id="btn-basic" aria-label="기본 기술 쓰기" hidden><span class="kicker">기본 기술</span><span id="basic-name">퀵 스텝</span><span class="sub" id="basic-cd">준비됨</span><i id="basic-bar"></i></button>
+      <button type="button" class="chip skill" id="btn-skill" aria-label="고유 기술 쓰기" hidden><span class="kicker">고유 기술</span><span id="skill-name">틈새 대시</span><span class="sub" id="skill-cd">준비됨</span><i id="skill-bar"></i></button>
     </div>
   </div>
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><b>폭주전설</b><span>정식 버전 1.6</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.1</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
-    <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false">아이템</button>
+    <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false" hidden>아이템</button>
     <button type="button" role="tab" id="tab-mode" data-tab="mode" aria-selected="false">모드</button>
     <button type="button" role="tab" id="tab-set" data-tab="set" aria-selected="false">설정</button>
   </div>
   <div class="scroll">
   <div class="pane" id="pane-car" role="tabpanel" aria-labelledby="tab-car">
-    <p class="premise">오 사장: “막내야, 통신 모듈은 다 뗐다. 마음에 드는 놈으로 골라. 제원은 실차 그대로야.”</p>
+    <p class="premise">오 사장: “막내야, 마음에 드는 놈으로 골라. 제원은 실차 그대로야.”</p>
     <div class="cars" id="car-grid"></div>
   </div>
   <div class="pane" id="pane-gear" role="tabpanel" aria-labelledby="tab-gear" hidden>
@@ -427,21 +427,21 @@ body.cine #card { bottom: 9%; }
   </div>
   <div class="pane" id="pane-set" role="tabpanel" aria-labelledby="tab-set" hidden>
     <label class="opt"><input type="checkbox" id="opt-sound" checked>효과음</label>
-    <label class="opt"><input type="checkbox" id="opt-music" checked>배경음악</label>
+    <label class="opt"><input type="checkbox" id="opt-music">배경음악</label>
     <label class="opt"><input type="checkbox" id="opt-mirror" checked>룸미러 (화면 위쪽에 뒤쪽 모습 표시)</label>
     <label class="opt"><input type="checkbox" id="opt-calm">화면 흔들림과 번쩍임 줄이기</label>
     <label class="opt sel">그래픽 품질<select id="opt-gfx"><option value="auto">자동 (기기에 맞춰 조절)</option><option value="high">높음</option><option value="mid">보통</option><option value="low">낮음 (그림자 끔)</option></select></label>
-    <label class="opt"><input type="checkbox" id="opt-unlock">잠금 모두 해제 (차량, 미션, 무기 전부 열기)</label>
+    <label class="opt"><input type="checkbox" id="opt-unlock">잠금 모두 해제 (차량 전부 열기)</label>
     <label class="opt sel">시점<select id="opt-cam"><option value="low">낮은 추격 뷰 (기본, 차량 뒤 낮은 시점)</option><option value="top">탑뷰 (위에서 내려다봄)</option><option value="cockpit">운전석 뷰 (1인칭)</option></select></label>
     <button type="button" class="plain" id="opt-reset">진행 초기화</button>
     <button type="button" class="plain" id="opt-title">타이틀 화면으로</button>
     <button type="button" class="plain" id="opt-help">조작 방법 보기</button>
-    <button type="button" class="plain" id="opt-story">이야기와 운전 연습 다시 보기</button>
-    <p class="keys">키보드는 방향키로 움직입니다. ↑ ↓ 는 가속과 감속, ← → 는 좌우 이동입니다. 공격은 Z(누르는 동안 발사), 기본 기술은 X, 고유 기술은 Space, 시점 바꾸기는 C, 일시정지는 Esc, 소리 끄기는 M입니다. 터치는 왼쪽 아래 레버로 속도를 정하고 화면 오른쪽을 좌우로 끌어 이동하며, 레버를 잡고 있는 동안 무기가 나갑니다. 게임패드는 왼쪽 스틱으로 움직이고 RT로 쏩니다.</p>
-    <p class="keys">고철, 구입한 차량과 무기, 완료한 미션, 기록은 이 브라우저에만 저장됩니다.</p>
+    <button type="button" class="plain" id="opt-story" hidden>이야기와 운전 연습 다시 보기</button>
+    <p class="keys">키보드는 방향키로 움직입니다. ↑ ↓ 는 가속과 감속, ← → 는 좌우 이동입니다. 시점 바꾸기는 C, 일시정지는 Esc, 소리 끄기는 M입니다. 터치는 왼쪽 아래 레버로 속도를 정하고 화면 오른쪽을 좌우로 끌어 이동합니다. 게임패드는 왼쪽 스틱으로 움직입니다.</p>
+    <p class="keys">모은 고철, 연 차량, 기록은 이 브라우저에만 저장됩니다. 이름 같은 개인정보는 저장하지 않습니다.</p>
   </div>
   </div>
-  <div class="foot"><p class="what" id="go-what"></p><p class="sub" id="go-why" hidden></p><div><button type="button" id="demo-go" class="ghost">예고편 보기</button><button type="button" id="go" class="go">출발</button></div></div>
+  <div class="foot"><p class="what" id="go-what"></p><p class="sub" id="go-why" hidden></p><div><button type="button" id="demo-go" class="ghost" hidden>예고편 보기</button><button type="button" id="go" class="go">출발</button></div></div>
 </aside>
 
 <div class="panel result info" id="info" role="dialog" aria-labelledby="info-title" hidden>
@@ -478,13 +478,13 @@ body.cine #card { bottom: 9%; }
 </div>
 <div class="panel result help" id="help" role="dialog" aria-labelledby="help-title" hidden>
   <b id="help-title">조작 방법</b>
-  <p class="story">키보드와 게임패드는 이동과 공격이 따로입니다. 터치 화면에서는 왼손 레버를 잡고 있는 동안 무기가 나갑니다.</p>
+  <p class="story">속도를 정하고 좌우로 움직여 차로를 고릅니다.</p>
   <div class="helpgrid">
-    <section><h3>키보드</h3><dl class="detail"><dt>↑ ↓</dt><dd>가속·감속 (W S도 됩니다)</dd><dt>← →</dt><dd>좌우 이동 (A D도 됩니다)</dd><dt>Z, J</dt><dd>공격 (누르는 동안 발사). 화면 오른쪽 아래 공격 버튼을 마우스로 누르고 있어도 됩니다</dd><dt>X, E, F</dt><dd>기본 기술</dd><dt>Space, Shift</dt><dd>고유 기술</dd><dt>C</dt><dd>시점 바꾸기</dd><dt>Esc, P</dt><dd>일시정지</dd><dt>M</dt><dd>소리 전체 끄기</dd></dl></section>
-    <section><h3>터치</h3><dl class="detail"><dt>왼쪽 레버</dt><dd>위아래로 끌어 목표 속도 (누르는 동안 발사)</dd><dt>화면 오른쪽</dt><dd>좌우로 끌어 이동</dd><dt>오른쪽 아래 버튼</dt><dd>큰 버튼은 고유 기술, 그 위 작은 버튼은 기본 기술. 다른 손가락을 떼지 않고 눌러도 됩니다</dd></dl></section>
-    <section><h3>게임패드</h3><dl class="detail"><dt>왼쪽 스틱</dt><dd>위아래 속도, 좌우 이동</dd><dt>RT, RB</dt><dd>공격 (누르는 동안 발사)</dd><dt>A, B</dt><dd>고유 기술</dd><dt>X</dt><dd>기본 기술</dd><dt>Y</dt><dd>시점 바꾸기</dd><dt>Start</dt><dd>일시정지</dd></dl></section>
+    <section><h3>키보드</h3><dl class="detail"><dt>↑ ↓</dt><dd>가속·감속 (W S도 됩니다)</dd><dt>← →</dt><dd>좌우 이동 (A D도 됩니다)</dd><dt>C</dt><dd>시점 바꾸기</dd><dt>Esc, P</dt><dd>일시정지</dd><dt>M</dt><dd>소리 전체 끄기</dd></dl></section>
+    <section><h3>터치</h3><dl class="detail"><dt>왼쪽 레버</dt><dd>위아래로 끌어 목표 속도</dd><dt>화면 오른쪽</dt><dd>좌우로 끌어 이동</dd></dl></section>
+    <section><h3>게임패드</h3><dl class="detail"><dt>왼쪽 스틱</dt><dd>위아래 속도, 좌우 이동</dd><dt>Y</dt><dd>시점 바꾸기</dd><dt>Start</dt><dd>일시정지</dd></dl></section>
   </div>
-  <p>보급 상자는 쏘면 내용물이 바뀌고 지나가며 먹습니다. 갓길은 폭격과 공사 구간을 피하는 비상 차선입니다. 흙길·눈길·빗길에서는 속도와 접지력이 떨어집니다. 방지턱과 포트홀은 속도를 줄여 넘고, 화면 위 룸미러로 뒤에서 따라붙는 추격차를 확인합니다.</p>
+  <p>흙길·눈길·빗길에서는 속도와 접지력이 떨어집니다. 방지턱과 포트홀은 속도를 줄여 넘습니다. 앞차에 부딪히지 않게 빈 차로로 비켜 갑니다.</p>
   <div class="btns"><button type="button" class="primary" id="help-close">확인</button></div>
 </div>
 <div class="panel result ending" id="ending" hidden>
@@ -495,11 +495,11 @@ body.cine #card { bottom: 9%; }
   <div class="btns"><button type="button" class="primary" id="ending-title">타이틀로</button><button type="button" id="ending-menu">차량·미션 선택</button></div>
 </div>
 <div id="title">
-  <span class="kick">한울시 · 관제 AI 「마성」이 도로를 빼앗은 날</span>
-  <b>폭주전설</b>
+  <span class="kick">한울시 · 계산을 까먹은 관제 AI 「마성」</span>
+  <b>폭주 구구단</b>
   <span class="more" id="title-more"></span>
   <div class="kinds" id="title-kinds" role="group" aria-label="모드 골라 시작"></div>
-  <div class="btns"><button type="button" class="go" id="title-start">게임 시작</button><button type="button" class="ghost" id="title-tut">이야기와 운전 연습</button><button type="button" class="ghost" id="title-trailer">예고편 보기</button></div>
+  <div class="btns"><button type="button" class="go" id="title-start">게임 시작</button><button type="button" class="ghost" id="title-tut" hidden>이야기와 운전 연습</button><button type="button" class="ghost" id="title-trailer" hidden>예고편 보기</button></div>
 </div>
 <div id="err" hidden><div class="chip">이 기기에서는 3D 그래픽(WebGL)을 켤 수 없어 장면을 표시하지 못했습니다.</div></div>
 
