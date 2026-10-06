@@ -1,0 +1,535 @@
+<title>폭주전설 정식 버전</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@500;700&display=swap">
+<style>
+/* Layout: full-bleed live 3D scene where the car always drives up the screen. A tabbed selection panel sits on the left (bottom sheet on phones) with the view shifted so the car stays visible; the chosen car's detail opens under its own card. In play (top-down, low chase or driver's-seat view, switchable) small HUD chips hug the edges (objective with a run clock, status, speed with a centred gain/loss gauge) and a throttle lever sits at the left hand; no guidance text is drawn over the road. The trailer shows large title cards between letterbox bars. */
+:root {
+  --page: #9fd3f2;
+  --chip: rgba(255, 255, 255, 0.94);
+  --chip-fg: #202124;
+  --chip-sub: #4d5156;
+  --accent: #1967d2;
+  --accent-fg: #ffffff;
+  --accent-soft: #e3edfc;
+  --danger: #c5221f;
+  --danger-fg: #ffffff;
+  --ok: #188038;
+  --track: rgba(32, 33, 36, 0.14);
+  --line: rgba(32, 33, 36, 0.2);
+  --hit: rgba(214, 40, 30, 0.55);
+  --cine: #000000;
+  --cine-fg: #ffffff;
+  --scrim: rgba(0, 0, 0, 0.55);
+  --warn: #b06000;
+  --solid: #ffffff;
+  --display: 'Black Han Sans', 'Noto Sans KR', system-ui, sans-serif;
+  --body: 'Noto Sans KR', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0d1330; --chip: rgba(28, 30, 36, 0.93); --chip-fg: #e8eaed; --chip-sub: #c4c7cc;
+    --accent: #8ab4f8; --accent-fg: #14161a; --accent-soft: #263652; --danger: #f28b82; --danger-fg: #14161a;
+    --ok: #81c995; --track: rgba(232, 234, 237, 0.18); --line: rgba(232, 234, 237, 0.26);
+    --hit: rgba(242, 80, 70, 0.5); --warn: #fdd663; --solid: #1c1e24; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0d1330; --chip: rgba(28, 30, 36, 0.93); --chip-fg: #e8eaed; --chip-sub: #c4c7cc;
+  --accent: #8ab4f8; --accent-fg: #14161a; --accent-soft: #263652; --danger: #f28b82; --danger-fg: #14161a;
+  --ok: #81c995; --track: rgba(232, 234, 237, 0.18); --line: rgba(232, 234, 237, 0.26);
+  --hit: rgba(242, 80, 70, 0.5); --warn: #fdd663; --solid: #1c1e24; color-scheme: dark;
+}
+html, body { height: 100%; touch-action: manipulation; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background: var(--page); color: var(--chip-fg); font-family: var(--body); overflow: hidden; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+img { -webkit-user-drag: none; }
+[hidden] { display: none !important; }
+/* iOS answers a second tap on the same spot with its word-selection lens and copy bubble; nothing here is meant to be selected */
+*, *::before, *::after { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+input, textarea { -webkit-user-select: auto; user-select: auto; }
+/* iOS draws native, half-transparent pill buttons unless told otherwise, and dims disabled controls on its own */
+button { font-family: var(--body); color: var(--chip-fg); cursor: pointer; -webkit-appearance: none; appearance: none; margin: 0; }
+button:disabled, select:disabled { opacity: 1; -webkit-text-fill-color: currentColor; }
+select, input { -webkit-appearance: auto; }
+button:focus-visible, .lever:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+#flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; box-shadow: inset 0 0 140px 30px var(--hit); }
+.chip { background: var(--chip); border-radius: 16px; padding: 8px 12px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22); }
+.sub { font-size: 13px; color: var(--chip-sub); }
+.hud .bar, .status .bar { height: 6px; border-radius: 4px; background: var(--track); overflow: hidden; }
+.hud .bar i { display: block; height: 100%; width: 0; border-radius: 4px; background: var(--accent); }
+.tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 10px; background: var(--accent-soft); color: var(--chip-fg); white-space: nowrap; }
+.tag.rev { background: var(--danger); color: var(--danger-fg); }
+
+.hud { position: fixed; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
+.hud .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; justify-content: space-between; }
+.hud .row.bottom { align-items: flex-end; flex-wrap: nowrap; }
+.hud, .hud *, #demo, #demo *, #coach, #caption, #banner, #card { touch-action: none; }
+button, select, label, [role="tab"] { touch-action: manipulation; }
+.hud button, .lever { touch-action: none; }
+#vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 46%, transparent 52%, rgba(0, 0, 0, 0.5) 100%); opacity: 0.45; }
+.hud .chip { pointer-events: auto; }
+.obj { display: flex; flex-direction: column; gap: 3px; min-width: 200px; max-width: 340px; }
+.obj .head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.obj .head b { font-family: var(--display); font-weight: 400; font-size: 18px; margin-left: 2px; }
+.clock { display: flex; align-items: baseline; gap: 10px; font-variant-numeric: tabular-nums; }
+.clock b { font-family: var(--display); font-weight: 400; font-size: 22px; line-height: 1.1; }
+.status { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; min-width: 230px; font-variant-numeric: tabular-nums; }
+.status > :nth-child(1) { grid-column: 1; grid-row: 1; } .status > :nth-child(2) { grid-column: 1; grid-row: 2; } .status > :nth-child(3) { grid-column: 1; grid-row: 3; }
+.status > :nth-child(4) { grid-column: 2; grid-row: 1 / span 3; flex-direction: column; gap: 5px; } .status > :nth-child(5) { grid-column: 1 / span 2; grid-row: 4; }
+.status .line:first-child b { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#hp-text { white-space: nowrap; flex: none; }
+.status .line { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.status .line b { font-weight: 700; }
+.status .bar.hp i { background: var(--ok); }
+.status .bar.hp i.s2 { background: var(--warn); }
+.status .bar.hp i.s3 { background: var(--danger); }
+.status button { white-space: nowrap; height: 28px; width: 78px; padding: 0 6px; border-radius: 14px; border: 1px solid var(--line); background: transparent; font-size: 12px; font-weight: 700; }
+.speed { display: flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
+.speed b { font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1; }
+.speed span { font-size: 12px; color: var(--chip-sub); }
+.ctl { display: flex; align-items: flex-end; gap: 10px; }
+.lever { width: 68px; height: 176px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 0; touch-action: none; cursor: ns-resize; }
+.lever span { font-size: 12px; font-weight: 700; color: var(--chip-sub); }
+.lever .track { position: relative; flex: 1; width: 14px; border-radius: 7px; background: var(--track); }
+.lever .fill { position: absolute; left: 0; right: 0; bottom: 0; height: 50%; border-radius: 7px; background: var(--ok); }
+.lever .knob { position: absolute; left: 50%; bottom: 50%; width: 48px; height: 24px; margin: 0 0 -12px -24px; border-radius: 12px; background: var(--accent); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35); }
+.skill { position: relative; overflow: hidden; flex: none; box-sizing: border-box; width: 176px; height: 88px; padding: 8px 12px 12px; border: 2px solid var(--accent); text-align: left; display: flex; flex-direction: column; justify-content: center; gap: 2px; font-size: 16px; font-weight: 700; line-height: 1.3; }
+.skill span { display: block; flex: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1.3; }
+.skill .kicker { font-size: 11px; font-weight: 700; color: var(--chip-sub); letter-spacing: 0.04em; }
+.skill i { position: absolute; left: 0; bottom: 0; height: 5px; width: 100%; background: var(--accent); transform-origin: left; }
+.skill.cool { border-color: var(--line); cursor: default; }
+.skill.cool #skill-name, .skill.cool #basic-name { color: var(--chip-sub); }
+.acts { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex: none; }
+.skill.basic { height: 74px; padding: 6px 12px 10px; font-size: 14px; border-color: var(--ok); gap: 1px; }
+.skill.fire { border-color: var(--danger); }
+.skill.fire.on { background: var(--danger); }
+.skill.fire.on span { color: var(--danger-fg); }
+.skill.basic.cool { border-color: var(--line); }
+.skill.basic i { background: var(--ok); height: 4px; }
+.skill.basic .kicker { font-size: 10px; }
+.skill:active { transform: scale(0.96); }
+.buffs { min-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctl { flex: none; }
+
+#caption { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: max-content; max-width: min(680px, calc(100% - 32px));
+  box-sizing: border-box; pointer-events: none; text-align: center; font-size: 15px; font-weight: 700; line-height: 1.5; text-wrap: balance; }
+#demo { position: fixed; inset: 0; pointer-events: none; }
+#demo .bar { position: absolute; left: 0; right: 0; height: 9%; border-radius: 0; background: var(--cine); }
+#demo .bar.top { top: 0; } #demo .bar.bot { bottom: 0; }
+#demo .info { position: absolute; left: 16px; top: calc(9% + 12px); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; max-width: calc(100% - 170px); }
+#demo .info b { font-family: var(--display); font-weight: 400; font-size: 17px; }
+#demo button { position: absolute; right: 16px; top: calc(9% + 12px); pointer-events: auto; border: 0; min-height: 44px; font-size: 14px; font-weight: 700; }
+#demo.carded .info { display: none; }
+body.cine #caption { bottom: calc(9% + 14px); font-size: 16px; }
+#banner { position: fixed; left: 50%; top: max(calc(110px + env(safe-area-inset-top, 0px)), var(--mb, 0px)); transform: translateX(-50%); pointer-events: none;
+  background: var(--danger); color: var(--danger-fg); font-family: var(--display); font-size: 22px; padding: 6px 20px; border-radius: 20px; }
+
+.panel { position: fixed; left: 16px; top: calc(16px + env(safe-area-inset-top, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  width: min(380px, calc(100% - 32px)); box-sizing: border-box; overflow-y: auto; background: var(--chip); border-radius: 20px; padding: 18px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28); display: flex; flex-direction: column; gap: 10px; }
+.panel h2 { margin: 6px 0 0; font-size: 13px; font-weight: 700; color: var(--chip-sub); letter-spacing: 0.04em; }
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand b { font-family: var(--display); font-weight: 400; font-size: 26px; letter-spacing: 0.02em; }
+.brand span { font-size: 13px; color: var(--chip-sub); }
+.premise { margin: 0; font-size: 13.5px; line-height: 1.6; }
+.wallet { margin-left: auto; font-size: 13px; color: var(--chip-sub); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.wallet b { font-family: var(--body); font-weight: 700; font-size: 15px; letter-spacing: 0; color: var(--chip-fg); }
+.tabs { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--track); }
+.tabs button { flex: 1 1 auto; min-height: 40px; padding: 0 4px; border: 0; border-radius: 10px; background: transparent; font-size: 13.5px; font-weight: 700; color: var(--chip-sub); white-space: nowrap; }
+.tabs button[aria-selected="true"] { background: var(--chip); color: var(--chip-fg); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
+.pane { display: flex; flex-direction: column; gap: 10px; }
+.cars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.cars h3 { grid-column: 1 / -1; margin: 2px 0 0; font-size: 12.5px; font-weight: 700; color: var(--chip-sub); letter-spacing: 0.04em; }
+.card, .mis { text-align: left; background: transparent; border: 2px solid var(--line); border-radius: 14px; padding: 5px 10px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.card b { font-family: var(--display); font-weight: 400; font-size: 15.5px; line-height: 1.2; word-break: keep-all; overflow-wrap: anywhere; }
+.card img { width: calc(100% + 12px); margin: -1px -6px 3px; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 9px; background: var(--track); display: block; }
+.card.locked img { filter: grayscale(0.8) brightness(0.8); }
+.mis { padding: 7px 10px; }
+.card span { font-size: 12px; line-height: 1.4; color: var(--chip-sub); white-space: nowrap; }
+.card.locked span, .mis .lock { color: var(--warn); font-weight: 700; }
+.card[aria-pressed="true"], .mis[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.inline { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; margin: 0 0 4px; padding: 10px 12px 12px; border: 2px solid var(--accent); border-radius: 14px; }
+.picked { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+.arm { padding: 10px 0; border-top: 1px solid var(--line); }
+.arm-head { display: flex; align-items: center; gap: 8px; }
+.arm b { font-size: 15px; font-weight: 700; }
+.arm p { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--chip-sub); }
+.arm .plain[disabled] { color: var(--chip-sub); cursor: default; opacity: 0.7; }
+.tag.off { background: var(--track); color: var(--chip-sub); }
+.foot p.what { color: var(--chip-fg); font-size: 13px; }
+.picked b { font-family: var(--display); font-weight: 400; font-size: 22px; }
+.picked span { font-size: 13px; color: var(--chip-sub); }
+.buy { min-height: 46px; border-radius: 23px; border: 2px solid var(--accent); background: transparent; font-size: 15px; font-weight: 700; }
+.buy[disabled] { border-color: var(--line); color: var(--chip-sub); cursor: default; }
+.slot, .arm { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: start; gap: 10px; }
+.slot { font-size: 14px; font-weight: 700; }
+.slot label { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; gap: 8px; }
+.slot-body, .arm-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pic { width: 88px; height: 66px; padding: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #e3ebf5; display: block; }
+.pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pic.empty { background: var(--track); border-style: dashed; }
+.arm-btns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.arm .plain { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.arm p.stat { color: var(--chip-fg); font-weight: 700; font-variant-numeric: tabular-nums; }
+.result.info { width: min(400px, calc(100% - 32px)); text-align: left; gap: 8px; max-height: calc(100% - 32px); overflow-y: auto; z-index: 3; }
+.result.info p { text-align: left; }
+.info img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 14px; border: 1px solid var(--line); background: #e3ebf5; display: block; }
+.info b { font-size: 26px; }
+.info .detail dd { color: var(--chip-fg); }
+.slot select { min-height: 44px; border-radius: 12px; border: 2px solid var(--line); background: var(--chip); color: var(--chip-fg); font-family: var(--body); font-size: 15px; font-weight: 700; padding: 0 10px; }
+.slot p { margin: 0; font-size: 12.5px; font-weight: 500; line-height: 1.45; color: var(--chip-sub); }
+.opt { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px; font-weight: 700; }
+.opt input { width: 20px; height: 20px; accent-color: var(--accent); }
+.opt.sel select { flex: 1 1 auto; min-width: 0; min-height: 44px; border-radius: 12px; border: 2px solid var(--line); background: var(--chip); color: var(--chip-fg); font-family: var(--body); font-size: 14px; font-weight: 700; padding: 0 10px; }
+.plain { align-self: flex-start; min-height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid var(--line); background: transparent; font-size: 14px; font-weight: 700; }
+.missions { display: flex; flex-direction: column; gap: 5px; }
+.missions .part { font-size: 13px; font-weight: 700; color: var(--accent); padding: 8px 4px 1px; }
+.missions .part:first-child { padding-top: 0; }
+.kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 5px; }
+.kind { text-align: left; background: transparent; border: 2px solid var(--line); border-radius: 14px; padding: 6px 10px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.kind b { font-family: var(--display); font-weight: 400; font-size: 16px; line-height: 1.25; }
+.kind span { font-size: 11.5px; line-height: 1.35; color: var(--chip-sub); }
+.kind[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
+#menu .kinds { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--track); }
+#menu .kind { flex: 1 1 auto; align-items: center; min-height: 38px; padding: 0 2px; border: 0; border-radius: 10px; justify-content: center; }
+#menu .kind b { font-family: var(--body); font-weight: 700; font-size: 13px; color: var(--chip-sub); white-space: nowrap; }
+#menu .kind span { display: none; }
+#menu .kind[aria-checked="true"] { background: var(--accent); }
+#menu .kind[aria-checked="true"] b { color: var(--accent-fg); }
+#title .kinds { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+#title .kind { min-height: 0; padding: 8px 16px; border-radius: 16px; border: 0; background: var(--chip); color: var(--chip-fg); font-family: var(--body); text-shadow: none; }
+#title .kind b { font-size: 17px; }
+#title .kind span { font-size: 12px; }
+.mis { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; }
+.mis b { font-size: 15px; font-weight: 700; }
+.detail { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; font-size: 13px; line-height: 1.5; }
+.detail dt { font-weight: 700; color: var(--chip-sub); white-space: nowrap; }
+.detail dd { margin: 0; }
+.panel:not(.result) { overflow: hidden; }
+.scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -8px; padding: 2px 8px; }
+.foot { flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.foot p { margin: 0; text-align: center; color: var(--warn); font-weight: 700; }
+.foot div { display: flex; gap: 8px; }
+.foot button { min-height: 52px; border-radius: 26px; font-family: var(--display); font-size: 20px; }
+.foot .ghost { flex: 1 1 0; border: 2px solid var(--accent); background: transparent; color: var(--chip-fg); }
+.go { flex: 1.4 1 0; border: 0; background: var(--accent); color: var(--accent-fg); }
+.go[disabled] { background: var(--track); color: var(--chip-sub); cursor: default; }
+.keys { margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--chip-sub); }
+.result { top: 50%; bottom: auto; left: 50%; transform: translate(-50%, -50%); width: min(360px, calc(100% - 32px)); text-align: center; }
+.result b { font-family: var(--display); font-weight: 400; font-size: 30px; }
+.result p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--chip-sub); }
+.result p.story { font-size: 15px; color: var(--chip-fg); }
+.result .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.result .stats { text-align: left; font-size: 14px; padding: 10px 12px; border-radius: 14px; background: var(--track); font-variant-numeric: tabular-nums; }
+.result .stats dd { color: var(--chip-fg); font-weight: 700; text-align: right; }
+.result p.reward { color: var(--chip-fg); font-weight: 700; }
+.result .quick { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; justify-content: center; }
+.result .quick .plain { align-self: center; min-height: 36px; font-size: 13px; }
+.result.help { width: min(720px, calc(100% - 32px)); text-align: left; gap: 10px; max-height: calc(100% - 32px); overflow-y: auto; z-index: 4; }
+.result.help b { text-align: center; }
+.result.help, .result.info { background: var(--solid); }
+.result.tale { width: min(540px, calc(100% - 32px)); gap: 12px; }
+.result.tale b { font-family: var(--display); font-weight: 400; font-size: 26px; }
+.result.tale p.story { font-size: 16px; line-height: 1.75; margin: 0; }
+#coach { position: fixed; left: 50%; transform: translateX(-50%); top: max(calc(128px + env(safe-area-inset-top, 0px)), var(--mb, 0px)); width: min(560px, calc(100% - 24px)); box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; pointer-events: none; z-index: 2; }
+#coach[hidden] { display: none; }
+#coach .who { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+#coach .who b { font-weight: 700; color: var(--accent); }
+#coach p { margin: 0; line-height: 1.5; }
+#coach-do { font-weight: 700; padding: 6px 10px; border-radius: 10px; background: var(--accent-soft); }
+#coach-skip { pointer-events: auto; align-self: flex-end; height: 28px; padding: 0 10px; border-radius: 14px; border: 1px solid var(--line); background: transparent; font-size: 12px; font-weight: 700; }
+.helpgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.helpgrid section { padding: 10px 12px; border-radius: 14px; background: var(--track); }
+.helpgrid h3 { margin: 0 0 6px; font-size: 14px; font-weight: 700; }
+.helpgrid dd { color: var(--chip-fg); }
+.result .btns button { flex: 1 1 130px; min-height: 46px; border-radius: 23px; border: 1px solid var(--line); background: transparent; font-size: 15px; font-weight: 700; }
+.result .btns button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+#fade { position: fixed; inset: 0; pointer-events: none; background: var(--cine); opacity: 0; }
+body.cine #card { bottom: 9%; }
+#card { position: fixed; left: 0; right: 0; bottom: 0; padding: 90px max(24px, 7vw) 34px; box-sizing: border-box; pointer-events: none; display: flex; flex-direction: column; gap: 6px;
+  color: var(--cine-fg); background: linear-gradient(to bottom, transparent, var(--scrim) 60%); text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7); }
+#card .kick { font-size: clamp(14px, 1.7vw, 20px); font-weight: 700; letter-spacing: 0.08em; }
+#card b { font-family: var(--display); font-weight: 400; font-size: clamp(44px, 8.5vw, 112px); line-height: 1.05; text-wrap: balance; }
+#card .more { font-size: clamp(15px, 1.9vw, 22px); font-weight: 700; line-height: 1.5; max-width: 760px; text-wrap: pretty; }
+.meter { display: block; height: 6px; margin-top: 3px; border-radius: 3px; background: var(--track); overflow: hidden; }
+.meter b { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+.speed { flex: none; box-sizing: border-box; width: 190px; height: 114px; flex-direction: column; align-items: stretch; justify-content: space-between; gap: 4px; overflow: hidden; }
+.speed .sub2 span { flex: none; }
+.speed .sub2.info { flex-wrap: wrap; row-gap: 3px; }
+.speed .sub2 #grade { flex: 1 1 100%; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; }
+.speed .top { display: flex; align-items: baseline; gap: 8px; }
+.speed .sub2 { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--chip-sub); white-space: nowrap; justify-content: space-between; }
+.acc { position: relative; flex: 1 1 60px; height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
+.acc::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--chip-fg); }
+#acc-up { position: absolute; left: 50%; top: 0; bottom: 0; width: 0; background: var(--ok); }
+#acc-dn { position: absolute; right: 50%; top: 0; bottom: 0; width: 0; background: var(--danger); }
+.tag.on { background: var(--ok); color: var(--accent-fg); }
+#title { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; padding: 0 max(24px, 7vw) max(40px, 9vh); box-sizing: border-box;
+  color: var(--cine-fg); background: linear-gradient(to bottom, transparent 35%, var(--scrim) 80%); text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7); }
+#title .kick { font-size: clamp(14px, 1.7vw, 20px); font-weight: 700; letter-spacing: 0.08em; }
+#title b { font-family: var(--display); font-weight: 400; font-size: clamp(56px, 11vw, 150px); line-height: 1; }
+#title .more { font-size: clamp(15px, 1.9vw, 22px); font-weight: 700; line-height: 1.5; max-width: 720px; text-wrap: pretty; }
+#title .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+#title button { min-height: 54px; padding: 0 30px; border-radius: 27px; border: 0; font-family: var(--display); font-size: 21px; text-shadow: none; }
+#title .go { flex: 0 1 auto; background: var(--accent); color: var(--accent-fg); }
+#title .ghost { background: var(--chip); color: var(--chip-fg); }
+#card.long b { font-size: clamp(32px, 5.6vw, 76px); }
+.ending { width: min(560px, calc(100% - 32px)); text-align: left; gap: 12px; }
+.ending b { text-align: center; }
+.ending p.story { font-size: 15px; line-height: 1.7; }
+#err { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+@media (max-width: 720px) {
+  .panel:not(.result) { top: auto; left: 16px; right: 16px; width: auto; max-height: 56%; }
+  .obj, .status { min-width: 0; flex: 1 1 150px; }
+  .clock b { font-size: 19px; }
+  .clock { gap: 6px; }
+  .status { gap: 3px 6px; }
+  .status .line { gap: 4px 5px; }
+  .status > :nth-child(3) { font-size: 12px; }
+  .status > :nth-child(4) { gap: 4px; }
+  #banner { top: max(calc(104px + env(safe-area-inset-top, 0px)), var(--mb, 0px)); }
+  #coach { top: calc(100px + env(safe-area-inset-top, 0px)); font-size: 13px; }
+  .hud { padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
+  .lever { height: 150px; width: 60px; }
+  .hud { padding-left: 10px; padding-right: 10px; }
+  .hud .row { gap: 8px; }
+  .hud .row:first-child { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .hud .chip { padding: 8px 10px; }
+  .hud .chip.obj, .hud .chip.status { padding: 6px 9px; box-sizing: border-box; height: 84px; overflow: hidden; }
+  .obj .head { flex-wrap: nowrap; gap: 4px; }
+  .obj .head .tag { font-size: 11px; padding: 0 6px; }
+  .hud .bar, .status .bar { height: 5px; }
+  .buffs { min-height: 15px; font-size: 11px; }
+  .obj { max-width: none; }
+  .obj .head b { font-size: 14px; margin-left: 0; flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #clock-best { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .status button { height: 24px; width: 54px; padding: 0 2px; font-size: 11px; }
+  #hp-text { font-size: 11px; }
+  .speed { width: 150px; height: 96px; gap: 3px; }
+  .speed b { font-size: 24px; }
+  .speed .sub2 { font-size: 11px; gap: 4px; }
+  #obj-text { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; line-height: 1.3; }
+  .skill { width: 96px; height: 96px; border-radius: 48px; align-items: center; text-align: center; padding: 6px; }
+  .skill #skill-name, .skill #basic-name { font-size: 14px; white-space: normal; line-height: 1.15; max-height: 2.3em; word-break: keep-all; }
+  .skill .kicker { display: none; }
+  .skill.basic { width: 68px; height: 68px; border-radius: 34px; padding: 4px; }
+  .skill span { line-height: 1.2; }
+  .skill.basic #basic-name { font-size: 12px; }
+  .skill.basic .sub { font-size: 10px; }
+  .acts { gap: 6px; }
+  .skill .sub { font-size: 11px; }
+  .skill i { height: 6px; }
+  #caption { bottom: calc(262px + env(safe-area-inset-bottom, 0px)); }
+  #spd-target { display: none; }
+  .speed { min-width: 0; }
+  .panel:not(.result) { padding: 14px; gap: 8px; }
+  .card { padding: 6px 8px; }
+}
+</style>
+
+<canvas id="c" aria-label="무장 차량이 도로를 위쪽으로 달리며 적 차량과 드론을 상대하는 3D 전투 장면"></canvas>
+<div id="vignette"></div>
+<div id="flash"></div>
+<div id="banner" hidden>공중폭격</div>
+<div id="demo" hidden>
+  <div class="bar top"></div><div class="bar bot"></div>
+  <div class="chip info"><span class="tag">예고편</span><b id="demo-title"></b><span class="sub" id="demo-obj"></span></div>
+  <button type="button" class="chip" id="demo-exit">예고편 끝내기</button>
+</div>
+<div id="card" hidden><span class="kick" id="card-kick"></span><b id="card-title"></b><span class="more" id="card-sub"></span></div>
+<div id="fade"></div>
+<div id="caption" class="chip" hidden aria-live="polite"></div>
+
+<div class="hud" id="hud" hidden>
+  <div class="row">
+    <div class="chip obj">
+      <div class="head"><span class="tag" id="tag-time">낮</span><span class="tag" id="tag-dir">정주행</span><b id="obj-title">외곽 소탕</b></div>
+      <div class="clock"><b id="clock">0:00.0</b><span class="sub" id="clock-best"></span></div>
+      <div class="sub" id="obj-text">폭주 차량 격파 0 / 20</div>
+      <div class="bar"><i id="obj-bar"></i></div>
+    </div>
+    <div class="chip status">
+      <div class="line"><b id="car-name">레이저</b><span class="sub" id="hp-text">100 / 100</span></div>
+      <div class="bar hp"><i id="hp-bar"></i></div>
+      <div class="line sub"><span>점수 <b id="score">0</b></span><span>고철 <b id="scrap">0</b></span></div>
+      <div class="line"><button type="button" id="btn-cam" aria-label="시점 바꾸기">추격 뷰</button><button type="button" id="btn-exit">일시정지</button></div>
+      <div class="sub buffs" id="buffs"></div>
+    </div>
+  </div>
+  <div class="row bottom">
+    <div class="ctl">
+    <div class="chip lever" id="lever" role="slider" tabindex="0" aria-label="목표 속도" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+      <span>가속</span>
+      <div class="track" id="lever-track"><i class="fill" id="lever-fill"></i><i class="knob" id="lever-knob"></i></div>
+      <span>감속</span>
+    </div>
+      <div class="chip speed"><div class="top"><b id="spd">100</b><span>km/h</span><span id="spd-target">목표 100</span></div><div class="sub2"><span>감속</span><i class="acc" role="img" aria-label="가감속 게이지"><i id="acc-dn"></i><i id="acc-up"></i></i><span>가속</span></div><div class="sub2 info"><span class="tag" id="fire-state">발사 대기</span><span id="grade">평지</span></div></div>
+    </div>
+    <div class="acts">
+      <button type="button" class="chip skill basic fire" id="btn-fire" aria-label="공격: 누르고 있는 동안 발사" hidden><span class="kicker">공격</span><span id="fire-name">사격</span><span class="sub" id="fire-cd">누르는 동안 · Z</span></button>
+      <button type="button" class="chip skill basic" id="btn-basic" aria-label="기본 기술 쓰기"><span class="kicker">기본 기술</span><span id="basic-name">퀵 스텝</span><span class="sub" id="basic-cd">준비됨</span><i id="basic-bar"></i></button>
+      <button type="button" class="chip skill" id="btn-skill" aria-label="고유 기술 쓰기"><span class="kicker">고유 기술</span><span id="skill-name">틈새 대시</span><span class="sub" id="skill-cd">준비됨</span><i id="skill-bar"></i></button>
+    </div>
+  </div>
+</div>
+
+<aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
+  <div class="brand"><b>폭주전설</b><span>정식 버전 1.6</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="tabs" role="tablist" aria-label="선택 항목">
+    <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
+    <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false">아이템</button>
+    <button type="button" role="tab" id="tab-mode" data-tab="mode" aria-selected="false">모드</button>
+    <button type="button" role="tab" id="tab-set" data-tab="set" aria-selected="false">설정</button>
+  </div>
+  <div class="scroll">
+  <div class="pane" id="pane-car" role="tabpanel" aria-labelledby="tab-car">
+    <p class="premise">오 사장: “막내야, 통신 모듈은 다 뗐다. 마음에 드는 놈으로 골라. 제원은 실차 그대로야.”</p>
+    <div class="cars" id="car-grid"></div>
+  </div>
+  <div class="pane" id="pane-gear" role="tabpanel" aria-labelledby="tab-gear" hidden>
+    <p class="premise" id="gear-head"></p>
+    <div class="pane" id="slots"></div>
+    <p class="keys">이 탭에서는 달린 무기가 시험 사격을 합니다. 미사일과 지뢰는 적이 있을 때만 나갑니다.</p>
+    <h2>무기고</h2>
+    <p class="keys">한 번 산 무기는 어느 차에나 답니다. 차량을 사면 그 차의 기본 무기가 함께 들어옵니다. 강화는 세 단계까지입니다.</p>
+    <div class="armory" id="armory"></div>
+    <h2>타이어</h2>
+    <p class="keys">한 번 산 타이어는 어느 차에나 달고, 차마다 다른 타이어를 달아 둘 수 있습니다. 길과 날씨에 맞는 타이어가 접지력과 속도를 지켜 줍니다.</p>
+    <div class="armory" id="tires"></div>
+    <h2>보급 상자 아이템</h2>
+    <p class="keys">도로에 떠서 다가오는 보급 상자에서 나옵니다. 상자를 쏘면 내용물이 바뀌고, 지나가며 먹으면 효과가 납니다.</p>
+    <div class="armory" id="supply"></div>
+  </div>
+  <div class="pane" id="pane-mode" role="tabpanel" aria-labelledby="tab-mode" hidden>
+  <div class="kinds" id="kinds" role="radiogroup" aria-label="게임 모드"></div>
+  <div class="pane" id="pane-mis">
+    <p class="premise">당신은 전설 카센터의 막내 정비사, 한울시에 몇 안 남은 운전할 줄 아는 사람이다. 관제 AI 「마성」이 빼앗은 도로를 통신 모듈을 뗀 차로 달려, 마성 타워의 전원을 내려라. 새벽이 무전으로 길을 읽어 준다.</p>
+    <div class="missions" id="mis-list"></div>
+    <dl class="detail" id="brief"></dl>
+  </div>
+  <div class="pane" id="pane-ta" hidden>
+    <p class="premise">같은 길을 달려 기록을 겨룹니다. 트랙의 도로는 달릴 때마다 같고, 기록은 차량마다 따로 남습니다.</p>
+    <div class="missions" id="ta-list"></div>
+    <dl class="detail" id="ta-brief"></dl>
+  </div>
+  <div class="pane" id="pane-race" hidden>
+    <p class="premise">타임어택 트랙에서 경쟁 차량 5대와 순위를 겨룹니다. 상대는 고른 차와 최고속도가 비슷한 차량들이고, 무기와 몸싸움이 모두 허용됩니다.</p>
+    <div class="missions" id="race-list"></div>
+    <dl class="detail" id="race-brief"></dl>
+  </div>
+  <div class="pane" id="pane-cond" hidden>
+    <p class="premise" id="cond-premise"></p>
+    <label class="opt sel">배경<select id="opt-region"></select></label>
+    <label class="opt sel">시간<select id="opt-time"><option value="day">낮</option><option value="sunset">노을</option><option value="night">밤</option></select></label>
+    <label class="opt sel">날씨<select id="opt-weather"></select></label>
+    <dl class="detail" id="cond-brief"></dl>
+  </div>
+  </div>
+  <div class="pane" id="pane-set" role="tabpanel" aria-labelledby="tab-set" hidden>
+    <label class="opt"><input type="checkbox" id="opt-sound" checked>효과음</label>
+    <label class="opt"><input type="checkbox" id="opt-music" checked>배경음악</label>
+    <label class="opt"><input type="checkbox" id="opt-mirror" checked>룸미러 (화면 위쪽에 뒤쪽 모습 표시)</label>
+    <label class="opt"><input type="checkbox" id="opt-calm">화면 흔들림과 번쩍임 줄이기</label>
+    <label class="opt sel">그래픽 품질<select id="opt-gfx"><option value="auto">자동 (기기에 맞춰 조절)</option><option value="high">높음</option><option value="mid">보통</option><option value="low">낮음 (그림자 끔)</option></select></label>
+    <label class="opt"><input type="checkbox" id="opt-unlock">잠금 모두 해제 (차량, 미션, 무기 전부 열기)</label>
+    <label class="opt sel">시점<select id="opt-cam"><option value="low">낮은 추격 뷰 (기본, 차량 뒤 낮은 시점)</option><option value="top">탑뷰 (위에서 내려다봄)</option><option value="cockpit">운전석 뷰 (1인칭)</option></select></label>
+    <button type="button" class="plain" id="opt-reset">진행 초기화</button>
+    <button type="button" class="plain" id="opt-title">타이틀 화면으로</button>
+    <button type="button" class="plain" id="opt-help">조작 방법 보기</button>
+    <button type="button" class="plain" id="opt-story">이야기와 운전 연습 다시 보기</button>
+    <p class="keys">키보드는 방향키로 움직입니다. ↑ ↓ 는 가속과 감속, ← → 는 좌우 이동입니다. 공격은 Z(누르는 동안 발사), 기본 기술은 X, 고유 기술은 Space, 시점 바꾸기는 C, 일시정지는 Esc, 소리 끄기는 M입니다. 터치는 왼쪽 아래 레버로 속도를 정하고 화면 오른쪽을 좌우로 끌어 이동하며, 레버를 잡고 있는 동안 무기가 나갑니다. 게임패드는 왼쪽 스틱으로 움직이고 RT로 쏩니다.</p>
+    <p class="keys">고철, 구입한 차량과 무기, 완료한 미션, 기록은 이 브라우저에만 저장됩니다.</p>
+  </div>
+  </div>
+  <div class="foot"><p class="what" id="go-what"></p><p class="sub" id="go-why" hidden></p><div><button type="button" id="demo-go" class="ghost">예고편 보기</button><button type="button" id="go" class="go">출발</button></div></div>
+</aside>
+
+<div class="panel result info" id="info" role="dialog" aria-labelledby="info-title" hidden>
+  <img id="info-img" alt="">
+  <b id="info-title"></b>
+  <p id="info-tag"></p>
+  <dl class="detail" id="info-body"></dl>
+  <div class="btns"><button type="button" class="primary" id="info-act" hidden></button><button type="button" id="info-close">닫기</button></div>
+</div>
+<div class="panel result" id="result" hidden>
+  <b id="res-title">미션 완료</b>
+  <p class="story" id="res-story"></p>
+  <dl class="detail stats" id="res-text"></dl>
+  <p class="reward" id="res-reward"></p>
+  <div class="btns"><button type="button" id="res-menu">선택 화면으로</button><button type="button" id="res-retry">다시 하기</button><button type="button" class="primary" id="res-next" hidden>다음 미션</button><button type="button" class="primary" id="res-ending" hidden>엔딩 보기</button></div>
+</div>
+<div class="panel result" id="pause" hidden>
+  <b>일시정지</b>
+  <p id="pause-text"></p>
+  <div class="quick"><label class="opt"><input type="checkbox" id="pz-sound" checked>효과음</label><label class="opt"><input type="checkbox" id="pz-music" checked>배경음악</label><button type="button" class="plain" id="pz-cam">시점 바꾸기</button><button type="button" class="plain" id="pz-help">조작 방법</button></div>
+  <div class="btns"><button type="button" class="primary" id="pause-resume">계속 하기</button><button type="button" id="pause-retry">다시 시작</button><button type="button" id="pause-menu">선택 화면으로</button></div>
+</div>
+<div class="panel result help tale" id="story" role="dialog" aria-labelledby="story-title" hidden>
+  <span class="sub" id="story-step"></span>
+  <b id="story-title"></b>
+  <p class="story" id="story-text"></p>
+  <div class="btns"><button type="button" id="story-skip">건너뛰기</button><button type="button" class="primary" id="story-next">다음</button></div>
+</div>
+<div class="chip" id="coach" hidden aria-live="polite">
+  <div class="who"><b id="coach-who"></b><span class="sub" id="coach-step"></span></div>
+  <p id="coach-line"></p>
+  <p id="coach-do"></p>
+  <button type="button" id="coach-skip">연습 건너뛰기</button>
+</div>
+<div class="panel result help" id="help" role="dialog" aria-labelledby="help-title" hidden>
+  <b id="help-title">조작 방법</b>
+  <p class="story">키보드와 게임패드는 이동과 공격이 따로입니다. 터치 화면에서는 왼손 레버를 잡고 있는 동안 무기가 나갑니다.</p>
+  <div class="helpgrid">
+    <section><h3>키보드</h3><dl class="detail"><dt>↑ ↓</dt><dd>가속·감속 (W S도 됩니다)</dd><dt>← →</dt><dd>좌우 이동 (A D도 됩니다)</dd><dt>Z, J</dt><dd>공격 (누르는 동안 발사). 화면 오른쪽 아래 공격 버튼을 마우스로 누르고 있어도 됩니다</dd><dt>X, E, F</dt><dd>기본 기술</dd><dt>Space, Shift</dt><dd>고유 기술</dd><dt>C</dt><dd>시점 바꾸기</dd><dt>Esc, P</dt><dd>일시정지</dd><dt>M</dt><dd>소리 전체 끄기</dd></dl></section>
+    <section><h3>터치</h3><dl class="detail"><dt>왼쪽 레버</dt><dd>위아래로 끌어 목표 속도 (누르는 동안 발사)</dd><dt>화면 오른쪽</dt><dd>좌우로 끌어 이동</dd><dt>오른쪽 아래 버튼</dt><dd>큰 버튼은 고유 기술, 그 위 작은 버튼은 기본 기술. 다른 손가락을 떼지 않고 눌러도 됩니다</dd></dl></section>
+    <section><h3>게임패드</h3><dl class="detail"><dt>왼쪽 스틱</dt><dd>위아래 속도, 좌우 이동</dd><dt>RT, RB</dt><dd>공격 (누르는 동안 발사)</dd><dt>A, B</dt><dd>고유 기술</dd><dt>X</dt><dd>기본 기술</dd><dt>Y</dt><dd>시점 바꾸기</dd><dt>Start</dt><dd>일시정지</dd></dl></section>
+  </div>
+  <p>보급 상자는 쏘면 내용물이 바뀌고 지나가며 먹습니다. 갓길은 폭격과 공사 구간을 피하는 비상 차선입니다. 흙길·눈길·빗길에서는 속도와 접지력이 떨어집니다. 방지턱과 포트홀은 속도를 줄여 넘고, 화면 위 룸미러로 뒤에서 따라붙는 추격차를 확인합니다.</p>
+  <div class="btns"><button type="button" class="primary" id="help-close">확인</button></div>
+</div>
+<div class="panel result ending" id="ending" hidden>
+  <b id="ending-head">마지막 서버, 전원 차단</b>
+  <p class="story" id="ending-a">폭풍이 지나간 새벽, 해안도로 끝에서 서버 트럭이 멈췄다. 타워에서 들녘의 변전소로, 산속 중계소로, 바다로 달아나던 마성의 마지막 백업이 꺼졌다.</p>
+  <p class="story" id="ending-b">새벽이 무전으로 말했다. “방공망도, 관제망도, 백업도 전부 꺼졌어. 이제 사람들이 돌아올 수 있어.” 오 사장은 고철 더미 위에서 다음에 고칠 차를 고르고 있다.</p>
+  <p id="ending-stats"></p>
+  <div class="btns"><button type="button" class="primary" id="ending-title">타이틀로</button><button type="button" id="ending-menu">차량·미션 선택</button></div>
+</div>
+<div id="title">
+  <span class="kick">한울시 · 관제 AI 「마성」이 도로를 빼앗은 날</span>
+  <b>폭주전설</b>
+  <span class="more" id="title-more"></span>
+  <div class="kinds" id="title-kinds" role="group" aria-label="모드 골라 시작"></div>
+  <div class="btns"><button type="button" class="go" id="title-start">게임 시작</button><button type="button" class="ghost" id="title-tut">이야기와 운전 연습</button><button type="button" class="ghost" id="title-trailer">예고편 보기</button></div>
+</div>
+<div id="err" hidden><div class="chip">이 기기에서는 3D 그래픽(WebGL)을 켤 수 없어 장면을 표시하지 못했습니다.</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  var T = window.THREE;
+  var $ = function (id) { return document.getElementById(id); };
+  var cv = $('c');
+  var renderer;
+  try {
+    renderer = new T.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' });
+  } catch (e) {
+    $('err').hidden = false; $('menu').hidden = true;
+    return;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = T.sRGBEncoding;
+  renderer.toneMapping = T.ACESFilmicToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = T.PCFSoftShadowMap;
+
+  var scene = new T.Scene();
+  scene.background = new T.Color(0x9fd3f2);
+  scene.fog = new T.Fog(0x9fd3f2, 70, 210);
+  var camera = new T.PerspectiveCamera(55, 1, 0.5, 700);
+
+  function C(hex) { return new T.Color(hex).convertSRGBToLinear(); }
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+  function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }
+  var lerp = T.MathUtils.lerp, clamp = T.MathUtils.clamp;
+
