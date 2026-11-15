@@ -15,8 +15,23 @@
     }
     return null;
   }
+  /* aim help (learning edition 1.3): a shot drifts toward the nearest hostile in a narrow cone ahead, so the guns actually reach the
+     cars that attack, not only the ones dead ahead in the same lane */
+  function aimVx(x, z, speed) {
+    var best = null, bd = 1e9, i, e, dx, dz;
+    for (i = 0; i < enemies.length; i++) {
+      e = enemies[i]; if (e.cfg.civ || e.cfg.air) continue;
+      dz = z - e.g.position.z; dx = e.g.position.x - x;
+      if (dz < 4 || dz > 70 || Math.abs(dx) > 1.5 + dz * 0.15) continue;
+      if (dz + Math.abs(dx) * 4 < bd) { bd = dz + Math.abs(dx) * 4; best = e; }
+    }
+    if (!best) return 0;
+    dz = z - best.g.position.z; dx = best.g.position.x - x;
+    return clamp(dx / dz * speed, -speed * 0.2, speed * 0.2);
+  }
   function fireBullet(x, y, z, kind, vx, mul) {
     var b = bpool.pop(), K = BK[kind];
+    if (!vx && kind !== 'shell') vx = aimVx(x, z, K.speed);
     if (!b) { b = { m: new T.Mesh(bulletGeo, K.mat), hits: [] }; b.g = glowSprite(0xffb53d, 1.5, 0.9); b.g.scale.set(1.1, 2.6, 1); b.m.add(b.g); scene.add(b.m); }
     b.m.material = K.mat; b.g.material.color.copy(K.glowCol);
     b.m.visible = true; b.m.position.set(x, y, z); b.hits.length = 0;
@@ -31,6 +46,7 @@
     var i, k, e, p, b;
     for (i = bullets.length - 1; i >= 0; i--) {
       b = bullets[i]; p = b.m.position;
+      var z0 = p.z;
       p.z -= b.K.speed * dt; p.x += b.vx * dt;
       if (b.vy > 0) p.y = Math.min(4.7, p.y + b.vy * dt); else if (p.y > 1.15) p.y -= 7 * dt;
       var gone = p.z < b.K.minZ || Math.abs(p.x) > 11;
@@ -40,9 +56,14 @@
       if (!gone && quizShot(p, b) && !b.K.pierce) gone = true;
       for (k = enemies.length - 1; k >= 0 && !gone; k--) {
         e = enemies[k];
-        if (e.cfg.civ || (e.cfg.air ? p.y < 3.2 : p.y > 3.4)) continue;
+        if (e.cfg.civ) {   /* traffic is not a target, but it is solid: a shot that meets a car stops there with a spark instead of passing through */
+          if (!b.K.pierce && p.y < 2.2 && Math.abs(p.x - e.g.position.x) < e.cfg.hw && p.z < e.g.position.z + e.cfg.hl && z0 > e.g.position.z - e.cfg.hl) { sparks(p.x, p.y, e.g.position.z + e.cfg.hl, 3, 5, veff * 0.6); gone = true; }
+          continue;
+        }
+        if (e.cfg.air ? p.y < 3.2 : p.y > 3.4) continue;
         if (b.hits.indexOf(e) >= 0) continue;
-        if (Math.abs(p.x - e.g.position.x) < e.cfg.hw + 0.12 && Math.abs(p.z - e.g.position.z) < e.cfg.hl + 0.9) {
+        var ez = e.g.position.z, reach = e.cfg.hl + 0.9;
+        if (Math.abs(p.x - e.g.position.x) < e.cfg.hw + 0.12 && p.z < ez + reach && z0 > ez - reach) {   /* swept: the stretch flown this frame overlaps the target */
           b.hits.push(e);
           if (b.K.push && !e.cfg.air && !e.cfg.boss) e.g.position.z -= b.K.push;
           hitEnemy(k, b.dmg, p.x, p.y, p.z); if (!b.K.pierce) gone = true;
@@ -84,7 +105,7 @@
   function fireMissile(x, y, z, side, mul) {
     var m = mpool.pop() || buildMissile();
     m.g.visible = true; m.g.position.set(x, y, z); m.vel.set(side * 7, 9, -14); m.age = 0; m.trail = 0; m.target = null; m.dmg = 8 * (mul || 1);
-    missiles.push(m);
+    missiles.push(m); mStat.fired++;
     for (var k = 0; k < 4; k++) spawnP('smoke', x, y, z + 0.6, rnd(-1.5, 1.5), rnd(0.5, 2), rnd(4, 10), 0.6, 0.7, 2.4, smokeColor(COL.smokeL), 0.6, 0.5);
     return m;
   }
@@ -99,10 +120,18 @@
     }
     return best;
   }
+  /* squared distance from point q to the segment a→b: a fast projectile is tested along the whole path it flew this frame */
+  function segD2(ax, ay, az, bx, by, bz, qx, qy, qz) {
+    var dx = bx - ax, dy = by - ay, dz = bz - az, l2 = dx * dx + dy * dy + dz * dz, t = l2 > 1e-9 ? ((qx - ax) * dx + (qy - ay) * dy + (qz - az) * dz) / l2 : 0;
+    t = t < 0 ? 0 : (t > 1 ? 1 : t);
+    var ex = ax + dx * t - qx, ey = ay + dy * t - qy, ez = az + dz * t - qz;
+    return ex * ex + ey * ey + ez * ez;
+  }
+  var mPrev = new T.Vector3(), mStat = { fired: 0, hit: 0, ground: 0, lost: 0 };   /* mStat: for the test page */
   function updMissiles(dt) {
     var i, k, p, m;
     for (i = missiles.length - 1; i >= 0; i--) {
-      m = missiles[i]; p = m.g.position; m.age += dt;
+      m = missiles[i]; p = m.g.position; m.age += dt; mPrev.copy(p);
       if (!m.target || enemies.indexOf(m.target) < 0) m.target = m.age > 0.22 ? pickTarget() : null;
       var speed = Math.min(52, 22 + m.age * 60);
       if (m.target) v3.set(m.target.g.position.x, m.target.cfg.y, m.target.g.position.z).sub(p).normalize().multiplyScalar(speed);
@@ -113,15 +142,20 @@
       m.trail -= dt;
       if (m.trail <= 0) { m.trail = 0.022; spawnP('smoke', p.x, p.y, p.z, rnd(-0.6, 0.6), rnd(0.2, 1), rnd(-1, 1), 0.75, 0.55, 1.9, smokeColor(COL.smokeL), 0.55, 0.45); }
       var boom = false;
-      if (m.target) {
-        var tp = m.target.g.position, dx = p.x - tp.x, dy = p.y - m.target.cfg.y, dz3 = p.z - tp.z, rr = m.target.cfg.boss ? 14 : 3.2;
-        if (dx * dx + dy * dy + dz3 * dz3 < rr) {
-          k = enemies.indexOf(m.target);
+      /* any hostile on the path flown this frame takes the hit, the target first: before, only the target was tested, and only where
+         the missile ended up, so at 52 m/s on a slow frame it flew straight through */
+      for (k = enemies.length - 1; k >= -1 && !boom; k--) {
+        var e = k < 0 ? null : enemies[k];
+        if (k < 0 || !e || e.cfg.civ) continue;
+        var ep = e.g.position, rad = e.cfg.boss ? 3.8 : Math.max(e.cfg.hw, 0.9) + 0.8 + (e === m.target ? 0.4 : 0);
+        if (Math.abs(ep.z - p.z) > 40) continue;
+        if (segD2(mPrev.x, mPrev.y, mPrev.z, p.x, p.y, p.z, ep.x, e.cfg.y, ep.z) < rad * rad || segD2(mPrev.x, mPrev.y, mPrev.z, p.x, p.y, p.z, ep.x, e.cfg.y, ep.z + (e.cfg.hl - 0.5)) < rad * rad || segD2(mPrev.x, mPrev.y, mPrev.z, p.x, p.y, p.z, ep.x, e.cfg.y, ep.z - (e.cfg.hl - 0.5)) < rad * rad) {
           explode(p.x, p.y, p.z, 0.75, veff * 0.4, M.dark);
-          hitEnemy(k, m.dmg, p.x, p.y, p.z); boom = true;
+          hitEnemy(k, m.dmg, p.x, p.y, p.z); boom = true; mStat.hit++;
         }
       }
-      if (!boom && p.y < 0.25) { explode(p.x, 0.4, p.z, 0.7, veff, M.dark); boom = true; }
+      if (!boom && p.y < 0.25) { explode(p.x, 0.4, p.z, 0.7, veff, M.dark); boom = true; mStat.ground++; }
+      if (!boom && (m.age > 3.2 || p.z < -140)) mStat.lost++;
       if (boom || m.age > 3.2 || p.z < -140) { if (trackM === m) trackM = null; m.g.visible = false; mpool.push(m); missiles.splice(i, 1); }
     }
   }

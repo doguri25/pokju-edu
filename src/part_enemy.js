@@ -22,6 +22,17 @@
     if (!TRAFFIC && typeof CAR_ORDER !== 'undefined' && CAR_ORDER) TRAFFIC = CAR_ORDER.filter(function (k) { var c = CARS[k]; return c && c.g && c.paint && c.spec && c.spec.L >= 4.1 && c.spec.L <= 5.0 && c.spec.H <= 1.72 && c.spec.W <= 1.95; });
     return TRAFFIC || [];
   }
+  /* a red chevron floats over every vehicle that attacks, so it can be told from traffic at a glance (the cars now look alike) */
+  var foeMarkMat = (function () {
+    var c = document.createElement('canvas'); c.width = c.height = 64;
+    var g = c.getContext('2d');
+    g.shadowColor = '#ff2a3a'; g.shadowBlur = 10; g.fillStyle = '#ff3b4a';
+    g.beginPath(); g.moveTo(10, 14); g.lineTo(54, 14); g.lineTo(32, 46); g.closePath(); g.fill();
+    g.shadowBlur = 0; g.fillStyle = '#ffd0d4'; g.beginPath(); g.moveTo(22, 20); g.lineTo(42, 20); g.lineTo(32, 34); g.closePath(); g.fill();
+    var t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace;
+    return new T.SpriteMaterial({ map: t, transparent: true, depthWrite: false, fog: false });
+  })();
+  function foeMark(g, y) { var s = new T.Sprite(foeMarkMat); s.scale.set(0.9, 0.9, 1); s.position.set(0, y, 0); s.renderOrder = 5; g.add(s); g.userData.mark = s; return s; }
   function trafficEnemy(type) {
     var key = pick(trafficModels()), src = CARS[key], hex = type === 'taxi' ? pick([0xe8862a, 0xf0f0ec]) : (type === 'sedan' ? pick(enemyReds) : pick(TRAFFIC_PAINT));
     var g = src.g.clone(true), so = [], co = [], wheels = [], body = enemyPaint(hex), i, k, H = src.spec.H, L = src.spec.L;
@@ -35,6 +46,7 @@
     for (k in src.mounts) src.mounts[k].forEach(function (m) { var cm = co[so.indexOf(m)]; if (cm) while (cm.children.length) cm.remove(cm.children[0]); });   /* no player weapons on traffic */
     g.visible = true; g.position.set(0, 0, 0); g.rotation.set(0, 0, 0); groundShadow(g);
     if (type === 'sedan') {   /* the pursuer's roof gun and push bar */
+      foeMark(g, H + 1.25);
       g.add(cyl(0.26, 0.3, 0.22, 10, M.gun, 0, H + 0.08, -0.2));
       g.add(cyl(0.07, 0.07, 1.1, 8, M.dark, 0, H + 0.12, -0.8, 'z'));
       g.add(bx(Math.min(1.9, src.spec.W - 0.05), 0.26, 0.14, M.dark, 0, 0.55, L / 2 + 0.1));
@@ -195,6 +207,7 @@
     }
     bake(g, wheels); wheels.forEach(function (wh) { bake(wh); }); if (g.userData.hover) bake(g.userData.hover);
     if (GROUNDED[type]) groundShadow(g);
+    if (type === 'sedan' || type === 'bike' || type === 'buggy' || type === 'dump') foeMark(g, type === 'dump' ? 4.4 : (type === 'bike' ? 2.4 : 2.6));
     return { g: g, type: type, cfg: TYPES[type], body: body, wheels: wheels, hp: 1, x0: 0, phase: 0, flash: 0, fireT: 1, ws: 0, t: 0 };
   }
   var enemies = [], epool = { bike: [], sedan: [], civ: [], dump: [], drone: [], boss: [], buggy: [], kami: [], cbus: [], taxi: [], tractor: [] };

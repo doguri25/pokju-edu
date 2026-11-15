@@ -1808,7 +1808,7 @@
       if (skipBrief) { briefT = 0.001; }
     },
     spawn: function (type, x, z, ws) { return spawnEnemy(type, x, z, ws === undefined ? 0 : ws); },
-    boom: function (x, z, s) { explode(x, 0.8, z, s || 1.5, veff * 0.4, M.dark); },
+    boom: function (x, z, s) { explode(x, 0.8, z, s || 1.5, veff * 0.4, M.dark); }, mstat: function () { return mStat; }, missile: function (x, z) { return !!fireMissile(x, 1.2, z, 1, 1); }, stepDt: function (dt, n) { for (var i = 0; i < n; i++) step(dt); },
     startKind: function (kind, carKey, idx, o) {
       var k; selCar = carKey; selKind = kind; if (o) for (k in o) if (cond[k] !== undefined) cond[k] = o[k];
       if (kind === 'ta' || kind === 'race') selTrack = idx || 0; else if (kind === 'mis') selMission = idx || 0; else if (kind === 'story') selChapter = idx || 0;
