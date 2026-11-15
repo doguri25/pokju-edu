@@ -67,6 +67,7 @@
   var fbCam = new T.Vector3();
   function fx3Step(dt) {
     var i, f, t, n = 0, k;
+    waterU.uWT.value = time % 600; waterU.uWD.value = dist; tuftsUpd();
     for (i = 0; i < FB_N; i++) {
       f = fireballs[i];
       if (f.life <= 0) continue;
@@ -150,3 +151,69 @@
       m.needsUpdate = true;
     });
   })();
+
+  /* water (graphics upgrade 3): the sea, the creek and puddles get moving waves worked out in the shader. A few travelling swells
+     and a finer chop tilt the surface normal, so the sun glints and the sky's reflection ripples; seen flat on, deep water stays dark.
+     The sea lies on a strip that does not move, so its waves are laid out along the road's distance to travel past like the shore */
+  var waterU = { uWT: { value: 0 }, uWD: { value: 0 } };
+  var WAVE_GLSL = [
+    'vec2 waveGrad( vec2 p, float t ) {',
+    '\tvec2 d1 = vec2( 0.287, 0.958 ), d2 = vec2( -0.759, 0.651 ), d3 = vec2( 0.976, 0.217 ), d4 = vec2( -0.196, -0.981 ), g = vec2( 0.0 );',
+    '\tg += d1 * 0.9 * cos( dot( d1, p ) * 0.9 - t * 1.3 );',
+    '\tg += d2 * 0.7 * cos( dot( d2, p ) * 1.7 - t * 1.9 );',
+    '\tg += d3 * 0.5 * cos( dot( d3, p ) * 3.1 - t * 2.6 );',
+    '\tg += d4 * 0.35 * cos( dot( d4, p ) * 5.3 - t * 3.4 );',
+    '\tg += vec2( 0.6, -0.4 ) * 0.25 * cos( dot( vec2( 0.6, -0.8 ), p ) * 9.7 - t * 4.6 );',
+    '\treturn g;',
+    '}'].join('\n');
+  function waterify(mat, amp, scale, scroll, key) {
+    var hill = T.Material.prototype.onBeforeCompile;
+    mat.onBeforeCompile = function (sh) {
+      hill.call(this, sh);
+      sh.uniforms.uWT = waterU.uWT; sh.uniforms.uWD = waterU.uWD;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
+        .replace('#include <fog_vertex>', 'vWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\n#include <fog_vertex>');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uWT;\nuniform float uWD;\nvarying vec3 vWPos;\n' + WAVE_GLSL)
+        .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n\t{\n\t\tvec2 wp = vec2( vWPos.x, vWPos.z' + (scroll ? ' - uWD' : '') + ' ) * ' + scale.toFixed(3) + ';\n\t\tvec2 gr = waveGrad( wp, uWT ) * ' + amp.toFixed(3) + ';\n\t\tnormal = normalize( ( viewMatrix * vec4( normalize( vec3( -gr.x, 1.0, -gr.y ) ), 0.0 ) ).xyz );\n\t}');
+    };
+    mat.customProgramCacheKey = function () { return 'water-' + key; };
+    mat.needsUpdate = true;
+    if (ENV_MATS.indexOf(mat) < 0) ENV_MATS.push(mat);
+  }
+  seaMat.roughness = 0.06; seaMat.metalness = 0.04; seaMat.envMapIntensity = 1.1;
+  waterify(seaMat, 0.16, 0.22, true, 'sea');
+  RM.stream.roughness = 0.05; RM.stream.metalness = 0.05; RM.stream.envMapIntensity = 1.0;
+  waterify(RM.stream, 0.22, 1.1, false, 'stream');
+  RM.water.roughness = 0.04; RM.water.envMapIntensity = 1.0;
+  waterify(RM.water, 0.06, 1.6, false, 'puddle');
+
+  /* grass tufts along the verges (graphics upgrade 3): one instanced mesh of small blade clumps, laid out in a 30 m pattern that the
+     loop machinery slides along with the road; tinted from the region's ground colour, shown where the land is green */
+  var TUFT_REGIONS = { country: 1, creek: 1, offroad: 1, mountain: 1, highway: 1, coast: 1 };
+  var tuftGeo = (function () {
+    var pos = [], i, a, r, h, x, z;
+    for (i = 0; i < 7; i++) {
+      a = i / 7 * Math.PI * 2 + rnd(-0.3, 0.3); r = rnd(0.05, 0.16); h = rnd(0.35, 0.6); x = Math.cos(a) * r; z = Math.sin(a) * r;
+      var lx = Math.cos(a + 1.57) * 0.05, lz = Math.sin(a + 1.57) * 0.05, tx = x + Math.cos(a) * h * 0.35, tz = z + Math.sin(a) * h * 0.35;
+      pos.push(x - lx, 0, z - lz, x + lx, 0, z + lz, tx, h, tz);
+    }
+    var g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.computeVertexNormals();
+    var n = g.attributes.normal; for (i = 0; i < n.count; i++) n.setXYZ(i, n.getX(i) * 0.4, 1, n.getZ(i) * 0.4);   /* lit like the ground under it, not like thin cards */
+    return g;
+  })();
+  var tuftMat = new T.MeshStandardMaterial({ color: 0x6f9a52, roughness: 0.95, side: T.DoubleSide });
+  var TUFT_N = 700, tuftLoop = loopGroup(30, false), tuftSides = [-1, 1].map(function (side) {   /* one mesh per side: by the sea only the land side has grass */
+    var im = new T.InstancedMesh(tuftGeo, tuftMat, TUFT_N), m4 = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler(), sc = new T.Vector3(), p = new T.Vector3(), pat = [], i, k = 0;
+    for (i = 0; i < 88; i++) pat.push([side * rnd(12.6, 34), rnd(0, 30), rnd(0.7, 1.5), rnd(0, 6.28)]);
+    for (var z0 = -210; z0 < 30 && k < TUFT_N; z0 += 30) for (i = 0; i < pat.length && k < TUFT_N; i++, k++) {
+      p.set(pat[i][0], 0, z0 + pat[i][1]); e.set(0, pat[i][3], 0); q.setFromEuler(e); sc.setScalar(pat[i][2]);
+      im.setMatrixAt(k, m4.compose(p, q, sc));
+    }
+    im.count = k; im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; im.receiveShadow = true; tuftLoop.add(im);
+    return im;
+  });
+  function tuftsUpd() {
+    var on = !!TUFT_REGIONS[region.key] && snowCover < 0.3 && tunK < 0.5 && fxK > 0.5;
+    tuftLoop.visible = on; tuftSides[0].visible = region.key !== 'coast';
+    if (on) tuftMat.color.copy(groundMat.color).multiplyScalar(1.12);
+  }

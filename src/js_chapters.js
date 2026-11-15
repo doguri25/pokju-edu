@@ -31,10 +31,10 @@
     /* part two: the 글자 칩. The same roads again, one pair of easily confused words each */
     { part: '2부 · 글자 칩', sets: ['dwae'], region: 'city', time: 'sunset', weather: 'clear', fix: '도로 전광판', foes: { traffic: 1.3 }, name: '엉터리 전광판',
       go: '이번엔 마성의 글자 칩이 말썽이야. 도로 전광판에 「천천히 가도 됀다」가 떴어. 되와 돼부터 고치자.', hint: '되와 돼가 헷갈리면 「하」와 「해」를 넣어 봐. 「해」가 어울리면 「돼」야.',
-      done: '전광판 글자가 바로잡혔다. 「천천히 가도 돼요.」 지나가던 버스 기사님이 고개를 끄덕였다.' },
+      done: '전광판 글자가 바로잡혔다. 「천천히 가도 된다.」 지나가던 버스 기사님이 고개를 끄덕였다.' },
     { sets: ['an'], region: 'country', time: 'sunset', weather: 'clear', fix: '마을 방송', foes: { buggy: true, traffic: 1.25 }, name: '이상한 마을 방송',
       go: '마을 방송에서 「오늘은 비가 않 옵니다」라고 하네. 안과 않을 고쳐 줘.', hint: '말 앞에 오면 「안」, 「-지」 뒤에 오면 「않」이야. 「오지 않는다」, 「안 온다」!',
-      done: '이장님 목소리가 바르게 흘러나왔다. 「내일은 비가 안 옵니다. 빨래를 널어도 됩니다.」' },
+      done: '이장님 목소리가 바르게 흘러나왔다. 「오늘은 비가 안 옵니다. 빨래를 널어도 됩니다.」' },
     { sets: ['mat'], region: 'creek', time: 'day', weather: 'clear', fix: '퀴즈 안내판', foes: { drones: 0.5, traffic: 1.25 }, name: '다리 앞 퀴즈 안내판',
       go: '다리 앞 퀴즈 안내판에 「정답을 맞추세요」라고 쓰여 있어. 맞히다와 맞추다야.', hint: '답을 알아내는 건 「맞히다」, 둘을 대어 보거나 퍼즐을 끼우는 건 「맞추다」야.',
       done: '안내판이 「정답을 맞혀 보세요!」로 바뀌었다. 다리 위 아이들이 퀴즈를 풀기 시작했다.' },

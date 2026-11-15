@@ -204,7 +204,7 @@
       bs.items.forEach(function (it, i) { it.g.position.y = Math.sin(time * 2 + i) * 0.15; });
     }
     quiz.t -= dt;
-    if (quiz.phase === 'ask') quiz.askE += dt;   /* game time: a pause or a hidden tab does not run the clock */
+    if (quiz.phase === 'ask' && (!quiz.b || quiz.b.g.position.z >= QB_HOLD - 0.01)) quiz.askE += dt;   /* game time (a pause does not run the clock); balloons start it once they have drifted in */
     if (quiz.phase === 'wait' && quiz.t <= 0) {
       q = quiz.q = quizNext(dk);
       if (!q) { quiz.phase = 'done'; finish(true); return; }
@@ -259,7 +259,7 @@
       }
       h += '</tr>';
     });
-    return h + '</table><div class="flegend"><span>★ 잘함 (세 번 연속 맞힘)</span><span>● 연습 중</span><span>▲ 어려움 (틀린 뒤 아직 못 맞힘)</span><span>빈칸 처음</span></div>';
+    return h + '</table><div class="flegend"><span>★ 잘함 (세 번 연속 맞힘)</span><span>● 연습 중</span><span>▲ 어려움 (최근 첫 답이 틀림)</span><span>빈칸 처음</span></div>';
   }
   function levelCount(dans) {
     var c = { good: 0, learn: 0, hard: 0, 'new': 0 };

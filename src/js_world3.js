@@ -1,6 +1,16 @@
   /* ---------- world: the four lanes stay flat; shoulders and everything beside the road can drop away under an elevated deck ---------- */
   var H_DECK = 10, sections = [], genD = 0, roadIdx = 0, props = [], propPool = {};
-  M.cone = std(0xff6a13, 0.6); M.concrete = std(0xb9bcc0, 0.9); M.dirt = std(0x8a6a4a, 1); M.digger = std(0xf2b01e, 0.5, 0.1);
+  /* concrete (graphics upgrade 3): pores and grit, softer blotches where it weathered, a few streaks running down */
+  var concreteTex = (function () {
+    var c = document.createElement('canvas'); c.width = c.height = 128;
+    var g = c.getContext('2d'), i, v;
+    g.fillStyle = '#c8c8c8'; g.fillRect(0, 0, 128, 128);
+    for (i = 0; i < 18; i++) { var x = Math.random() * 128, y = Math.random() * 128, rg = g.createRadialGradient(x, y, 0, x, y, rnd(10, 30)); v = Math.random() < 0.5 ? 255 : 90; rg.addColorStop(0, 'rgba(' + v + ',' + v + ',' + v + ',0.12)'); rg.addColorStop(1, 'rgba(' + v + ',' + v + ',' + v + ',0)'); g.fillStyle = rg; g.fillRect(0, 0, 128, 128); }
+    for (i = 0; i < 1600; i++) { v = Math.random() < 0.5 ? Math.round(rnd(220, 255)) : Math.round(rnd(80, 130)); g.fillStyle = 'rgba(' + v + ',' + v + ',' + v + ',' + rnd(0.1, 0.3) + ')'; g.fillRect(Math.random() * 128, Math.random() * 128, rnd(0.6, 1.6), rnd(0.6, 1.6)); }
+    for (i = 0; i < 6; i++) { var sx = Math.random() * 128, lg = g.createLinearGradient(0, 0, 0, 128); lg.addColorStop(0, 'rgba(60,58,54,0.16)'); lg.addColorStop(1, 'rgba(60,58,54,0)'); g.fillStyle = lg; g.fillRect(sx, 0, rnd(2, 6), rnd(50, 128)); }
+    var t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4; return t;
+  })();
+  M.cone = std(0xff6a13, 0.6); M.concrete = std(0xb9bcc0, 0.9); M.concrete.map = concreteTex; M.dirt = std(0x8a6a4a, 1); M.digger = std(0xf2b01e, 0.5, 0.1);
   M.sign = new T.MeshBasicMaterial({ color: 0xffc21a });
   /* tunnel walls are drawn already lit (tiles, joints every 5 m, a dark skirting and an orange guide line), so they look the same at any time of day */
   M.tunWall = (function () {
@@ -136,7 +146,7 @@
     t.wrapS = t.wrapT = T.RepeatWrapping; t.colorSpace = T.SRGBColorSpace; t.anisotropy = 8;
     return t;
   }
-  var groundTex = noiseTex(0.3); groundTex.repeat.set(90, 33);
+  var groundTex = grassTex(); groundTex.repeat.set(90, 33);
   var groundMat = new T.MeshStandardMaterial({ map: groundTex, roughness: 1 });
   strip(0, 1200, -0.06, groundMat, true);
   var roadTex = asphaltTex(); roadTex.repeat.set(1, 27.5);   /* each lane strip runs 0..1 across, so one tile is one lane; 440 m / 27.5 = 16 m per tile */
@@ -221,6 +231,25 @@
   });
   var stripMats = neonColors.map(function (hex) { var m = new T.MeshBasicMaterial({ color: C(hex) }); NEON_SIGNS.push({ m: m, base: C(hex), day: 1, night: 3 }); return m; });
   var scenery = [];
+  /* rooftops and shop floors (graphics upgrade 3): a parapet, plant on the roof, and at street level a lit shop window under an awning */
+  var bldTrim = std(0xd8d4cc, 0.85), shopGlass = new T.MeshStandardMaterial({ color: C(0x1d2733), roughness: 0.12, metalness: 0.5, emissive: new T.Color(1, 0.74, 0.45), emissiveIntensity: 0 });
+  var awnings = [0xc0392b, 0x2e86c1, 0x27ae60, 0xd68910, 0x7d3c98].map(function (h) { return std(h, 0.7); }), tankGeo = new T.CylinderGeometry(0.9, 0.9, 1.6, 12);
+  ENV_MATS.push(shopGlass);
+  function dressBuilding(m, side, w, h, d) {
+    var top = h / 2, rf = -side, i, pw = 0.25;
+    [[w, pw, 0, d / 2 - pw / 2], [w, pw, 0, -d / 2 + pw / 2], [pw, d, w / 2 - pw / 2, 0], [pw, d, -w / 2 + pw / 2, 0]].forEach(function (p) {   /* parapet */
+      var e = shadowed(new T.Mesh(new T.BoxGeometry(p[0], 0.7, p[1]), bldTrim)); e.position.set(p[2], top + 0.35, p[3]); m.add(e);
+    });
+    for (i = 0; i < 1 + (Math.random() * 3 | 0); i++) {   /* air-conditioning units */
+      var ac = shadowed(new T.Mesh(new T.BoxGeometry(rnd(1, 1.8), rnd(0.7, 1.1), rnd(1, 1.6)), i % 2 ? M.metal : M.steel)); ac.position.set(rnd(-w / 3, w / 3), top + 0.5, rnd(-d / 3, d / 3)); m.add(ac);
+    }
+    if (Math.random() < 0.5) { var tk = shadowed(new T.Mesh(tankGeo, M.steel)); tk.position.set(rnd(-w / 4, w / 4), top + 1.3, rnd(-d / 4, d / 4)); m.add(tk); }
+    else if (h > 14) { var an = new T.Mesh(new T.CylinderGeometry(0.05, 0.08, 4, 6), M.pole); an.position.set(rnd(-w / 4, w / 4), top + 2, rnd(-d / 4, d / 4)); m.add(an); }
+    /* the shop floor on the road side */
+    var sw = d * 0.8, shop = new T.Mesh(new T.BoxGeometry(0.12, 2.6, sw), shopGlass); shop.position.set(rf * (w / 2 + 0.02), -h / 2 + 1.5, 0); m.add(shop);
+    var fr = new T.Mesh(new T.BoxGeometry(0.2, 0.3, sw + 0.3), bldTrim); fr.position.set(rf * (w / 2 + 0.05), -h / 2 + 2.95, 0); m.add(fr);
+    var aw = shadowed(new T.Mesh(new T.BoxGeometry(1.6, 0.12, sw), pick(awnings))); aw.position.set(rf * (w / 2 + 0.75), -h / 2 + 3.25, 0); aw.rotation.z = rf * 0.28; m.add(aw);
+  }
   function makeBuilding(side, z) {
     var w = rnd(9, 15), h = rnd(7, 24), d = rnd(9, 16);
     var g = new T.BoxGeometry(w, h, d);
@@ -244,16 +273,19 @@
       var strip = new T.Mesh(new T.BoxGeometry(0.16, h * 0.9, 0.16), pick(stripMats));
       strip.position.set(-side * (w / 2 + 0.08), 0, (Math.random() < 0.5 ? -1 : 1) * (d / 2 - 0.1)); m.add(strip);
     }
+    dressBuilding(m, side, w, h, d);
     scene.add(m); scenery.push(m);
   }
   for (var bi = 0; bi < 14; bi++) { makeBuilding(-1, -250 + bi * 22 + rnd(-3, 3)); makeBuilding(1, -250 + bi * 22 + rnd(-3, 3)); }
   var leafMats = [std(0x4f9a52, 0.9), std(0x6fb35a, 0.9), std(0x3f8257, 0.9)];
-  var coneGeoA = new T.ConeGeometry(1.5, 2.6, 7), coneGeoB = new T.ConeGeometry(1.1, 2.2, 7), trunkGeo = new T.CylinderGeometry(0.18, 0.24, 1.6, 5);
+  var coneGeoA = new T.ConeGeometry(1.5, 2.6, 7), coneGeoB = new T.ConeGeometry(1.1, 2.2, 7), coneGeoC = new T.ConeGeometry(0.7, 1.5, 7), trunkGeo = new T.CylinderGeometry(0.18, 0.24, 1.6, 5);
+  var leafTop = [std(0x63ad5e, 0.9), std(0x86c66b, 0.9), std(0x55966a, 0.9)];
   for (var ti = 0; ti < 30; ti++) {
     var tr = new T.Group(), lm = pick(leafMats);
     var tk = shadowed(new T.Mesh(trunkGeo, M.trunk)); tk.position.y = 0.8; tr.add(tk);
     var c1 = shadowed(new T.Mesh(coneGeoA, lm)); c1.position.y = 2.5; tr.add(c1);
     var c2 = shadowed(new T.Mesh(coneGeoB, lm)); c2.position.y = 3.9; tr.add(c2);
+    var c3 = shadowed(new T.Mesh(coneGeoC, leafTop[leafMats.indexOf(lm)])); c3.position.y = 5.0; c3.rotation.y = 0.4; tr.add(c3);   /* a lighter top tier */
     var sc2 = rnd(0.8, 1.35); tr.scale.set(sc2, sc2, sc2);
     tr.position.set((ti % 2 ? 1 : -1) * rnd(13.2, 14.8), 0, -250 + ti * 10.3 + rnd(-2, 2)); tr.userData.baseY = 0;
     scene.add(tr); scenery.push(tr);

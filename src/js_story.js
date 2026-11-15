@@ -32,11 +32,11 @@
   }
   function tutTouch() { return touchUI || vw <= 720; }
   var TUT = [
-    { who: '오 사장', line: '막내야, 시동 걸었으면 속도부터 올려 봐. 이 차들은 밟는다고 바로 튀어 나가지 않는다.', key: '↑ 를 누르고 있기', touch: '왼쪽 아래 레버를 위로 올리기', goal: function (car) { return '시속 ' + Math.round(Math.min(100, car.vmax * 3.6 * 0.8)) + ' km 넘기기'; },
+    { who: '오 사장', line: '막내야, 시동 걸었으면 속도부터 올려 봐. 이 차들은 밟는다고 바로 튀어나가지 않는다.', key: '↑를 누르고 있기', touch: '왼쪽 아래 레버를 위로 올리기', goal: function (car) { return '시속 ' + Math.round(Math.min(100, car.vmax * 3.6 * 0.8)) + ' km 넘기기'; },
       check: function (car) { return veff * 3.6 >= Math.min(100, car.vmax * 3.6 * 0.8); } },
     { who: '새벽', line: '전설 하나, 들려? 새벽이야. 길은 내가 읽어 줄게. 먼저 차로를 바꿔 봐.', key: '← →', touch: '화면 오른쪽을 좌우로 끌기', goal: function () { return '맨 왼쪽 차로와 맨 오른쪽 차로를 한 번씩 밟기' + (tut.L ? ' (왼쪽 완료)' : '') + (tut.R ? ' (오른쪽 완료)' : ''); },
       enter: function () { tut.L = tut.R = false; }, tick: function () { if (player.x < -4.6) tut.L = true; if (player.x > 4.6) tut.R = true; }, check: function () { return tut.L && tut.R; } },
-    { who: '오 사장', line: '무기는 공격 키를 누르고 있는 동안 나간다. 손을 떼면 총도 쉰다. 앞에 굴러다니는 마성의 오토바이로 시험해 봐.', lineT: '무기는 레버를 잡고 있는 동안에만 나간다. 손을 떼면 총도 쉰다. 앞에 굴러다니는 마성의 오토바이로 시험해 봐.', key: 'Z 를 누른 채 오토바이와 같은 차로에 서기', touch: '레버를 누른 채 오토바이와 같은 차로에 서기', goal: function () { return '오토바이 ' + Math.min(3, kills - tut.k0) + ' / 3대 부수기'; },
+    { who: '오 사장', line: '무기는 공격 키를 누르고 있는 동안 나간다. 손을 떼면 총도 쉰다. 앞에 굴러다니는 마성의 오토바이로 시험해 봐.', lineT: '무기는 레버를 잡고 있는 동안에만 나간다. 손을 떼면 총도 쉰다. 앞에 굴러다니는 마성의 오토바이로 시험해 봐.', key: 'Z를 누른 채 오토바이와 같은 차로에 서기', touch: '레버를 누른 채 오토바이와 같은 차로에 서기', goal: function () { return '오토바이 ' + Math.min(3, kills - tut.k0) + ' / 3대 부수기'; },
       enter: function () { tut.k0 = kills; tut.sp = 0; },
       tick: function (dt) { tut.sp -= dt; if (tut.sp <= 0 && !enemies.some(function (e) { return e.type === 'bike'; })) { tut.sp = 2.5; for (var b = 0; b < 3; b++) spawnEnemy('bike', clamp(player.x + (b - 1) * 1.4, -6.6, 6.6), -95 - b * 5, Math.max(8, veff - 9)); } },
       check: function () { return kills - tut.k0 >= 3; } },
@@ -44,7 +44,7 @@
       enter: function () { tut.item = false; tut.cT = 0; if (!crate.active) spawnCrate(); }, tick: function (dt) { if (!crate.active && !tut.item) { tut.cT += dt; if (tut.cT > 1.2) { tut.cT = 0; spawnCrate(); } } }, check: function () { return tut.item; } },
     { who: '오 사장', line: '급할 때는 기본 기술이다. 차 종류마다 다르고, 몇 초면 다시 쓸 수 있어.', key: 'X', touch: '오른쪽 아래의 작은 버튼', goal: function (car) { return '기본 기술 「' + BASICS[car.basic].name + '」 쓰기'; }, check: function () { return player.bcd > 0; } },
     { who: '새벽', line: '고유 기술은 그 차만의 필살기야. 세지만 다시 쓰려면 오래 기다려야 해. 아껴 뒀다가 몰렸을 때 써.', key: 'Space', touch: '오른쪽 아래의 큰 버튼', goal: function (car) { return '고유 기술 「' + car.skillName + '」 쓰기'; }, check: function () { return player.cd > 0; } },
-    { who: '오 사장', line: '저 앞에 방지턱이다. 빠르게 넘으면 차가 튀고 속도를 잃는다. 줄여서 넘어.', key: '↓ 로 감속', touch: '레버를 아래로 내려 감속', goal: function () { return '시속 60 km 아래로 방지턱 넘기' + (tut.missed ? ' (턱을 비켜 갔다. 다음 턱은 넘어서 가기)' : (tut.tries ? ' (너무 빨랐다. 다음 턱에서 다시)' : '')); },
+    { who: '오 사장', line: '저 앞에 방지턱이다. 빠르게 넘으면 차가 튀고 속도를 잃는다. 줄여서 넘어.', key: '↓로 감속', touch: '레버를 아래로 내려 감속', goal: function () { return '시속 60 km 아래로 방지턱 넘기' + (tut.missed ? ' (턱을 비켜 갔다. 다음 턱은 넘어서 가기)' : (tut.tries ? ' (너무 빨랐다. 다음 턱에서 다시)' : '')); },
       enter: function () { tut.hump = 0; tut.tries = 0; tut.missed = false; tutHump(); },
       tick: function () {
         if (tut.hump < 0) { tut.hump = 0; tut.tries++; tut.missed = false; tutHump(); tutCoach(); }

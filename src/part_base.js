@@ -53,19 +53,57 @@
     t.wrapS = t.wrapT = T.RepeatWrapping; t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4;
     return t;
   }
+  /* fields (graphics upgrade 3): short blades in light and dark strokes, a few clover patches and bare specks; grey, so each region's ground colour tints it */
+  function grassTex() {
+    var c = document.createElement('canvas'); c.width = c.height = 256;
+    var g = c.getContext('2d'), i, v, x, y, a, l;
+    g.fillStyle = '#c4c4c4'; g.fillRect(0, 0, 256, 256);
+    for (i = 0; i < 40; i++) { x = Math.random() * 256; y = Math.random() * 256; v = Math.random() < 0.5 ? 255 : 70; var rg = g.createRadialGradient(x, y, 0, x, y, rnd(14, 40)); rg.addColorStop(0, 'rgba(' + v + ',' + v + ',' + v + ',0.12)'); rg.addColorStop(1, 'rgba(' + v + ',' + v + ',' + v + ',0)'); g.fillStyle = rg; g.fillRect(0, 0, 256, 256); }
+    g.lineCap = 'round';
+    for (i = 0; i < 7000; i++) {
+      x = Math.random() * 256; y = Math.random() * 256; a = rnd(-0.5, 0.5) - Math.PI / 2; l = rnd(2, 6);
+      v = Math.random() < 0.6 ? Math.round(rnd(205, 255)) : Math.round(rnd(70, 125));
+      g.strokeStyle = 'rgba(' + v + ',' + v + ',' + v + ',' + rnd(0.18, 0.42) + ')'; g.lineWidth = rnd(0.7, 1.4);
+      for (var dx = -256; dx <= 256; dx += 256) for (var dy = -256; dy <= 256; dy += 256) {
+        if (x + dx < -8 || x + dx > 264 || y + dy < -8 || y + dy > 264) continue;   /* wrap the strokes that cross an edge */
+        g.beginPath(); g.moveTo(x + dx, y + dy); g.lineTo(x + dx + Math.cos(a) * l, y + dy + Math.sin(a) * l); g.stroke();
+      }
+    }
+    for (i = 0; i < 260; i++) { v = Math.round(rnd(90, 150)); g.fillStyle = 'rgba(' + v + ',' + (v - 8) + ',' + (v - 20) + ',0.35)'; g.fillRect(Math.random() * 256, Math.random() * 256, rnd(1, 2.5), rnd(1, 2.5)); }
+    var t = new T.CanvasTexture(c);
+    t.wrapS = t.wrapT = T.RepeatWrapping; t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4;
+    return t;
+  }
+  /* building walls (graphics upgrade 3): four bays by four storeys per tile. Storey bands, framed windows with a mullion, a sill and
+     a sky reflection in the glass; the emissive version lights some windows, a few half hidden by curtains */
   function facadeTex(emissive) {
     var c = document.createElement('canvas'); c.width = c.height = 256;
-    var g = c.getContext('2d');
+    var g = c.getContext('2d'), x, y, i;
     g.fillStyle = emissive ? '#000' : '#ece6dc'; g.fillRect(0, 0, 256, 256);
-    for (var y = 0; y < 4; y++) for (var x = 0; x < 4; x++) {
+    if (!emissive) {
+      for (i = 0; i < 900; i++) { var v = Math.random() < 0.5 ? 255 : 120; g.fillStyle = 'rgba(' + v + ',' + v + ',' + v + ',' + rnd(0.04, 0.1) + ')'; g.fillRect(Math.random() * 256, Math.random() * 256, rnd(1, 3), rnd(1, 3)); }
+      for (y = 0; y < 4; y++) { g.fillStyle = 'rgba(0,0,0,0.07)'; g.fillRect(0, y * 64 + 58, 256, 6); g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(0, y * 64 + 57, 256, 1.5); }
+    }
+    for (y = 0; y < 4; y++) for (x = 0; x < 4; x++) {
+      var wx = x * 64 + 13, wy = y * 64 + 10, ww = 38, wh = 40;
       if (emissive) {
         if (Math.random() > 0.55) continue;
-        g.fillStyle = pick(['#ffd98a', '#ffe9b8', '#ffc76a', '#a8d4ff']);
-      } else g.fillStyle = '#5a6c80';
-      g.fillRect(x * 64 + 14, y * 64 + 12, 36, 40);
+        g.fillStyle = pick(['#ffd98a', '#ffe9b8', '#ffc76a', '#a8d4ff', '#ffd0a0']); g.fillRect(wx, wy, ww, wh);
+        if (Math.random() < 0.45) { g.fillStyle = 'rgba(0,0,0,0.62)'; g.fillRect(wx + (Math.random() < 0.5 ? 0 : ww * 0.55), wy, ww * 0.45, wh); }   /* a curtain */
+        g.fillStyle = 'rgba(0,0,0,0.85)'; g.fillRect(wx + ww / 2 - 1, wy, 2, wh); g.fillRect(wx, wy + wh * 0.38, ww, 2);
+        continue;
+      }
+      g.fillStyle = 'rgba(0,0,0,0.22)'; g.fillRect(wx - 3, wy - 3, ww + 6, wh + 6);                 /* the reveal around the frame */
+      g.fillStyle = '#d9dde2'; g.fillRect(wx - 2, wy - 2, ww + 4, wh + 4);                          /* frame */
+      var gl = g.createLinearGradient(wx, wy, wx + ww * 0.6, wy + wh);                              /* glass: sky above, darker below */
+      gl.addColorStop(0, '#9fb6cc'); gl.addColorStop(0.45, '#5f7690'); gl.addColorStop(1, '#3c4d62');
+      g.fillStyle = gl; g.fillRect(wx, wy, ww, wh);
+      g.fillStyle = 'rgba(255,255,255,0.22)'; g.beginPath(); g.moveTo(wx, wy + wh * 0.55); g.lineTo(wx + ww * 0.5, wy); g.lineTo(wx + ww * 0.75, wy); g.lineTo(wx, wy + wh * 0.95); g.fill();   /* a streak of reflection */
+      g.fillStyle = '#d9dde2'; g.fillRect(wx + ww / 2 - 1, wy, 2, wh); g.fillRect(wx, wy + wh * 0.38, ww, 2);   /* mullion and transom */
+      g.fillStyle = '#f4f2ee'; g.fillRect(wx - 4, wy + wh + 2, ww + 8, 3); g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(wx - 4, wy + wh + 5, ww + 8, 3);   /* sill and its shadow */
     }
     var t = new T.CanvasTexture(c);
-    t.wrapS = t.wrapT = T.RepeatWrapping; t.colorSpace = T.SRGBColorSpace;
+    t.wrapS = t.wrapT = T.RepeatWrapping; t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4;
     return t;
   }
 

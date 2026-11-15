@@ -907,7 +907,7 @@
   $('opt-reset').addEventListener('click', function () {
     /* a shared classroom device: the next child starts clean, story chapters, stars and the 구구단·맞춤법 records included */
     if (window.confirm && !window.confirm('이야기 진행, 별, 구구단·맞춤법 기록을 모두 지우고 처음부터 시작할까요?')) return;
-    save.story = { open: 0, stars: {}, tries: {}, done: false }; save.quiz.facts = {}; save.quiz.runs = [];
+    save.story = { open: 0, stars: {}, tries: {}, done: false }; save.quiz.facts = {}; save.quiz.runs = []; save.tut = false; save.help = false;   /* the prologue, practice and controls come back too */
     save.scrap = 500; save.cars = { laser: true }; save.cleared = []; save.loadouts = {}; save.best = {}; save.bestT = {}; save.ta = {}; save.race = {}; save.surv = {}; save.tires = { allseason: 1 }; save.tire = {}; save.weapons = { mg: 1 }; save.unlockAll = false; grantStock(); storeSave();
     $('opt-unlock').checked = false; selCar = 'laser'; selMission = 0; selTrack = 0; selKind = 'story'; selChapter = 0; toMenu(); setTab('car');
   });
@@ -1244,6 +1244,7 @@
     streakMat.opacity = night * (0.25 + 0.75 * wetK) * 0.85;
     tailPool.material.opacity = (0.25 * night + 0.45 * wetK) * (mode === 'play' || mode === 'demo' ? 1 : 0.6);
     for (i = 0; i < bMats.length; i++) bMats[i][0].emissiveIntensity = night * 0.95;
+    shopGlass.emissiveIntensity = night * 0.32;   /* shop windows light up after dark */
     beam.intensity = Math.max(night, tunK) * 2.6; beamPool.material.opacity = Math.max(night, tunK) * 0.55;   /* lower: a flat panel straight ahead (a bus's back) blew out to white */
     beam.position.z = -car.hl; beamPool.position.z = -car.hl - 13; tailPool.position.z = car.hl + 4;
 

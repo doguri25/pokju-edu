@@ -8,7 +8,7 @@
       /* three.js uploads viewMatrix only for mesh materials; lines and points get the camera matrix as their own uniform, like sprites */
       var own = this.isLineBasicMaterial || this.isPointsMaterial || this.isLineDashedMaterial;
       if (own) { shader.uniforms.uView = viewU; vs = vs.replace('uniform float uHill', 'uniform mat4 uView;\nuniform float uHill'); }
-      vs = vs.replace('#include <project_vertex>', 'vec4 mvPosition = modelMatrix * vec4( transformed, 1.0 );\nmvPosition.y += hillY( mvPosition.z ) + splitY( mvPosition.x, mvPosition.z );\nmvPosition = ' + (own ? 'uView' : 'viewMatrix') + ' * mvPosition;\ngl_Position = projectionMatrix * mvPosition;');
+      vs = vs.replace('#include <project_vertex>', 'vec4 mvPosition = vec4( transformed, 1.0 );\n#ifdef USE_INSTANCING\n\tmvPosition = instanceMatrix * mvPosition;\n#endif\nmvPosition = modelMatrix * mvPosition;\nmvPosition.y += hillY( mvPosition.z ) + splitY( mvPosition.x, mvPosition.z );\nmvPosition = ' + (own ? 'uView' : 'viewMatrix') + ' * mvPosition;\ngl_Position = projectionMatrix * mvPosition;');
     } else {
       /* sprites: three.js does not upload viewMatrix for sprite materials, so the camera matrix is passed in as its own uniform */
       shader.uniforms.uView = viewU;

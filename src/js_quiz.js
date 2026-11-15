@@ -53,16 +53,27 @@
   function qMake(f, type, rf) { var q = f.item ? qSpell(f, rf) : qQuestion(f.a, f.b, type, rf); q.fact = f; return q; }
   /* where the right answer sits, over the whole deck: with two gates it is left exactly half the time and never more than twice running on the same side */
   function qSlots(count, n, rf) {
-    var s = [], i, run, tries;
-    var off = (rf() * n) | 0;   /* when the count is not a multiple of n, the spare places fall on a random gate, not always the left ones */
-    for (tries = 0; tries < 40; tries++) {
-      s.length = 0;
-      for (i = 0; i < count; i++) s.push((i + off) % n);
-      qShuffle(s, rf);
-      for (run = 1, i = 1; i < s.length; i++) { if (s[i] === s[i - 1]) { if (++run > 2) break; } else run = 1; }
-      if (i >= s.length) break;
+    /* built one place at a time: each gate keeps its fair share, never three times running on one side while another gate is still owed,
+       and the draw leans to the gate that is owed most, so a long ordered run (72 questions) stays as mixed as a short one.
+       If the very end is left with one side only, it is built again; the most mixed try is kept */
+    var best = null, bestRun = 1e9, tries, i, k, off = (rf() * n) | 0;
+    for (tries = 0; tries < 60 && bestRun > 2; tries++) {
+      var left = [], s = [], run = 0, maxRun = 0;
+      for (k = 0; k < n; k++) left.push(0);
+      for (i = 0; i < count; i++) left[(i + off) % n]++;
+      for (i = 0; i < count; i++) {
+        var ban = i >= 2 && s[i - 1] === s[i - 2] ? s[i - 1] : -1, opts = [], tot = 0, r;
+        for (k = 0; k < n; k++) if (left[k] > 0 && k !== ban) opts.push(k);
+        if (!opts.length) for (k = 0; k < n; k++) if (left[k] > 0) opts.push(k);
+        for (k = 0; k < opts.length; k++) tot += left[opts[k]];
+        r = rf() * tot;
+        for (k = 0; k < opts.length - 1 && r >= left[opts[k]]; k++) r -= left[opts[k]];
+        run = i && opts[k] === s[i - 1] ? run + 1 : 1; maxRun = Math.max(maxRun, run);
+        s.push(opts[k]); left[opts[k]]--;
+      }
+      if (maxRun < bestRun) { best = s; bestRun = maxRun; }
     }
-    return s;
+    return best || [];
   }
   function qPlace(q, slot) {
     var rest = q.opts.slice(1);

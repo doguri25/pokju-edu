@@ -5,7 +5,7 @@
     });
   }
   /* traffic and pursuers get the same clearcoat paint as the player's cars (graphics upgrade 3): smooth, rounded panels that reflect the sky */
-  var PAINTED = { sedan: 1, civ: 1, taxi: 1, cbus: 1, dump: 1, buggy: 1, tractor: 1 }, GROUNDED = { sedan: 1, civ: 1, taxi: 1, cbus: 1, dump: 1, buggy: 1, tractor: 1, bike: 1, boss: 1 };
+  var PAINTED = { bike: 1, sedan: 1, civ: 1, taxi: 1, cbus: 1, dump: 1, buggy: 1, tractor: 1 }, GROUNDED = { sedan: 1, civ: 1, taxi: 1, cbus: 1, dump: 1, buggy: 1, tractor: 1, bike: 1, boss: 1 };
   /* big flat panels (a bus's back, a truck's box) face our headlights square on and would throw them straight back: those get a satin finish */
   var SATIN = { cbus: 1, dump: 1, tractor: 1 };
   function enemyPaint(hex, satin) {
@@ -15,7 +15,39 @@
     if (typeof envRT !== 'undefined' && envRT) m.envMap = envRT.texture;   /* built after the sky map was baked: take it now */
     return m;
   }
+  /* traffic, taxis and armed sedans are real cars from the garage (graphics upgrade 3): a clone of one of the sedans, hatchbacks
+     and crossovers of a road car's size, sharing its geometry, in a paint of its own. Road traffic is mostly white, black and grey */
+  var TRAFFIC = null, TRAFFIC_PAINT = [0xf2f2ef, 0xf2f2ef, 0xe4e6e9, 0x15171b, 0x15171b, 0x8e959d, 0x5d636b, 0x2b3a5c, 0x8f1c22, 0xc8b89a, 0x41503f, 0x6c2a3a];
+  function trafficModels() {
+    if (!TRAFFIC && typeof CAR_ORDER !== 'undefined' && CAR_ORDER) TRAFFIC = CAR_ORDER.filter(function (k) { var c = CARS[k]; return c && c.g && c.paint && c.spec && c.spec.L >= 4.1 && c.spec.L <= 5.0 && c.spec.H <= 1.72 && c.spec.W <= 1.95; });
+    return TRAFFIC || [];
+  }
+  function trafficEnemy(type) {
+    var key = pick(trafficModels()), src = CARS[key], hex = type === 'taxi' ? pick([0xe8862a, 0xf0f0ec]) : (type === 'sedan' ? pick(enemyReds) : pick(TRAFFIC_PAINT));
+    var g = src.g.clone(true), so = [], co = [], wheels = [], body = enemyPaint(hex), i, k, H = src.spec.H, L = src.spec.L;
+    src.g.traverse(function (o) { so.push(o); }); g.traverse(function (o) { co.push(o); });
+    for (i = 0; i < so.length; i++) {
+      var o = so[i], c = co[i];
+      if (src.wheels.indexOf(o) >= 0) wheels.push(c);
+      if (c.isMesh && c.material === src.paint) c.material = body;
+      if (c.isSprite) { c.material = c.material.clone(); if (headGlows.indexOf(o) >= 0) headGlows.push(c); }
+    }
+    for (k in src.mounts) src.mounts[k].forEach(function (m) { var cm = co[so.indexOf(m)]; if (cm) while (cm.children.length) cm.remove(cm.children[0]); });   /* no player weapons on traffic */
+    g.visible = true; g.position.set(0, 0, 0); g.rotation.set(0, 0, 0);
+    if (type === 'sedan') {   /* the pursuer's roof gun and push bar */
+      g.add(cyl(0.26, 0.3, 0.22, 10, M.gun, 0, H + 0.08, -0.2));
+      g.add(cyl(0.07, 0.07, 1.1, 8, M.dark, 0, H + 0.12, -0.8, 'z'));
+      g.add(bx(Math.min(1.9, src.spec.W - 0.05), 0.26, 0.14, M.dark, 0, 0.55, L / 2 + 0.1));
+    }
+    if (type === 'taxi') {
+      g.add(bx(0.55, 0.17, 0.24, new T.MeshBasicMaterial({ color: 0xffe14a }), 0, H + 0.09, 0.1));
+      g.userData.blink = [];
+      [[0.95, 2.1], [0.95, -2.1], [-0.95, 2.1], [-0.95, -2.1]].forEach(function (q) { var bs = glowSprite(0xffa21a, 1.5, 0); bs.position.set(q[0] * src.spec.W / 1.9, 0.85, -q[1] * L / 4.5); g.add(bs); g.userData.blink.push(bs); });
+    }
+    return { g: g, type: type, cfg: TYPES[type], body: body, wheels: wheels, hp: 1, x0: 0, phase: 0, flash: 0, fireT: 1, ws: 0, t: 0 };
+  }
   function buildEnemy(type) {
+    if ((type === 'civ' || type === 'sedan' || type === 'taxi') && trafficModels().length) return trafficEnemy(type);
     var hex = type === 'civ' ? pick(civColors) : (type === 'cbus' ? pick([0x2f6fd0, 0x3aa655]) : (type === 'taxi' ? pick([0xe8862a, 0xd9dde2]) : pick(enemyReds)));
     var g = new T.Group(), wheels = [], body = PAINTED[type] ? enemyPaint(hex, SATIN[type]) : std(hex, 0.45, 0.1), i;
     if (type === 'sedan' || type === 'civ' || type === 'taxi') {
@@ -36,14 +68,32 @@
       }
       frontGlows(g, 0.6, 0.7, 2.28);
       [-0.6, 0.6].forEach(function (x) { g.add(bx(0.42, 0.13, 0.06, M.tail, x, 0.84, -2.3)); });
-      [[0.86, 1.35], [-0.86, 1.35], [0.86, -1.35], [-0.86, -1.35]].forEach(function (p) { g.add(wheel(0.37, 0.28, p[0], p[1], wheels)); });
+      [[0.86, 1.35], [-0.86, 1.35], [0.86, -1.35], [-0.86, -1.35]].forEach(function (p) { g.add(wheel2(0.37, 0.28, p[0], p[1], wheels)); });
     } else if (type === 'bike') {
-      g.add(bx(0.3, 0.5, 1.5, M.dark, 0, 0.72, 0));
-      g.add(wheel(0.36, 0.18, 0, 0.78, wheels)); g.add(wheel(0.36, 0.18, 0, -0.78, wheels));
-      var torso = bx(0.52, 0.66, 0.4, body, 0, 1.28, -0.12); torso.rotation.x = -0.35; g.add(torso);
-      var helm = shadowed(new T.Mesh(new T.IcosahedronGeometry(0.24, 0), body)); helm.position.set(0, 1.75, -0.12); g.add(helm);
-      g.add(bx(0.7, 0.06, 0.06, M.metal, 0, 1.12, 0.55));
-      g.add(bx(0.16, 0.1, 0.05, M.tail, 0, 0.9, -0.78));
+      /* a sport bike (graphics upgrade 3): fairing, tank, seat and tail in clearcoat paint, engine and exhaust, raked forks,
+         and a rider bent over the tank, arms to the bars, knees in, helmet with a dark visor */
+      var paint = body, suit = std(0x1c1e24, 0.7, 0.05), part = function (geo, mat, x, y, f, rx, sx, sy, sz) { var m = shadowed(new T.Mesh(geo, mat)); m.position.set(x, y, -f); if (rx) m.rotation.x = rx; if (sx) m.scale.set(sx, sy, sz); g.add(m); return m; };
+      g.add(wheel2(0.34, 0.16, 0, 0.74, wheels, { n: 5 })); g.add(wheel2(0.35, 0.2, 0, -0.76, wheels, { n: 5 }));
+      part(new T.BoxGeometry(0.32, 0.34, 0.6), M.gun, 0, 0.56, 0.02);                                               /* engine */
+      part(new T.CylinderGeometry(0.06, 0.075, 0.9, 12), M.chrome, 0.17, 0.5, -0.45, Math.PI / 2 - 0.12);          /* exhaust */
+      part(new T.SphereGeometry(0.24, 16, 10), paint, 0, 0.96, 0.22, 0, 0.9, 0.62, 1.5);                         /* tank */
+      part(new T.SphereGeometry(0.3, 16, 10), paint, 0, 0.92, 0.62, 0.35, 1.0, 0.85, 1.25);                      /* front fairing */
+      part(new T.BoxGeometry(0.34, 0.2, 0.04), M.glass, 0, 1.13, 0.78, -0.6);                                       /* windscreen */
+      part(new T.BoxGeometry(0.26, 0.08, 0.5), suit, 0, 0.94, -0.28);                                               /* seat */
+      part(new T.SphereGeometry(0.17, 12, 8), paint, 0, 0.98, -0.62, 0, 1, 0.6, 1.9);                            /* tail */
+      [-0.09, 0.09].forEach(function (x) { part(new T.CylinderGeometry(0.03, 0.03, 0.62, 8), M.chrome, x, 0.66, 0.66, -0.42); });   /* forks */
+      part(new T.CylinderGeometry(0.024, 0.024, 0.66, 8), M.dark, 0, 1.06, 0.5, 0, 1, 1, 1).rotation.z = Math.PI / 2;            /* bars */
+      g.add(bx(0.16, 0.08, 0.05, M.head, 0, 0.96, 0.93)); var hl = glowSprite(0xfff0c0, 1.5, 0); hl.position.set(0, 0.96, -1.06); g.add(hl); nightGlows.push(hl);
+      g.add(bx(0.14, 0.05, 0.04, M.tail, 0, 0.99, -0.94));
+      part(new T.CapsuleGeometry(0.17, 0.34, 4, 10), suit, 0, 1.3, -0.12, -0.95);                                 /* torso, bent over the tank */
+      part(new T.CapsuleGeometry(0.15, 0.1, 4, 10), paint, 0, 1.36, 0.02, -0.95, 1.2, 0.9, 1);                  /* jacket colour across the back */
+      [-1, 1].forEach(function (sd) {
+        part(new T.CapsuleGeometry(0.055, 0.42, 4, 8), suit, sd * 0.23, 1.27, 0.33, 0.8);                           /* arms to the bars */
+        part(new T.CapsuleGeometry(0.075, 0.38, 4, 8), suit, sd * 0.17, 0.98, 0.0, 1.4);                           /* thighs */
+        part(new T.CapsuleGeometry(0.06, 0.34, 4, 8), suit, sd * 0.19, 0.72, 0.1, -0.5);                             /* shins */
+      });
+      part(new T.SphereGeometry(0.17, 18, 12), paint, 0, 1.55, 0.3);                                               /* helmet */
+      part(new T.SphereGeometry(0.165, 18, 12, 0, Math.PI, 0.9, 1.0), M.glass, 0, 1.55, 0.31, 0, 1.02, 1.02, 1.02).rotation.y = Math.PI;   /* visor */
     } else if (type === 'dump') {
       g.add(bx(2.3, 0.5, 7.2, M.dark, 0, 0.85, 0));
       g.add(prof([[1.6, 0.9], [3.6, 0.9], [3.6, 1.9], [1.6, 1.9]], 2.6, M.dark, 0.06));
@@ -58,7 +108,7 @@
       g.add(bx(3.0, 0.5, 0.3, M.metal, 0, 0.9, 3.75));
       frontGlows(g, 0.95, 1.2, 3.65);
       [-0.95, 0.95].forEach(function (x) { g.add(bx(0.5, 0.2, 0.06, M.tail, x, 1.3, -3.52)); });
-      [[1.2, 2.6], [-1.2, 2.6], [1.2, -1.3], [-1.2, -1.3], [1.2, -2.6], [-1.2, -2.6]].forEach(function (p) { g.add(wheel(0.58, 0.45, p[0], p[1], wheels)); });
+      [[1.2, 2.6], [-1.2, 2.6], [1.2, -1.3], [-1.2, -1.3], [1.2, -2.6], [-1.2, -2.6]].forEach(function (p) { g.add(wheel2(0.58, 0.45, p[0], p[1], wheels)); });
     } else if (type === 'boss') {
       body = M.bossRed.clone();
       g.add(bx(2.7, 0.6, 9.4, M.dark, 0, 0.95, 0));
@@ -73,7 +123,7 @@
       });
       g.add(bx(3.3, 0.6, 0.3, M.metal, 0, 1.0, 4.85));
       [-1.1, 1.1].forEach(function (x) { g.add(bx(0.6, 0.24, 0.06, M.tail, x, 1.4, -4.72)); var tg = glowSprite(0xff2a1a, 2.2, 0.7); tg.position.set(x, 1.4, 4.8); g.add(tg); });
-      [[1.4, 3.6], [-1.4, 3.6], [1.4, -1.6], [-1.4, -1.6], [1.4, -2.9], [-1.4, -2.9], [1.4, -4.1], [-1.4, -4.1]].forEach(function (p) { g.add(wheel(0.62, 0.5, p[0], p[1], wheels)); });
+      [[1.4, 3.6], [-1.4, 3.6], [1.4, -1.6], [-1.4, -1.6], [1.4, -2.9], [-1.4, -2.9], [1.4, -4.1], [-1.4, -4.1]].forEach(function (p) { g.add(wheel2(0.62, 0.5, p[0], p[1], wheels)); });
     } else if (type === 'cbus') {
       /* city bus: long low-floor body, window band, two doors on the kerb side, route board */
       g.add(bx(2.44, 2.5, 10.4, body, 0, 1.75, 0));
@@ -87,7 +137,7 @@
       [-0.9, 0.9].forEach(function (x) { g.add(bx(0.4, 0.18, 0.06, M.tail, x, 1.0, -5.21)); });
       g.userData.blink = [];
       [[1.25, 4.9], [1.25, -4.9], [-1.25, 4.9], [-1.25, -4.9]].forEach(function (q) { var bs = glowSprite(0xffa21a, 2.0, 0); bs.position.set(q[0], 1.0, -q[1]); g.add(bs); g.userData.blink.push(bs); });
-      [[1.05, 3.4], [-1.05, 3.4], [1.05, -3.0], [-1.05, -3.0]].forEach(function (p) { g.add(wheel(0.48, 0.34, p[0], p[1], wheels)); });
+      [[1.05, 3.4], [-1.05, 3.4], [1.05, -3.0], [-1.05, -3.0]].forEach(function (p) { g.add(wheel2(0.48, 0.34, p[0], p[1], wheels)); });
     } else if (type === 'tractor') {
       /* 경운기: a walking tractor pulling a cart, the slow vehicle of country roads */
       body = std(pick([0xc5221f, 0x2f6fb5, 0x3f8a5a]), 0.6, 0.1);
@@ -103,7 +153,7 @@
       g.add(cyl(0.34, 0.34, 0.04, 12, std(0xe2c98a, 0.9), 0, 1.95, -0.08));
       frontGlows(g, 0.22, 0.82, 1.82);
       g.add(bx(0.3, 0.12, 0.05, M.tail, 0, 0.72, -1.92));
-      [[0.5, 1.3, 0.4], [-0.5, 1.3, 0.4], [0.82, -1.0, 0.36], [-0.82, -1.0, 0.36]].forEach(function (p) { g.add(wheel(p[2], 0.2, p[0], p[1], wheels)); });
+      [[0.5, 1.3, 0.4], [-0.5, 1.3, 0.4], [0.82, -1.0, 0.36], [-0.82, -1.0, 0.36]].forEach(function (p) { g.add(wheel2(p[2], 0.2, p[0], p[1], wheels)); });
     } else if (type === 'buggy') {
       /* rocket buggy: open frame, roll cage, fat rear tyres and a rocket pod over the engine */
       g.add(bx(1.3, 0.3, 2.7, M.dark, 0, 0.55, 0));
@@ -120,7 +170,7 @@
       });
       frontGlows(g, 0.45, 0.8, 1.45);
       g.add(bx(0.5, 0.1, 0.05, M.tail, 0, 0.95, -1.42));
-      [[0.72, 1.0, 0.34, 0.24], [-0.72, 1.0, 0.34, 0.24], [0.78, -0.95, 0.44, 0.36], [-0.78, -0.95, 0.44, 0.36]].forEach(function (p) { g.add(wheel(p[2], p[3], p[0], p[1], wheels)); });
+      [[0.72, 1.0, 0.34, 0.24], [-0.72, 1.0, 0.34, 0.24], [0.78, -0.95, 0.44, 0.36], [-0.78, -0.95, 0.44, 0.36]].forEach(function (p) { g.add(wheel2(p[2], p[3], p[0], p[1], wheels)); });
     } else if (type === 'kami') {
       /* suicide drone: small dart with a red warhead; it hovers ahead, locks on, then dives */
       var kd = new T.Group(); kd.position.y = 4.6; g.add(kd);
