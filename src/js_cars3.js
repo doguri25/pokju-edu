@@ -1,4 +1,5 @@
   /* ---------- paints and trim ---------- */
+  var M_BEFORE = Object.keys(M);
   M.mint = std(0xa9dccd, 0.4, 0.1); M.carWhite = std(0xf1f1ee, 0.35, 0.1); M.sea = std(0x4d6688, 0.3, 0.35);
   M.sage = std(0x8fa58a, 0.5, 0.15); M.ivory = std(0xcfc9bd, 0.35, 0.2); M.nocturne = std(0x5b616b, 0.35, 0.3); M.arctic = std(0x7fb5d6, 0.35, 0.2);
   M.coral = std(0xf2a7b5, 0.4, 0.1); M.deepBlue = std(0x2a4a9a, 0.3, 0.3); M.obsidian = std(0x1c1d20, 0.28, 0.4); M.busGreen = std(0x3aa655, 0.5, 0.1);
@@ -18,6 +19,22 @@
   M.graphite = std(0x3b4048, 0.35, 0.35); M.flame = std(0xd9361e, 0.35, 0.2); M.wolfGrey = std(0x767e86, 0.55, 0.05); M.jungle = std(0x4f5d49, 0.5, 0.15); M.teal = std(0x2f7f86, 0.4, 0.25);
   M.yacht = std(0x24566f, 0.3, 0.4); M.orchid = std(0x7a6aa8, 0.35, 0.25); M.copper = std(0x9a4f2e, 0.35, 0.4); M.grabber = std(0x1f7fe0, 0.35, 0.2);
   M.plate = new T.MeshBasicMaterial({ color: C(0xe9e9e4) }); M.plateEV = new T.MeshBasicMaterial({ color: C(0x4a9ae8) });
+  /* paint, glass and metal (graphics upgrade, after the mockup): every paint above becomes a clearcoat paint with smooth-shaded,
+     rounded edges; glass and chrome turn reflective. All of them reflect the sky's environment map (js_fx2.js) */
+  (function () {
+    var METAL = { rim: 1, rimDark: 1, chrome: 1, gloss: 1 };
+    Object.keys(M).forEach(function (k) {
+      var m = M[k];
+      if (M_BEFORE.indexOf(k) >= 0 || !m || !m.isMeshStandardMaterial) return;
+      var p = METAL[k]
+        ? new T.MeshPhysicalMaterial({ color: m.color, roughness: Math.min(m.roughness, k === 'chrome' ? 0.12 : 0.28), metalness: Math.max(m.metalness, k === 'gloss' ? 0.5 : 0.9), clearcoat: k === 'gloss' ? 1 : 0.4, clearcoatRoughness: 0.08, flatShading: false })
+        : new T.MeshPhysicalMaterial({ color: m.color, roughness: clamp(m.roughness * 0.9, 0.22, 0.5), metalness: clamp(m.metalness + 0.1, 0.15, 0.55), clearcoat: 1, clearcoatRoughness: 0.05, flatShading: false });
+      p.envMapIntensity = METAL[k] ? 0.7 : 0.45;   /* the sky map is bright by day: enough for a sheen, not enough to wash the colour out */
+      M[k] = p; ENV_MATS.push(p);
+    });
+    M.glass = new T.MeshPhysicalMaterial({ color: C(0x16212e), roughness: 0.05, metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0.02, flatShading: true });
+    M.glass.envMapIntensity = 0.8; ENV_MATS.push(M.glass);
+  })();
   function textMat(text, fg, bg, w, h) {
     var c = document.createElement('canvas'); c.width = w; c.height = h;
     var x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0, 0, w, h);
@@ -188,12 +205,24 @@
   function wheel2(r, w, x, f, list, st) {
     st = st || {};
     var g = new T.Group(), n = st.n || 5, i;
-    g.add(cyl(r, r, w, 18, M.tire, 0, 0, 0, 'x'));
+    g.add(tyreMesh(r, w));
+    var lip = new T.Mesh(new T.TorusGeometry(r * 0.69, r * 0.045, 6, 24), M.chrome); lip.rotation.y = Math.PI / 2; [-1, 1].forEach(function (sd) { var l = lip.clone(); l.position.x = sd * (w / 2 + 0.005); g.add(l); });
     var face = new T.Mesh(new T.CylinderGeometry(r * 0.68, r * 0.68, w + 0.02, 18), st.rim || M.rim); face.geometry.rotateZ(Math.PI / 2); g.add(face);
     for (i = 0; i < n; i++) { var sp = new T.Mesh(new T.BoxGeometry(w + 0.035, r * (st.cover ? 0.34 : 0.15), r * 1.3), st.spoke || M.rimDark); sp.rotation.x = i * Math.PI / n; g.add(sp); }
     g.add(cyl(r * 0.17, r * 0.17, w + 0.05, 8, st.rim || M.rim, 0, 0, 0, 'x'));
     g.position.set(x, r, -f); g.userData.r = r; list.push(g);
     return g;
+  }
+  /* a tyre turned on a lathe: rounded shoulders and a sidewall instead of a plain cylinder, with a few tread grooves */
+  var tyreGeos = {};
+  function tyreMesh(r, w) {
+    var key = r.toFixed(3) + ',' + w.toFixed(3), geo = tyreGeos[key];
+    if (!geo) {
+      var pts = [[0.6, -0.5], [0.86, -0.5], [0.96, -0.44], [1, -0.3], [1, -0.18], [0.985, -0.14], [1, -0.1], [1, 0.1], [0.985, 0.14], [1, 0.18], [1, 0.3], [0.96, 0.44], [0.86, 0.5], [0.6, 0.5]]
+        .map(function (p) { return new T.Vector2(p[0] * r, p[1] * w); });
+      geo = new T.LatheGeometry(pts, 28); geo.rotateZ(Math.PI / 2); tyreGeos[key] = geo;
+    }
+    return shadowed(new T.Mesh(geo, M.tire));
   }
   function archDisc(r, x, y, f, trap) {
     var geo;

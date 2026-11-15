@@ -1235,9 +1235,11 @@
     for (i = 0; i < nightGlows.length; i++) nightGlows[i].material.opacity = night * 0.9;
     for (i = 0; i < headGlows.length; i++) headGlows[i].material.opacity = 0.3 + night * 0.7;
     poolMat.opacity = night * 0.34;
+    streakMat.opacity = night * (0.25 + 0.75 * wetK) * 0.85;
+    tailPool.material.opacity = (0.25 * night + 0.45 * wetK) * (mode === 'play' || mode === 'demo' ? 1 : 0.6);
     for (i = 0; i < bMats.length; i++) bMats[i][0].emissiveIntensity = night * 0.95;
     beam.intensity = Math.max(night, tunK) * 4.5; beamPool.material.opacity = Math.max(night, tunK) * 0.5;
-    beam.position.z = -car.hl; beamPool.position.z = -car.hl - 13;
+    beam.position.z = -car.hl; beamPool.position.z = -car.hl - 13; tailPool.position.z = car.hl + 4;
 
     if (mode === 'demo') updTrailer(dt);
     if (buff.nitro > 0) buff.nitro -= dt;
@@ -1791,8 +1793,8 @@
     spawn: function (type, x, z, ws) { return spawnEnemy(type, x, z, ws === undefined ? 0 : ws); },
     startKind: function (kind, carKey, idx, o) {
       var k; selCar = carKey; selKind = kind; if (o) for (k in o) if (cond[k] !== undefined) cond[k] = o[k];
-      if (kind === 'ta' || kind === 'race') selTrack = idx || 0; else if (kind === 'mis') selMission = idx || 0;
-      tr.on = false; tr.phase = ''; beginRun(carKey, kind === 'mis' ? (idx || 0) : 0, false, kind === 'ta' || kind === 'race' ? (idx || 0) : undefined, kind, !!(o && o.cont));
+      if (kind === 'ta' || kind === 'race') selTrack = idx || 0; else if (kind === 'mis') selMission = idx || 0; else if (kind === 'story') selChapter = idx || 0;
+      tr.on = false; tr.phase = ''; beginRun(carKey, kind === 'mis' || kind === 'story' ? (idx || 0) : 0, false, kind === 'ta' || kind === 'race' ? (idx || 0) : undefined, kind, !!(o && o.cont));
       if (!(o && o.brief)) briefT = 0.001;
     },
     setCond: function (o) { for (var k in o) cond[k] = o[k]; if (mode === 'menu') { pickCourse(); renderCond(); renderFoot(); } },

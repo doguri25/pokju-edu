@@ -20,7 +20,7 @@
   }
 
   /* ---------- graphics quality: three levels; 「자동」 starts high and steps down when frames take too long ---------- */
-  var GFX = { high: { pr: 2, shadow: true, fx: 1, map: 2048, mir: 2, post: 1 }, mid: { pr: 1.5, shadow: true, fx: 0.7, map: 1024, mir: 3, post: 0.8 }, low: { pr: 1, shadow: false, fx: 0.45, map: 1024, mir: 3, post: 0 } }, gfxNow = 'high', gfxAcc = 0, gfxN = 0, fxK = 1, mirEvery = 2;
+  var GFX = { high: { pr: 2, shadow: true, fx: 1, map: 2048, mir: 1, post: 1 }, mid: { pr: 1.5, shadow: true, fx: 0.7, map: 1024, mir: 1, post: 0.8 }, low: { pr: 1, shadow: false, fx: 0.45, map: 1024, mir: 3, post: 0 } }, gfxNow = 'high', gfxAcc = 0, gfxN = 0, fxK = 1, mirEvery = 2;
   /* 「자동」 starts one step down on a phone-sized or touch screen: those are the devices where the full setting costs frames */
   function gfxStart() { var small = Math.min(window.innerWidth, window.innerHeight) <= 520 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches); return small ? 'mid' : 'high'; }
   function applyGfx(k) {
@@ -126,8 +126,9 @@
   }
 
   /* ---------- rear-view mirror: the road behind is drawn into a small target every other frame and shown, flipped left to right, on a panel at the top of the screen ---------- */
-  var mirrorRT = new T.WebGLRenderTarget(384, 128); mirrorRT.texture.colorSpace = T.SRGBColorSpace;
-  var mirrorCam = new T.PerspectiveCamera(40, 3, 0.5, 90), mirrorN = 0;
+  /* the rear-view mirror is drawn every frame at a small size; its buffer gets the same tone mapping as the main picture (see js_fx2.js) */
+  var mirrorRT = new T.WebGLRenderTarget(336, 112, { type: renderer.capabilities.isWebGL2 ? T.HalfFloatType : T.UnsignedByteType }); mirrorRT.texture.colorSpace = T.SRGBColorSpace; mirrorRT.isXRRenderTarget = true;
+  var mirrorCam = new T.PerspectiveCamera(40, 3, 0.5, 75), mirrorN = 0;
   var mirrorQuad = new T.Mesh(new T.PlaneGeometry(1, 1), new T.ShaderMaterial({ uniforms: { tMap: { value: mirrorRT.texture } }, depthTest: false, depthWrite: false, transparent: true, fog: false,
     vertexShader: 'varying vec2 vUv;\nvoid main() {\n\tvUv = uv;\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}',
     fragmentShader: ['uniform sampler2D tMap; varying vec2 vUv;', 'void main() {', '\tvec2 p = ( vUv - 0.5 ) * vec2( 3.0, 1.0 );', '\tfloat d = length( max( abs( p ) - vec2( 1.5 - 0.17, 0.5 - 0.17 ), 0.0 ) ) - 0.17;', '\tif ( d > 0.0 ) discard;',

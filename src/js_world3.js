@@ -142,6 +142,8 @@
   });
   var nightGlows = [];
   var poolMat = new T.MeshBasicMaterial({ map: texGlow, color: C(0xffd9a0), blending: T.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0, fog: false });
+  /* a lamp's reflection on a wet or night road: a long warm streak running towards the viewer (graphics upgrade) */
+  var streakMat = new T.MeshBasicMaterial({ map: texGlow, color: C(0xffb066), blending: T.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0, fog: false });
   var lamps = loopGroup(48, true);
   for (var lz = -288, li = 0; lz <= 48; lz += 24, li++) {
     var ls = li % 2 ? 1 : -1;
@@ -151,6 +153,7 @@
     var head = new T.Mesh(new T.BoxGeometry(0.9, 0.14, 0.4), M.lamp); head.position.set(-ls * 2.3, 7.4, 0); L.add(head);
     var gl = glowSprite(0xffd08a, 5, 0); gl.position.set(-ls * 2.3, 7.3, 0); L.add(gl); nightGlows.push(gl);
     var pool = new T.Mesh(new T.PlaneGeometry(14, 17), poolMat); pool.rotation.x = -Math.PI / 2; pool.position.set(-ls * 4.6, 0.05, 0); L.add(pool);
+    var streak = new T.Mesh(new T.PlaneGeometry(1.6, 26), streakMat); streak.rotation.x = -Math.PI / 2; streak.position.set(-ls * 3.4, 0.06, 9); L.add(streak);
     lamps.add(L);
   }
   var facade = facadeTex(false), facadeE = facadeTex(true);

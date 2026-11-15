@@ -24,6 +24,8 @@
     if (a < 0 || b < 0) { console.warn('legacy light fall-off: shader chunk not found'); return; }
     T.ShaderChunk.lights_pars_begin = src.slice(0, a) + 'if ( cutoffDistance > 0.0 && decayExponent > 0.0 ) return pow( saturate( - lightDistance / cutoffDistance + 1.0 ), decayExponent );\n\treturn 1.0;' + src.slice(b + 'return distanceFalloff;'.length);
   })();
+  /* materials that reflect the sky's environment map (car paint, glass, metal, a wet road); js_fx2.js bakes the map and hands it out */
+  var ENV_MATS = [];
   var LEGACY_LIGHTS = [];
   function legacy(l) { LEGACY_LIGHTS.push(l); return l; }
   var rawRender = renderer.render.bind(renderer);

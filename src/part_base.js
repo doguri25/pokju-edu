@@ -164,10 +164,12 @@
   function prof(pts, width, mat, bevel) {
     var s = new T.Shape();
     pts.forEach(function (p, i) { if (i) s.lineTo(p[0], p[1]); else s.moveTo(p[0], p[1]); });
-    var b = bevel || 0;
-    var g = new T.ExtrudeGeometry(s, { depth: width - 2 * b, bevelEnabled: b > 0, bevelThickness: b, bevelSize: b, bevelSegments: 1, steps: 1 });
+    var b = bevel || 0, smooth = b > 0 && mat && mat.flatShading === false;
+    var g = new T.ExtrudeGeometry(s, { depth: width - 2 * b, bevelEnabled: b > 0, bevelThickness: b, bevelSize: b, bevelSegments: smooth ? 3 : 1, steps: 1 });
     g.translate(0, 0, -(width - 2 * b) / 2);
     g.rotateY(Math.PI / 2);
+    /* smooth-shaded materials (car paint): round the bevels but keep the hard corners of the silhouette */
+    if (smooth) { var cg = toCreasedNormals(g, 0.7); g.dispose(); g = cg; }
     return shadowed(new T.Mesh(g, mat));
   }
   function cyl(r1, r2, len, seg, mat, x, y, f, axis) {

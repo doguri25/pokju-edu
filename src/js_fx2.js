@@ -27,6 +27,21 @@
     return { composer: composer, bloom: bloom, grade: grade.uniforms };
   }
   try { post = postBuild(); } catch (e) { post = null; }
+  /* the sky's environment map: the sky dome drawn into a blurred cube map whenever the time, weather or region changes enough to show.
+     Car paint, glass, chrome and the road reflect it */
+  var envGen = new T.PMREMGenerator(renderer), envScene = new T.Scene(), envRT = null, envKey = '', envT = 0;
+  envScene.add(new T.Mesh(skyDome.geometry, skyDome.material));
+  ENV_MATS.push(roadMat, roadOutMat);
+  function updEnv(dt) {
+    envT -= dt; if (envT > 0) return; envT = 0.6;
+    var key = Math.round(cur.night * 16) + ',' + Math.round(weather.cloud * 8) + ',' + Math.round(tunK * 3) + ',' + Math.round(cur.sunDir.x * 8) + ',' + Math.round(cur.sunDir.y * 8);
+    if (key === envKey) return;
+    envKey = key;
+    var rt = envGen.fromScene(envScene, 0, 0.1, 1000);
+    for (var i = 0; i < ENV_MATS.length; i++) { var m = ENV_MATS[i]; if (!m.envMap) m.needsUpdate = true; m.envMap = rt.texture; }
+    if (envRT) envRT.dispose();
+    envRT = rt;
+  }
   function postResize(w, h) {
     if (!post) return;
     post.composer.setPixelRatio(renderer.getPixelRatio()); post.composer.setSize(w, h);
@@ -46,7 +61,7 @@
   function renderFrame() {
     var q = GFX[gfxNow] || GFX.high, now = performance.now(), dt = Math.min(0.1, (now - postLast) / 1000);
     postLast = now;
-    postLights();
+    postLights(); updEnv(dt);
     if (!post || !q.post) { renderer.render(scene, camera); return; }
     var u = post.grade, n = cur.night, car = CARS[player.car];
     var dusk = clamp(1 - Math.abs(n - 0.35) / 0.3, 0, 1);

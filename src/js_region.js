@@ -387,7 +387,7 @@
     guardStones.visible = region.key === 'mountain'; streamStrip.visible = region.key === 'creek';
   }
   /* material colours for the region at the current time of day, then darkened by rain or whitened by snow */
-  var dayRoad = PRESETS.day.road, tintC = new T.Color(), tmpC = new T.Color(), snowC = C(0xf2f6fa), wetK = 0;
+  var dayRoad = PRESETS.day.road, tintC = new T.Color(), tmpC = new T.Color(), snowC = C(0xf2f6fa), wetK = 0, roadRefl = 0;
   function regionColors(dt, wet, cover) {
     var R = region, i, o, tk, list = sceneryNow;
     tintC.setRGB(cur.road.r / dayRoad.r, cur.road.g / dayRoad.g, cur.road.b / dayRoad.b);
@@ -403,7 +403,10 @@
       roadMat.color.multiplyScalar(1 - 0.36 * wetK * (1 - 0.5 * cur.night)); roadOutMat.color.multiplyScalar(1 - 0.3 * wetK * (1 - 0.5 * cur.night)); shoulderMat.color.multiplyScalar(1 - 0.28 * wetK);
       groundMat.color.multiplyScalar(1 - 0.14 * wetK); walkMat.color.multiplyScalar(1 - 0.2 * wetK);
     }
-    roadMat.roughness = roadOutMat.roughness = 0.85 - 0.5 * wetK;
+    /* how much the road reflects the sky (graphics upgrade): a wet road strongly, a dry one a little after dark */
+    roadRefl = clamp(wetK * 1.05 + cur.night * 0.3, 0, 1) * (1 - cover);
+    roadMat.roughness = roadOutMat.roughness = 0.85 - 0.6 * roadRefl;
+    roadMat.envMapIntensity = roadOutMat.envMapIntensity = roadRefl * 0.85;
     if (cover > 0.01) {
       tmpC.copy(snowC).multiply(tintC);
       groundMat.color.lerp(tmpC, cover); walkMat.color.lerp(tmpC, cover); shoulderMat.color.lerp(tmpC, cover * 0.85); roadMat.color.lerp(tmpC, cover * 0.62); roadOutMat.color.lerp(tmpC, cover * 0.72);
