@@ -232,6 +232,23 @@
     return m;
   }
   function both(fn) { fn(-1); fn(1); }
+  /* tumblehome (1.3): above the beltline everything leans in toward the roof, as on a real car: side glass, pillars, roof and rails.
+     Each part is moved into the car's own space and its corners pulled in by up to k of their distance from the centre line */
+  function tumble(g, beltY, H, k) {
+    g.children.slice().forEach(function (m) {
+      if (!m.isMesh || !m.geometry || !m.geometry.attributes.position) return;
+      m.updateMatrix();
+      var geo = m.geometry.clone(), a, i, x, y, f, yb, t;
+      geo.applyMatrix4(m.matrix); a = geo.attributes.position;
+      for (i = 0; i < a.count; i++) {
+        y = a.getY(i); f = -a.getZ(i); yb = beltY(f) + 0.03;
+        if (y <= yb) continue;
+        t = Math.min(1, (y - yb) / Math.max(0.2, H - yb)); x = a.getX(i);
+        a.setX(i, x * (1 - k * t * t * (3 - 2 * t)));
+      }
+      m.geometry = geo; m.position.set(0, 0, 0); m.rotation.set(0, 0, 0); m.scale.set(1, 1, 1); m.updateMatrix();
+    });
+  }
   /* passenger cars, SUVs and pickups share one builder: a side silhouette from a few real proportions, then each car's own lamps, grille and trim */
   function mkCar(key, o) {
     var car = CARS[key], s = car.spec, L = s.L, W = s.W, H = o.H || s.H, g = new T.Group(), w = [], B = o.mat, R = o.roofMat || B;
@@ -247,8 +264,9 @@
     var lower = [[rTip + 0.05, gc], [fTip - 0.1, gc], [fTip, hb], [fTip - o.nose, o.noseY], [o.cowlF, o.hoodY], [o.rearBaseF, o.deckY]];
     if (o.bed) lower.push([o.rearBaseF - 0.03, o.bed.floorY], [rTip + 0.03, o.bed.floorY], [rTip, rb]);
     else lower.push([rTip + o.tailIn, o.tailY], [rTip, rb]);
-    g.add(prof(lower, W, B, LB));
-    g.add(prof([[o.rearBaseF, o.deckY - 0.02], [o.cowlF, o.hoodY - 0.02], [o.roofF1, H - GB], [o.roofF2, o.roofY2 - GB]], Wg, R, GB));
+    /* 1.3: rolled shoulders: the panels curve over into the bonnet, roof and boot instead of meeting them at a box edge */
+    g.add(loftBody(lower, W, B) || prof(lower, W, B, LB, W * 0.11));
+    g.add(prof([[o.rearBaseF, o.deckY - 0.02], [o.cowlF, o.hoodY - 0.02], [o.roofF1, H - GB], [o.roofF2, o.roofY2 - GB]], Wg, R, GB, Wg * 0.09));
     var A0 = [o.cowlF, o.hoodY], A1 = [o.roofF1, H], C0 = [o.rearBaseF, o.deckY], C1 = [o.roofF2, o.roofY2], aT = o.aT || 0.14, cT = o.cT === undefined ? 0.2 : o.cT;
     var y0f = o.hoodY + 0.07, y1f = H - 0.09, y0r = o.deckY + 0.07, y1r = o.roofY2 - 0.09;
     g.add(pane(Wg - 0.16, o.cowlF - 0.03, o.hoodY + 0.02, o.roofF1 + 0.03, H - 0.05, M.glass, 0.03));
@@ -262,7 +280,16 @@
     if (o.ducktail) g.add(bx(W * 0.82, 0.05, 0.2, B, 0, o.tailY + 0.025, rTip + o.tailIn + 0.08));
     if (o.clad) g.add(bx(W + 0.02, 0.15, s.wb - 2 * r - 0.16, M.dark, 0, gc + 0.075, (ff + fr) / 2));
     [ff, fr].forEach(function (f) { both(function (sd) { g.add(archDisc(r + (o.clad ? 0.15 : 0.07), sd * (W / 2 + 0.008), r, f, o.arch === 'trap')); }); });
-    (o.doors || []).forEach(function (f) { var ht = beltY(f) - gc - 0.16; both(function (sd) { g.add(bx(0.012, ht, 0.014, M.gloss, sd * (W / 2 + 0.001), gc + 0.13 + ht / 2, f)); }); });
+    (o.doors || []).forEach(function (f, di) {
+      var ht = beltY(f) - gc - 0.16;
+      both(function (sd) {
+        g.add(bx(0.012, ht, 0.014, M.gloss, sd * (W / 2 + 0.001), gc + 0.13 + ht / 2, f));
+        if (di < 3) g.add(bx(0.022, 0.03, 0.15, M.chrome, sd * (W / 2 + 0.011), beltY(f) - 0.16, f + 0.32));   /* door handles */
+      });
+    });
+    /* black rocker panels between the wheels, and a thin chrome line under the side windows */
+    both(function (sd) { g.add(bx(0.035, 0.1, Math.max(0.4, s.wb - 2 * r - 0.25), M.dark, sd * (W / 2 + 0.004), gc + 0.08, (ff + fr) / 2)); });
+    both(function (sd) { g.add(bx(0.012, 0.012, Math.max(0.5, o.cowlF - o.rearBaseF - 0.5), M.chrome, sd * (Wg / 2 + 0.035), beltY((o.cowlF + o.rearBaseF) / 2) + 0.035, (o.cowlF + o.rearBaseF) / 2)); });
     both(function (sd) { g.add(bx(0.2, 0.11, 0.14, o.mirrorMat || B, sd * (W / 2 + 0.08), o.hoodY + 0.1, o.cowlF - 0.42)); });
     if (o.bed) {
       var bl = o.rearBaseF - rTip, bm = (o.rearBaseF + rTip) / 2, bh = o.bed.wallY - o.bed.floorY;
@@ -273,6 +300,7 @@
     F(0.5, 0.11, 0, gc + (o.plateFY || 0.24), o.plate || M.plate, 0.03); Rr(0.5, 0.11, 0, o.plateRY || gc + 0.42, o.plate || M.plate, 0.03);
     var ctx = { g: g, W: W, Wg: Wg, L: L, H: H, B: B, R: R, gc: gc, r: r, ff: ff, fr: fr, fTip: fTip, rTip: rTip, fF: fF, rF: rF, F: F, Rr: Rr, beltY: beltY, roofY: roofY, o: o };
     if (o.detail) o.detail(ctx);
+    tumble(g, beltY, H, o.bed ? 0.06 : 0.12);
     [ff, fr].forEach(function (f) { both(function (sd) { g.add(wheel2(r, r * 0.8, sd * (W / 2 - 0.1), f, w, o.wheel)); }); });
     var roofF = o.roofSlot === undefined ? (o.roofF1 + o.roofF2) / 2 : o.roofSlot, an = { front: [0, gc + 0.28, fTip + 0.04], roof: [0, roofY(roofF) + 0.02, roofF] };
     if (o.slots.indexOf('side') >= 0) an.side = [W / 2 + 0.08, gc + 0.72, (ff + fr) / 2];

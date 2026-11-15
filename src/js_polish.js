@@ -101,8 +101,10 @@
     if (!thumbRT) {
       thumbRT = new T.WebGLRenderTarget(W, H); thumbRT.texture.colorSpace = T.SRGBColorSpace; thumbRT.isXRRenderTarget = true;   /* tone-mapped like the game */
       thumbScene = new T.Scene(); thumbScene.background = new T.Color(0x323957);
-      thumbScene.add(legacy(new T.HemisphereLight(0xffffff, 0x9aa3b0, 1.0)));
-      var dl = legacy(new T.DirectionalLight(0xffffff, 1.25)); dl.position.set(-5, 8, -6); thumbScene.add(dl);
+      /* studio light (1.3): a soft sky, a strong key from the front left and a cool rim from behind, so the panels read as curved */
+      thumbScene.add(legacy(new T.HemisphereLight(0xdfe8ff, 0x3a4058, 0.5)));
+      var dl = legacy(new T.DirectionalLight(0xfff4e6, 1.55)); dl.position.set(-5, 8, -6); thumbScene.add(dl);
+      var rl = legacy(new T.DirectionalLight(0x9fc4ff, 0.9)); rl.position.set(6, 4, 7); thumbScene.add(rl);
       var fl = new T.Mesh(new T.CircleGeometry(40, 32), new T.MeshBasicMaterial({ color: C(0x4a5380) })); fl.rotation.x = -Math.PI / 2; fl.position.y = -0.02; thumbScene.add(fl);
       thumbCam = new T.PerspectiveCamera(26, W / H, 0.1, 120);
       thumbCv = document.createElement('canvas'); thumbCv.width = W; thumbCv.height = H; thumbBuf = new Uint8Array(W * H * 4);

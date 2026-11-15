@@ -226,15 +226,64 @@
     var m = shadowed(new T.Mesh(new T.BoxGeometry(w, h, l), mat));
     m.position.set(x, y, -f); return m;
   }
-  function prof(pts, width, mat, bevel) {
+  /* thick: how far across the width the edge rounds off (default: as far as the outline grows). A large value with a small bevel gives the
+     soft, rolled shoulders of a modern car body without making the car any longer or taller */
+  function prof(pts, width, mat, bevel, thick) {
     var s = new T.Shape();
     pts.forEach(function (p, i) { if (i) s.lineTo(p[0], p[1]); else s.moveTo(p[0], p[1]); });
-    var b = bevel || 0, smooth = b > 0 && mat && mat.flatShading === false;
-    var g = new T.ExtrudeGeometry(s, { depth: width - 2 * b, bevelEnabled: b > 0, bevelThickness: b, bevelSize: b, bevelSegments: smooth ? 3 : 1, steps: 1 });
-    g.translate(0, 0, -(width - 2 * b) / 2);
+    var b = bevel || 0, smooth = b > 0 && mat && mat.flatShading === false, t = smooth && thick ? Math.min(thick, width * 0.3) : b;
+    var g = new T.ExtrudeGeometry(s, { depth: width - 2 * t, bevelEnabled: b > 0, bevelThickness: t, bevelSize: b, bevelSegments: smooth ? (thick ? 6 : 3) : 1, steps: 1 });
+    g.translate(0, 0, -(width - 2 * t) / 2);
     g.rotateY(Math.PI / 2);
     /* smooth-shaded materials (car paint): round the bevels but keep the hard corners of the silhouette */
     if (smooth) { var cg = toCreasedNormals(g, 0.7); g.dispose(); g = cg; }
+    return shadowed(new T.Mesh(g, mat));
+  }
+  /* a car body lofted from its side outline (learning edition 1.3): 40 stations along the car, each a rounded section, the corners of the
+     plan rounded off at nose and tail. The outline's top edge (bonnet, screen base, boot) and bottom edge (sills, bumper undercuts) come
+     from the same points the old flat extrusion used, so every lamp, grille and badge still sits where it did; only the surface between is
+     now curved like a real panel. Returns null when the outline does not run front to back in one piece (then the extrusion is used) */
+  function loftBody(pts, W, mat) {
+    var n = pts.length, iMin = 0, iMax = 0, i, k;
+    for (i = 1; i < n; i++) { if (pts[i][0] < pts[iMin][0]) iMin = i; if (pts[i][0] > pts[iMax][0]) iMax = i; }
+    function chain(a, b) { var c = [], j = a; for (;;) { c.push(pts[j]); if (j === b) break; j = (j + 1) % n; } return c; }
+    var lo = chain(iMin, iMax), up = chain(iMax, iMin).reverse();
+    function mono(c) { for (var j = 1; j < c.length; j++) if (c[j][0] < c[j - 1][0] - 1e-6) return false; return true; }
+    if (!mono(lo) || !mono(up)) return null;
+    function at(c, f) {
+      for (var j = 1; j < c.length; j++) if (f <= c[j][0] + 1e-9) { var a = c[j - 1], b = c[j], d = b[0] - a[0]; return d < 1e-6 ? Math.max(a[1], b[1]) : a[1] + (b[1] - a[1]) * (f - a[0]) / d; }
+      return c[c.length - 1][1];
+    }
+    var f0 = pts[iMin][0], f1 = pts[iMax][0], N = 40, half = W / 2, pos = [], idx = [], ring = [];
+    /* one quarter of the section as unit corner arcs: bottom (small radius) and top (large radius, the rolled shoulder) */
+    var CB = 3, CT = 5;
+    for (i = 0; i <= N; i++) {
+      var u = i / N, f = f0 + (f1 - f0) * (0.5 - 0.5 * Math.cos(Math.PI * u));   /* stations closer together at the ends */
+      var yb = at(lo, f), yt = Math.max(yb, at(up, f)), h = yt - yb;
+      var e = Math.min(f - f0, f1 - f), kk = clamp(e / 0.38, 0, 1), hw = half * (0.9 + 0.1 * (1 - (1 - kk) * (1 - kk)));   /* plan corners */
+      var rt = Math.min(0.2, h * 0.5, hw * 0.45), rb = Math.min(0.06, h * 0.25), sec = [];
+      sec.push([0, yb]);
+      for (k = 0; k <= CB; k++) { var a1 = -Math.PI / 2 + k / CB * Math.PI / 2; sec.push([hw - rb + Math.cos(a1) * rb, yb + rb + Math.sin(a1) * rb]); }
+      for (k = 0; k <= CT; k++) { var a2 = k / CT * Math.PI / 2; sec.push([hw - rt + Math.cos(a2) * rt - 0.025 * Math.sin(a2), yt - rt + Math.sin(a2) * rt]); }
+      sec.push([0, yt]);
+      var full = sec.slice(); for (k = sec.length - 2; k >= 1; k--) full.push([-sec[k][0], sec[k][1]]);   /* mirror to the left side */
+      ring.push(full.length);
+      for (k = 0; k < full.length; k++) pos.push(full[k][0], full[k][1], -f);
+    }
+    var M2 = ring[0];
+    for (i = 0; i < N; i++) for (k = 0; k < M2; k++) {
+      var a = i * M2 + k, b = i * M2 + (k + 1) % M2, c = (i + 1) * M2 + k, d = (i + 1) * M2 + (k + 1) % M2;
+      idx.push(a, c, b, b, c, d);
+    }
+    /* close both ends with a fan (they are usually pinched flat already) */
+    [0, N].forEach(function (s, si) {
+      var base = s * M2, cx = 0, cy = 0;
+      for (k = 0; k < M2; k++) { cx += pos[(base + k) * 3]; cy += pos[(base + k) * 3 + 1]; }
+      var ci = pos.length / 3; pos.push(cx / M2, cy / M2, pos[base * 3 + 2]);
+      for (k = 0; k < M2; k++) { var p0 = base + k, p1 = base + (k + 1) % M2; if (si) idx.push(ci, p0, p1); else idx.push(ci, p1, p0); }
+    });
+    var g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
+    g.computeVertexNormals();
     return shadowed(new T.Mesh(g, mat));
   }
   function cyl(r1, r2, len, seg, mat, x, y, f, axis) {
