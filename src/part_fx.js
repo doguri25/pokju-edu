@@ -2,6 +2,7 @@
   var parts = [], ppool = { glow: [], smoke: [] };
   function spawnP(kind, x, y, z, vx, vy, vz, life, s0, s1, color, a0, drift) {
     if (color === COL.spark && typeof sparkAdd === 'function' && spkGeo) { sparkAdd(x, y, z, vx * 1.3, vy * 1.2, vz, life * 1.6); return; }   /* sparks are streaks now (js_fx3.js) */
+    if (parts.length > 300 * Math.max(0.5, fxK)) return;   /* a heavy barrage: past this many puffs more add nothing but draw calls */
     var p = ppool[kind].pop();
     if (!p) {
       p = { kind: kind, s: new T.Sprite(new T.SpriteMaterial({ map: kind === 'glow' ? texGlow : texSmoke, transparent: true, depthWrite: false, fog: false, blending: kind === 'glow' ? T.AdditiveBlending : T.NormalBlending })) };
@@ -34,7 +35,7 @@
     d.m.material = mat; d.m.visible = true; d.m.position.set(x, y, z);
     d.m.scale.set(rnd(0.3, 0.75), rnd(0.25, 0.6), rnd(0.3, 0.8)); d.hy = Math.max(d.m.scale.x, d.m.scale.y, d.m.scale.z) * 0.45;
     d.vx = rnd(-9, 9); d.vy = rnd(5, 13); d.vz = vzRel + rnd(-8, 8); d.rx = rnd(-10, 10); d.rz = rnd(-10, 10); d.life = rnd(1.4, 2.0);
-    d.burn = hot && Math.random() < 0.45 ? rnd(0.8, 1.6) : 0; d.metal = mat === M.metal || mat === M.steel || mat === M.dark; d.trail = 0;
+    d.burn = hot && Math.random() < 0.3 ? rnd(0.7, 1.3) : 0; d.metal = mat === M.metal || mat === M.steel || mat === M.dark; d.trail = 0;
     debris.push(d);
   }
   var rings = [], ringGeo = new T.PlaneGeometry(2, 2); ringGeo.rotateX(-Math.PI / 2);

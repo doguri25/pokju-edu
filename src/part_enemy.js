@@ -214,7 +214,7 @@
   function spawnEnemy(type, x, z, ws) {
     var e = epool[type].pop();
     if (!e) { e = buildEnemy(type); scene.add(e.g); }
-    e.hp = e.cfg.hp; e.x0 = x; e.phase = rnd(0, 6.28); e.flash = 0; e.fireT = rnd(0.6, 1.6); e.ws = ws; e.t = 0;
+    e.hp = e.cfg.hp; e.x0 = x; e.phase = rnd(0, 6.28); e.flash = 0; e.fireT = rnd(0.6, 1.6); e.ws = ws; e.t = 0; e.wsBase = undefined; e.dodge = null; e.brake = false; e.avoidT = 0;
     e.dropT = rnd(1.2, 2.0); e.holdZ = -rnd(20, 30); e.life = 15; e.strikeT = 5; e.st = 0; e.aimT = 1.1; e.lockX = 0; e.diveT = 0; e.stopD = undefined; e.state = 0; e.blinkOn = false; e.dieNow = false; e.hunted = false; e.lcT = rnd(2, 5); e.laneGo = undefined; e.entered = false; e.hpMax = 0; e.chase = 0; e.swT = 0;
     if (e.g.userData.hover) { e.g.userData.hover.position.y = 4.6; e.g.userData.hover.rotation.set(0, 0, 0); }
     e.body.emissive.setScalar(0);

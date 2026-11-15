@@ -528,6 +528,12 @@ body.paused #qtoast, body.paused #coach, body.paused #qbox { visibility: hidden;
   #banner { font-size: 18px; padding: 3px 16px; }
 }
 @media (max-height: 520px) and (min-width: 721px) { .hud .chip.status { width: 256px; box-sizing: border-box; } }   /* a growing chip moved the mirror and the card mid-question */
+/* 1.3: the two top HUD chips always the same height (the taller one sets it), at every screen size */
+.hud .row:first-child { align-items: stretch; }
+.hud .row:first-child > .chip.obj, .hud .row:first-child > .chip.status { box-sizing: border-box; align-content: center; }
+@media (max-width: 720px) { .hud .row:first-child { align-items: stretch; } .hud .row:first-child > .chip.obj, .hud .row:first-child > .chip.status { height: auto; min-height: 84px; } }
+.brand .home { pointer-events: auto; flex: none; align-self: center; width: 34px; height: 34px; border-radius: 17px; border: 1px solid var(--line); background: var(--chip); color: var(--chip-fg); font-size: 18px; line-height: 1; padding: 0; cursor: pointer; }
+.brand .home:hover { background: var(--accent-soft); }
 </style>
 
 <canvas id="c" aria-label="무장 차량이 도로를 위쪽으로 달리며 적 차량과 드론을 상대하는 3D 전투 장면"></canvas>
@@ -580,7 +586,7 @@ body.paused #qtoast, body.paused #coach, body.paused #qbox { visibility: hidden;
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><b>폭주 구구단</b><span>정식 버전 1.2</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><button type="button" class="home" id="brand-title" title="타이틀 화면으로" aria-label="타이틀 화면으로">⌂</button><b>폭주 구구단</b><span>정식 버전 1.3</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
     <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false">아이템</button>
@@ -693,13 +699,13 @@ body.paused #qtoast, body.paused #coach, body.paused #qbox { visibility: hidden;
   <dl class="detail stats" id="res-text"></dl>
   <div id="res-grid"></div>
   <p class="reward" id="res-reward"></p>
-  <div class="btns"><button type="button" id="res-menu">선택 화면으로</button><button type="button" id="res-retry">다시 하기</button><button type="button" id="res-big" aria-pressed="false">크게 보기</button><button type="button" class="primary" id="res-next" hidden>다음 미션</button><button type="button" class="primary" id="res-ending" hidden>엔딩 보기</button></div>
+  <div class="btns"><button type="button" id="res-menu">선택 화면으로</button><button type="button" id="res-home">타이틀 화면</button><button type="button" id="res-retry">다시 하기</button><button type="button" id="res-big" aria-pressed="false">크게 보기</button><button type="button" class="primary" id="res-next" hidden>다음 미션</button><button type="button" class="primary" id="res-ending" hidden>엔딩 보기</button></div>
 </div>
 <div class="panel result" id="pause" hidden>
   <b>일시정지</b>
   <p id="pause-text"></p>
   <div class="quick"><label class="opt"><input type="checkbox" id="pz-sound" checked>효과음</label><label class="opt"><input type="checkbox" id="pz-music" checked>배경음악</label><button type="button" class="plain" id="pz-cam">시점 바꾸기</button><button type="button" class="plain" id="pz-help">조작 방법</button></div>
-  <div class="btns"><button type="button" class="primary" id="pause-resume">계속 하기</button><button type="button" id="pause-retry">다시 시작</button><button type="button" id="pause-menu">선택 화면으로</button></div>
+  <div class="btns"><button type="button" class="primary" id="pause-resume">계속 하기</button><button type="button" id="pause-retry">다시 시작</button><button type="button" id="pause-menu">선택 화면으로</button><button type="button" id="pause-home">타이틀 화면</button></div>
 </div>
 <div class="panel result help tale" id="story" role="dialog" aria-labelledby="story-title" hidden>
   <span class="sub" id="story-step"></span>

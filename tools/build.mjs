@@ -19,7 +19,7 @@ const GEN = path.join(ROOT, '.build');
 const PARTS = [
   'part_start.js', 'part_base.js', 'js_hill.js', 'js_world3.js', 'js_region.js', 'js_audio2.js', 'part_weapons.js', 'js_specs.js',
   'js_cars3.js', 'part_cartail.js', 'part_enemy.js', 'part_fx.js', 'js_ga.js', 'js_proj2.js', 'js_extra.js', 'js_weather.js',
-  'js_modes.js', 'js_polish.js', 'js_story.js', 'js_quiz.js', '@spell', 'js_gate.js', 'js_chapters.js', 'js_link.js', 'js_fx2.js', 'js_fx3.js', 'js_hud2.js', 'js_gb.js'
+  'js_modes.js', 'js_polish.js', 'js_story.js', 'js_quiz.js', '@spell', 'js_gate.js', 'js_chapters.js', 'js_link.js', 'js_fx2.js', 'js_fx3.js', 'js_phys.js', 'js_hud2.js', 'js_gb.js'
 ];
 
 // add-ons and shaders the fragments use, exposed as plain names in their shared scope

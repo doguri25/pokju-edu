@@ -803,6 +803,9 @@
   $('pause-resume').addEventListener('click', function () { setPaused(false); });
   $('pause-retry').addEventListener('click', rerun);
   $('pause-menu').addEventListener('click', toMenu);
+  /* back to the title from anywhere: the pause panel, the result, the menu's home button, or the Home key */
+  ['pause-home', 'res-home', 'brand-title'].forEach(function (id) { $(id).addEventListener('click', function () { sfx('click'); showTitle(); }); });
+  window.addEventListener('keydown', function (e) { if (e.key === 'Home' && (mode === 'menu' || paused || mode === 'result') && $('title').hidden) { e.preventDefault(); showTitle(); } });
   $('res-ending').addEventListener('click', function () { if (runKind === 'story') storyEnding(); else showEnding(); });
   $('ending-title').addEventListener('click', showTitle);
   $('ending-menu').addEventListener('click', toMenu);
@@ -1593,6 +1596,7 @@
       }
       if (p.z > 46 || p.z < -180) releaseEnemy(i);
     }
+    vehiclePhysics(dt);   /* the other cars dodge, brake for or crash into what is on the road, and keep their distance (js_phys.js) */
 
     for (i = ebullets.length - 1; i >= 0; i--) {
       var eb = ebullets[i]; p = eb.m.position;
@@ -1652,7 +1656,7 @@
       d.vy -= 28 * dt; p.x += d.vx * dt; p.y += d.vy * dt; p.z += d.vz * dt;
       d.m.rotation.x += d.rx * dt; d.m.rotation.z += d.rz * dt;
       /* a burning piece trails fire and smoke while it flies */
-      if (d.burn > 0) { d.burn -= dt; d.trail -= dt; if (d.trail <= 0) { d.trail = 0.05 / Math.max(0.4, fxK); spawnP('glow', p.x, p.y, p.z, 0, 0.5, d.vz * 0.4 + veff * 0.6, 0.28, 0.9, 0.2, Math.random() < 0.5 ? COL.fire : COL.fire2, 0.85, 0.3); if (Math.random() < 0.5) spawnP('smoke', p.x, p.y + 0.2, p.z, 0, 1.2, veff * 0.8, 0.9, 0.5, 1.8, smokeColor(COL.smokeD), 0.45, 0.5); } }
+      if (d.burn > 0) { d.burn -= dt; d.trail -= dt; if (d.trail <= 0) { d.trail = 0.085 / Math.max(0.4, fxK); spawnP('glow', p.x, p.y, p.z, 0, 0.5, d.vz * 0.4 + veff * 0.6, 0.28, 0.9, 0.2, Math.random() < 0.5 ? COL.fire : COL.fire2, 0.85, 0.3); if (Math.random() < 0.5) spawnP('smoke', p.x, p.y + 0.2, p.z, 0, 1.2, veff * 0.8, 0.9, 0.5, 1.8, smokeColor(COL.smokeD), 0.45, 0.5); } }
       if (p.y < (d.hy || 0.15)) {
         if (d.metal && d.vy < -5) sparks(p.x, 0.12, p.z, 4, 6, veff * 0.7);   /* metal scrapes the road */
         p.y = d.hy || 0.15; d.vy = Math.abs(d.vy) * 0.35; d.vx *= 0.6; d.vz = lerp(d.vz, veff, 0.5); d.rx *= 0.5; d.rz *= 0.5;
@@ -1791,6 +1795,7 @@
   /* one-off: merge the static parts of everything that loops or stands by the road */
   loops.forEach(function (lg) { if (lg.userData.drop) rowBake(lg); else bake(lg); });
   (function () { for (var rk in regionScenery) regionScenery[rk].forEach(function (o) { bake(o); }); })();
+  prewarm();   /* pools filled and every shader compiled now, behind the title, not mid-run (js_phys.js) */
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
   window.__preview = {
@@ -1808,7 +1813,7 @@
       if (skipBrief) { briefT = 0.001; }
     },
     spawn: function (type, x, z, ws) { return spawnEnemy(type, x, z, ws === undefined ? 0 : ws); },
-    boom: function (x, z, s) { explode(x, 0.8, z, s || 1.5, veff * 0.4, M.dark); }, mstat: function () { return mStat; }, missile: function (x, z) { return !!fireMissile(x, 1.2, z, 1, 1); }, stepDt: function (dt, n) { for (var i = 0; i < n; i++) step(dt); },
+    boom: function (x, z, s) { explode(x, 0.8, z, s || 1.5, veff * 0.4, M.dark); }, mstat: function () { return mStat; }, prewarmMs: function () { return prewarmMs; }, programs: function () { return renderer.info.programs ? renderer.info.programs.length : -1; }, missile: function (x, z) { return !!fireMissile(x, 1.2, z, 1, 1); }, stepDt: function (dt, n) { for (var i = 0; i < n; i++) step(dt); },
     startKind: function (kind, carKey, idx, o) {
       var k; selCar = carKey; selKind = kind; if (o) for (k in o) if (cond[k] !== undefined) cond[k] = o[k];
       if (kind === 'ta' || kind === 'race') selTrack = idx || 0; else if (kind === 'mis') selMission = idx || 0; else if (kind === 'story') selChapter = idx || 0;
