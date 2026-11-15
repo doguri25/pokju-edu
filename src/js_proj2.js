@@ -19,6 +19,7 @@
      cars that attack, not only the ones dead ahead in the same lane */
   function aimVx(x, z, speed) {
     var best = null, bd = 1e9, i, e, dx, dz;
+    if (quiz.b && quiz.phase === 'ask') return 0;   /* shooting answer balloons: the shot goes where the car points */
     for (i = 0; i < enemies.length; i++) {
       e = enemies[i]; if (e.cfg.civ || e.cfg.air) continue;
       dz = z - e.g.position.z; dx = e.g.position.x - x;
@@ -31,7 +32,7 @@
   }
   function fireBullet(x, y, z, kind, vx, mul) {
     var b = bpool.pop(), K = BK[kind];
-    if (!vx && kind !== 'shell') vx = aimVx(x, z, K.speed);
+    if (!vx && kind !== 'shell' && !droneInLine(x)) vx = aimVx(x, z, K.speed);   /* a drone overhead in the lane comes first: the shot climbs to it */
     if (!b) { b = { m: new T.Mesh(bulletGeo, K.mat), hits: [] }; b.g = glowSprite(0xffb53d, 1.5, 0.9); b.g.scale.set(1.1, 2.6, 1); b.m.add(b.g); scene.add(b.m); }
     b.m.material = K.mat; b.g.material.color.copy(K.glowCol);
     b.m.visible = true; b.m.position.set(x, y, z); b.hits.length = 0;
@@ -49,8 +50,8 @@
       var z0 = p.z;
       p.z -= b.K.speed * dt; p.x += b.vx * dt;
       if (b.vy > 0) p.y = Math.min(4.7, p.y + b.vy * dt); else if (p.y > 1.15) p.y -= 7 * dt;
-      var gone = p.z < b.K.minZ || Math.abs(p.x) > 11;
-      if (!gone && crate.active && b.hits.indexOf(crate) < 0 && Math.abs(p.x - crate.g.position.x) < 1.0 && Math.abs(p.z - crate.g.position.z) < 1.6 && p.y < 3) {
+      var gone = p.z < b.K.minZ || Math.abs(p.x) > 11; b.z0 = z0;
+      if (!gone && crate.active && b.hits.indexOf(crate) < 0 && Math.abs(p.x - crate.g.position.x) < 1.0 && p.z < crate.g.position.z + 1.6 && z0 > crate.g.position.z - 1.6 && p.y < 3) {
         b.hits.push(crate); crateHit(b.dmg); if (!b.K.pierce) gone = true;
       }
       if (!gone && quizShot(p, b) && !b.K.pierce) gone = true;

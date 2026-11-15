@@ -155,8 +155,8 @@
   function quizShot(p, b) {
     var s = quiz.b, i;
     if (!s || quiz.phase !== 'ask' || p.y > 3.9) return false;
-    var z = s.g.position.z;
-    if (Math.abs(p.z - z) > 1.6) return false;
+    var z = s.g.position.z, z0 = b && b.z0 !== undefined ? b.z0 : p.z;
+    if (p.z > z + 1.6 || z0 < z - 1.6) return false;   /* swept: the stretch flown this frame */
     for (i = 0; i < s.items.length; i++) {
       var it = s.items[i];
       if (it.popped || b.hits.indexOf(it) >= 0 || Math.abs(p.x - it.x) > it.hw) continue;
