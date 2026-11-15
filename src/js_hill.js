@@ -13,7 +13,9 @@
       /* sprites: three.js does not upload viewMatrix for sprite materials, so the camera matrix is passed in as its own uniform */
       shader.uniforms.uView = viewU;
       vs = vs.replace('uniform float uHill', 'uniform mat4 uView;\nuniform float uHill');
-      vs = vs.replace('vec4 mvPosition = modelViewMatrix * vec4( 0.0, 0.0, 0.0, 1.0 );', 'vec4 mvPosition = modelMatrix * vec4( 0.0, 0.0, 0.0, 1.0 );\nmvPosition.y += hillY( mvPosition.z ) + splitY( mvPosition.x, mvPosition.z );\nmvPosition = uView * mvPosition;');
+      var spriteAt = 'vec4 mvPosition = modelMatrix[ 3 ];\nmvPosition.y += hillY( mvPosition.z ) + splitY( mvPosition.x, mvPosition.z );\nmvPosition = uView * mvPosition;';
+      if (vs.indexOf('vec4 mvPosition = modelViewMatrix[ 3 ];') >= 0) vs = vs.replace('vec4 mvPosition = modelViewMatrix[ 3 ];', spriteAt);   /* three r187 */
+      else vs = vs.replace('vec4 mvPosition = modelViewMatrix * vec4( 0.0, 0.0, 0.0, 1.0 );', spriteAt);   /* older three */
     }
     shader.vertexShader = vs;
   };

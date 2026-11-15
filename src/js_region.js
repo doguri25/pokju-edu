@@ -228,6 +228,7 @@
     longBox(0.55, 0.95, -8.8, 0.47, M.concrete).castShadow = true;   /* median barrier */
     longBox(0.3, 1.3, 15.9, 0.65, wallLow); longBox(0.12, 2.9, 15.9, 2.75, wallUp);   /* sound wall */
     var opp = strip(-23.6, 16.2, -0.02, roadMat, true); opp.visible = false; hwParts.push(opp);   /* the opposite carriageway */
+    (function (uv) { for (var q = 0; q < uv.count; q++) uv.setX(q, uv.getX(q) * 4); })(opp.geometry.attributes.uv);   /* four lanes: one asphalt tile each */
     var od = loopGroup(9, false); for (var z = -297; z <= 45; z += 9) [-19.6, -23.6, -27.6].forEach(function (x) { var d = new T.Mesh(dashGeo, M.white); d.position.set(x, 0.0, z); od.add(d); }); od.visible = false; hwParts.push(od);
     for (i = 0; i < 14; i++) scn(k, Math.random() < 0.5 ? pineTree() : roundTree(rnd(1.1, 1.7)), rnd(18.5, 36), zAt(i, 14, 6), 0);
     for (i = 0; i < 10; i++) scn(k, roundTree(rnd(1.2, 1.8)), -rnd(34, 50), zAt(i, 10, 8), 0);
@@ -428,7 +429,7 @@
     for (i = 0; i < list.length; i++) {
       o = list[i];
       if (o.userData.mount) { var dd = Math.sqrt(o.position.x * o.position.x + o.position.z * o.position.z); o.material.color.copy(o.userData.base).multiply(tintC).lerp(skyLin, clamp(dd / (scene.fog.far * 2.5), 0.3, 1)); }
-      else if (o.userData.bob !== undefined) o.rotation.z = Math.sin(time * 1.1 + o.userData.bob) * 0.05;
+      else if (o.userData.bob !== undefined) { o.rotation.z = Math.sin(time * 1.1 + o.userData.bob) * 0.06; o.rotation.x = Math.sin(time * 0.8 + o.userData.bob * 1.7) * 0.035; }   /* boats roll and pitch on the swell */
     }
   }
 

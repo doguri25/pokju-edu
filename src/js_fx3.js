@@ -11,7 +11,7 @@
   for (var fbi = 0; fbi < FB_N; fbi++) {
     var fbm = new T.ShaderMaterial({ uniforms: { uT: { value: 0 }, uSeed: { value: fbi * 7.31 }, uHeat: { value: 1 }, uNight: { value: 0 } },
       vertexShader: GLSL_FIREBALL_VERT, fragmentShader: GLSL_FIREBALL_FRAG, transparent: true, depthWrite: false, fog: false });
-    var fbMesh = new T.Mesh(fbGeo, fbm); fbMesh.visible = false; fbMesh.renderOrder = 3; scene.add(fbMesh);
+    var fbMesh = new T.Mesh(fbGeo, fbm); fbMesh.visible = false; scene.add(fbMesh);
     fireballs.push({ m: fbMesh, u: fbm.uniforms, life: 0, max: 1, size: 1, vy: 0, vz: 0, delay: 0 });
   }
   var fbNext = 0;
@@ -30,9 +30,13 @@
   var spkMesh = new T.LineSegments(spkGeo, new T.LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false, toneMapped: false }));
   spkMesh.frustumCulled = false; spkMesh.renderOrder = 4; scene.add(spkMesh);
   var SPK_HOT = new T.Color(1.0, 0.86, 0.55), SPK_COOL = new T.Color(1.0, 0.32, 0.08);
+  var spkFree = [];
+  for (var spi = 0; spi < SPK_N; spi++) spkFree.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0, max: 1 });
   function sparkAdd(x, y, z, vx, vy, vz, life) {
-    if (spk.length >= SPK_N) spk.shift();
-    spk.push({ x: x, y: y, z: z, vx: vx, vy: vy, vz: vz, life: life, max: life });
+    var p = spkFree.pop();
+    if (!p) { p = spk[0]; spk[0] = spk[spk.length - 1]; spk.pop(); }   /* all in use: the oldest makes way */
+    p.x = x; p.y = y; p.z = z; p.vx = vx; p.vy = vy; p.vz = vz; p.life = p.max = life;
+    spk.push(p);
   }
   function sparks(x, y, z, n, speed, vz) {
     n = Math.round(n * (0.5 + 0.5 * fxK));
@@ -55,19 +59,30 @@
   var scorches = [], scGeo = new T.PlaneGeometry(1, 1, 1, 2); scGeo.rotateX(-Math.PI / 2);
   for (var sci = 0; sci < 6; sci++) {
     var scm = new T.Mesh(scGeo, new T.MeshBasicMaterial({ map: scorchTex, color: 0x000000, transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
-    scm.visible = false; scm.renderOrder = 1; scene.add(scm); scorches.push({ m: scm, life: 0 });
+    scm.visible = false; scm.renderOrder = -1; scene.add(scm); scorches.push({ m: scm, life: 0 });
   }
   var scNext = 0;
   function scorch(x, z, size) {
+    if (splitVal(dist - z - 3) || splitVal(dist - z + 3)) return;   /* a split level: the mark would hang between the two decks */
     var s = scorches[scNext++ % scorches.length];
     s.m.position.set(x, 0.035, z); s.m.scale.set(3.6 * size, 1, 3.6 * size); s.m.rotation.y = rnd(0, 6.28); s.life = 6; s.m.visible = true;
+  }
+
+  /* the player's contact shadow lies flat on the road under the car: on the sprung body it rolled into the asphalt on every lane change */
+  var playerAO = new T.Mesh(aoGeo, aoMat); playerAO.renderOrder = -1; scene.add(playerAO);
+  function playerAOStep() {
+    var car = CARS[player.car];
+    playerAO.visible = !!(car && car.g && car.g.visible && !player.dead);
+    if (!playerAO.visible) return;
+    playerAO.position.set(playerRoot.position.x, 0.03, 0); playerAO.rotation.y = playerRoot.rotation.y;
+    playerAO.scale.set(car.hw * 2 * 1.3, 1, car.hl * 2 * 1.14);
   }
 
   /* the per-frame part, called from step() in js_gb.js */
   var fbCam = new T.Vector3();
   function fx3Step(dt) {
     var i, f, t, n = 0, k;
-    waterU.uWT.value = time % 600; waterU.uWD.value = dist; tuftsUpd();
+    waterU.uWT.value = time % 600; waterU.uWD.value = dist; seaStep(dt); playerAOStep();
     for (i = 0; i < FB_N; i++) {
       f = fireballs[i];
       if (f.life <= 0) continue;
@@ -83,7 +98,7 @@
     /* sparks: gravity, drag, a bounce on the road; head bright, tail fading into the dark */
     for (i = spk.length - 1; i >= 0; i--) {
       var p = spk[i]; p.life -= dt;
-      if (p.life <= 0 || p.z > 30) { spk.splice(i, 1); continue; }
+      if (p.life <= 0 || p.z > 30) { spkFree.push(p); spk[i] = spk[spk.length - 1]; spk.pop(); continue; }
       p.vy -= 20 * dt; p.vx *= 1 - dt * 1.5; p.vz += (veff - p.vz) * dt * 0.8;
       p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
       if (p.y < 0.04) { p.y = 0.04; p.vy = Math.abs(p.vy) * 0.38; p.vx *= 0.7; }
@@ -112,9 +127,11 @@
   function fx3Clear() {
     var i;
     for (i = 0; i < FB_N; i++) { fireballs[i].life = 0; fireballs[i].m.visible = false; }
-    spk.length = 0; spkGeo.setDrawRange(0, 0); spkMesh.visible = false;
+    while (spk.length) spkFree.push(spk.pop());
+    spkGeo.setDrawRange(0, 0); spkMesh.visible = false;
     for (i = 0; i < scorches.length; i++) { scorches[i].life = 0; scorches[i].m.visible = false; }
     if (post) post.grade.uRain.value = 0;   /* no drops carried over from the last run's rain */
+    envKey = ''; envT = 0;   /* a new hour or weather: bake the sky's reflections now, not in half a second */
   }
 
   /* puddles: the road shader gets a mask, sampled in the road's own texture space so it travels with the road. Where it is set and the road
@@ -144,8 +161,8 @@
         sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uWet;\nuniform sampler2D tPud;\nvarying float vPudX;')
           /* each lane reads the asphalt a little further along, so patches and cracks never line up across the road */
           .replace('#include <map_fragment>', '#ifdef USE_MAP\n\tfloat laneK = step( -4.2, vPudX ) + step( -0.205, vPudX ) + step( 0.205, vPudX ) + step( 4.2, vPudX );\n\tdiffuseColor *= texture2D( map, vec2( vMapUv.x, vMapUv.y + laneK * 0.383 ) );\n#endif')
-          .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n#ifdef USE_MAP\n\tfloat pud = smoothstep( 0.25, 0.75, texture2D( tPud, vec2( vPudX * 0.071, vMapUv.y * 0.57 ) ).r ) * uWet;\n\troughnessFactor = mix( roughnessFactor, 0.035, pud );\n\tdiffuseColor.rgb *= 1.0 - 0.5 * pud;\n#endif')
-          .replace('#include <lights_fragment_maps>', '#include <lights_fragment_maps>\n#ifdef USE_MAP\n\tradiance *= 1.0 + 1.0 * pud;\n#endif');
+          .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n#ifdef USE_MAP\n\tfloat pud = smoothstep( 0.25, 0.75, texture2D( tPud, vec2( vPudX * 0.071, vMapUv.y * 0.5 ) ).r ) * uWet;\n\troughnessFactor = mix( roughnessFactor, 0.035, pud );\n\tdiffuseColor.rgb *= 1.0 - 0.5 * pud;\n#endif')
+          .replace('#include <lights_fragment_maps>', '#include <lights_fragment_maps>\n#ifdef USE_MAP\n\tradiance *= 1.0 + 0.5 * pud;\n#endif');
       };
       m.customProgramCacheKey = function () { return 'road-puddles'; };
       m.needsUpdate = true;
@@ -180,40 +197,93 @@
     mat.needsUpdate = true;
     if (ENV_MATS.indexOf(mat) < 0) ENV_MATS.push(mat);
   }
-  seaMat.roughness = 0.06; seaMat.metalness = 0.04; seaMat.envMapIntensity = 1.1;
-  waterify(seaMat, 0.16, 0.22, true, 'sea');
   RM.stream.roughness = 0.05; RM.stream.metalness = 0.05; RM.stream.envMapIntensity = 1.0;
   waterify(RM.stream, 0.22, 1.1, false, 'stream');
   RM.water.roughness = 0.04; RM.water.envMapIntensity = 1.0;
   waterify(RM.water, 0.06, 1.6, false, 'puddle');
 
-  /* grass tufts along the verges (graphics upgrade 3): one instanced mesh of small blade clumps, laid out in a 30 m pattern that the
-     loop machinery slides along with the road; tinted from the region's ground colour, shown where the land is green */
-  var TUFT_REGIONS = { country: 1, creek: 1, offroad: 1, mountain: 1, highway: 1, coast: 1 };
-  var tuftGeo = (function () {
-    var pos = [], i, a, r, h, x, z;
-    for (i = 0; i < 7; i++) {
-      a = i / 7 * Math.PI * 2 + rnd(-0.3, 0.3); r = rnd(0.05, 0.16); h = rnd(0.35, 0.6); x = Math.cos(a) * r; z = Math.sin(a) * r;
-      var lx = Math.cos(a + 1.57) * 0.05, lz = Math.sin(a + 1.57) * 0.05, tx = x + Math.cos(a) * h * 0.35, tz = z + Math.sin(a) * h * 0.35;
-      pos.push(x - lx, 0, z - lz, x + lx, 0, z + lz, tx, h, tz);
-    }
-    var g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.computeVertexNormals();
-    var n = g.attributes.normal; for (i = 0; i < n.count; i++) n.setXYZ(i, n.getX(i) * 0.4, 1, n.getZ(i) * 0.4);   /* lit like the ground under it, not like thin cards */
-    return g;
+  /* the sea (graphics upgrade 4): a finer surface that really heaves. Long swells roll in toward the shore (vertex displacement, calmer
+     close in), with a finer chop on top for the light; the crests turn a lighter green-blue and break into foam, lines of surf run in to
+     a foam rim along the tetrapods, the sun (or the moon) lays a glittering path on the water, and spray bursts up against the rocks.
+     It still sinks away under a bridge deck like the rest of the ground */
+  var SEA_COLS = 72, seaGeo = new T.PlaneGeometry(360, 440, SEA_COLS, STRIP_ROWS), seaRowY = [];
+  seaGeo.rotateX(-Math.PI / 2);
+  dropStrips.splice(dropStrips.indexOf(seaStrip), 1);
+  seaStrip.geometry.dispose(); seaStrip.geometry = seaGeo; seaStrip.position.x = -196; seaStrip.receiveShadow = true;
+  seaTex.repeat.set(26.4, 30);
+  seaC.setHex(0x125582);
+  var seaU = { uSunW: { value: new T.Vector3(0, 1, 0) }, uSunCol: { value: new T.Color() }, uSunK: { value: 1 }, uFoamL: { value: 1 } };
+  var SEA_GLSL = [
+    'float sHash( vec2 p ) { return fract( sin( dot( p, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 ); }',
+    'float sNoise( vec2 p ) { vec2 i = floor( p ), f = fract( p ); f = f * f * ( 3.0 - 2.0 * f ); return mix( mix( sHash( i ), sHash( i + vec2( 1.0, 0.0 ) ), f.x ), mix( sHash( i + vec2( 0.0, 1.0 ) ), sHash( i + vec2( 1.0, 1.0 ) ), f.x ), f.y ); }',
+    /* one travelling swell: height, and its slope added to g. Deep-water speed: omega = sqrt( 9.8 k ) */
+    'float sWave( vec2 p, float t, vec2 d, float lam, float a, float ph, inout vec2 g ) { float k = 6.2832 / lam, w = sqrt( 9.8 * k ), x = k * dot( d, p ) - w * t + ph; g += d * a * k * cos( x ); return a * sin( x ); }',
+    'float seaSwell( vec2 p, float t, out vec2 g ) { g = vec2( 0.0 ); float h = 0.0;',
+    '\th += sWave( p, t, vec2( 0.914, 0.406 ), 38.0, 0.42, 0.0, g );',
+    '\th += sWave( p, t, vec2( 0.759, -0.651 ), 23.0, 0.27, 1.7, g );',
+    '\treturn h; }',
+    'float seaSwellF( vec2 p, float t, out vec2 g ) { float h = seaSwell( p, t, g ); h += sWave( p, t, vec2( 0.989, 0.148 ), 13.5, 0.12, 4.1, g ); h += sWave( p, t, vec2( 0.6, 0.8 ), 8.0, 0.05, 2.3, g ); return h; }'
+  ].join('\n');
+  (function () {
+    var hill = T.Material.prototype.onBeforeCompile;
+    seaMat.roughness = 0.12; seaMat.metalness = 0.02; seaMat.envMapIntensity = 0.5;   /* the camera skims the water: a full mirror would turn it white */
+    if (ENV_MATS.indexOf(seaMat) < 0) ENV_MATS.push(seaMat);
+    seaMat.onBeforeCompile = function (sh) {
+      hill.call(this, sh);
+      sh.uniforms.uWT = waterU.uWT; sh.uniforms.uWD = waterU.uWD;
+      for (var k in seaU) sh.uniforms[k] = seaU[k];
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uWT;\nuniform float uWD;\nvarying vec3 vWPos;\nvarying float vSeaH;\n' + SEA_GLSL)
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\n\t{\n\t\tvec4 sWp = modelMatrix * vec4( transformed, 1.0 );\n\t\tvec2 sG;\n\t\tfloat sOff = clamp( ( -17.0 - sWp.x ) / 26.0, 0.0, 1.0 );\n\t\tfloat sEnv = 0.15 + 0.85 * sOff, sH = seaSwell( vec2( sWp.x, sWp.z - uWD ), uWT, sG ) * sEnv;\n\t\ttransformed.y += sH + 0.72 * sEnv + 0.06; vSeaH = sH;   /* troughs stay above the field strip under the sea */\n\t}')
+        .replace('#include <fog_vertex>', 'vWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\n#include <fog_vertex>');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uWT;\nuniform float uWD;\nuniform vec3 uSunW;\nuniform vec3 uSunCol;\nuniform float uSunK;\nuniform float uFoamL;\nvarying vec3 vWPos;\nvarying float vSeaH;\n' + SEA_GLSL + '\n' + WAVE_GLSL)
+        .replace('#include <normal_fragment_maps>', [
+          '#include <normal_fragment_maps>',
+          '\tvec2 sP = vec2( vWPos.x, vWPos.z - uWD ), sG;',
+          '\tfloat sOffF = clamp( ( -17.0 - vWPos.x ) / 26.0, 0.0, 1.0 ), sShore = -17.0 - vWPos.x;',
+          '\tfloat sHF = seaSwellF( sP, uWT, sG ) * ( 0.15 + 0.85 * sOffF );',
+          '\tvec2 sGt = sG * ( 0.15 + 0.85 * sOffF ) + waveGrad( sP * 0.55, uWT * 1.3 ) * 0.07;',
+          '\tnormal = normalize( ( viewMatrix * vec4( normalize( vec3( -sGt.x, 1.0, -sGt.y ) ), 0.0 ) ).xyz );',
+          '\tfloat sN = sNoise( sP * 0.35 + vec2( uWT * 0.05, 0.0 ) ) * 0.65 + sNoise( sP * 1.3 ) * 0.35;',
+          /* crests light up green-blue, the shallows by the shore are paler */
+          '\tdiffuseColor.rgb = mix( diffuseColor.rgb, diffuseColor.rgb * 0.55 + vec3( 0.07, 0.42, 0.44 ) * uFoamL, smoothstep( -0.05, 0.45, sHF ) * 0.55 );',
+          '\tdiffuseColor.rgb = mix( diffuseColor.rgb, vec3( 0.1, 0.5, 0.52 ) * uFoamL, ( 1.0 - smoothstep( 0.0, 10.0, sShore ) ) * 0.5 );',
+          /* foam: on the highest crests, in lines of surf coming in, and as a ragged rim at the shore */
+          '\tfloat sCrest = smoothstep( 0.42, 0.68, sHF + ( sN - 0.5 ) * 0.3 ) * 0.6;',
+          '\tfloat sSurf = ( 1.0 - smoothstep( 2.0, 14.0, sShore ) ) * smoothstep( 0.82, 0.97, 0.5 + 0.5 * sin( sShore * 0.85 + uWT * 1.7 + sN * 3.0 ) ) * 0.7;',
+          '\tfloat sRim = 1.0 - smoothstep( 0.2, 1.4, sShore + ( sN - 0.5 ) * 1.2 + 0.4 * sin( uWT * 1.3 + vWPos.z * 0.2 ) );',
+          '\tfloat sFoam = clamp( max( sCrest, max( sSurf, sRim ) ) * smoothstep( 0.25, 0.6, sN + 0.3 ), 0.0, 1.0 );',
+          '\tdiffuseColor.rgb = mix( diffuseColor.rgb, vec3( 0.93, 0.96, 0.97 ) * uFoamL, sFoam );',
+          '\troughnessFactor = mix( roughnessFactor, 0.75, sFoam );'].join('\n'))
+        .replace('#include <emissivemap_fragment>', [
+          '#include <emissivemap_fragment>',
+          /* the glitter path: the sun's (or moon's) reflection in each facet of the chop, twinkling */
+          '\t{',
+          '\t\tvec3 sV = normalize( vViewPosition ), sSun = normalize( ( viewMatrix * vec4( uSunW, 0.0 ) ).xyz ), sR = reflect( -sV, normal );',
+          '\t\tfloat sDot = max( dot( sR, sSun ), 0.0 ), sTw = step( 0.6, sHash( floor( sP * 3.0 ) + floor( uWT * 7.0 ) ) );',
+          '\t\ttotalEmissiveRadiance += uSunCol * ( pow( sDot, 1400.0 ) * 22.0 * sTw + pow( sDot, 90.0 ) * 0.5 ) * uSunK * ( 1.0 - sFoam );',
+          '\t}'].join('\n'));
+    };
+    seaMat.customProgramCacheKey = function () { return 'sea-v2'; };
+    seaMat.needsUpdate = true;
   })();
-  var tuftMat = new T.MeshStandardMaterial({ color: 0x6f9a52, roughness: 0.95, side: T.DoubleSide });
-  var TUFT_N = 700, tuftLoop = loopGroup(30, false), tuftSides = [-1, 1].map(function (side) {   /* one mesh per side: by the sea only the land side has grass */
-    var im = new T.InstancedMesh(tuftGeo, tuftMat, TUFT_N), m4 = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler(), sc = new T.Vector3(), p = new T.Vector3(), pat = [], i, k = 0;
-    for (i = 0; i < 88; i++) pat.push([side * rnd(12.6, 34), rnd(0, 30), rnd(0.7, 1.5), rnd(0, 6.28)]);
-    for (var z0 = -210; z0 < 30 && k < TUFT_N; z0 += 30) for (i = 0; i < pat.length && k < TUFT_N; i++, k++) {
-      p.set(pat[i][0], 0, z0 + pat[i][1]); e.set(0, pat[i][3], 0); q.setFromEuler(e); sc.setScalar(pat[i][2]);
-      im.setMatrixAt(k, m4.compose(p, q, sc));
+  var splashC = new T.Color(), splashT = 0;
+  function seaStep(dt) {
+    if (!seaStrip.visible) return;
+    var pos = seaGeo.attributes.position, cols = SEA_COLS + 1, dirty = false, r, c, y;
+    for (r = 0; r <= STRIP_ROWS; r++) {   /* sink under a bridge deck, row by row, like the other ground strips */
+      y = -H_DECK * elevAt(dist + 390 - r * 5);
+      if (seaRowY[r] !== y) { seaRowY[r] = y; for (c = 0; c < cols; c++) pos.setY(r * cols + c, y); dirty = true; }
     }
-    im.count = k; im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; im.receiveShadow = true; tuftLoop.add(im);
-    return im;
-  });
-  function tuftsUpd() {
-    var on = !!TUFT_REGIONS[region.key] && snowCover < 0.3 && tunK < 0.5 && fxK > 0.5;
-    tuftLoop.visible = on; tuftSides[0].visible = region.key !== 'coast';
-    if (on) tuftMat.color.copy(groundMat.color).multiplyScalar(1.12);
+    if (dirty) { pos.needsUpdate = true; seaGeo.computeBoundingSphere(); }
+    seaU.uSunW.value.copy(cur.sunDir); seaU.uSunCol.value.copy(cur.sunCol);
+    seaU.uSunK.value = (1 - 0.88 * weather.cloud) * (cur.night > 0.6 ? 0.5 : 1) * (1 - tunK);
+    seaU.uFoamL.value = 1 - 0.78 * cur.night;
+    /* spray bursting up on the tetrapods */
+    splashT -= dt;
+    if (splashT <= 0 && fxK > 0.5 && elevAt(dist) < 0.01 && tunK < 0.1) {
+      splashT = rnd(0.08, 0.3) / fxK;
+      var z = rnd(-150, -12), n = 3 + (Math.random() * 4 | 0);
+      splashC.setRGB(0.92, 0.95, 0.97).multiplyScalar(1 - 0.75 * cur.night);
+      for (var i = 0; i < n; i++) spawnP('smoke', -17.4 + rnd(-0.8, 0.6), rnd(0.2, 0.8), z + rnd(-1.5, 1.5), rnd(-1.2, 1.2), rnd(3, 6.5), veff, rnd(0.7, 1.2), rnd(0.5, 0.9), rnd(2, 3.4), splashC, rnd(0.45, 0.7), 1);
+    }
   }

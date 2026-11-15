@@ -1337,7 +1337,7 @@
     if (car.blink) { var bph = Math.sin(time * 12) > 0; car.blink[0].visible = bph; car.blink[1].visible = !bph; }
 
     /* scenery scroll; everything beside the road follows the elevation profile */
-    roadTex.offset.y = (dist / 16) % 1; shoulderTex.offset.y = (dist / 4) % 1; groundTex.offset.y = (dist / 13.3) % 1;
+    roadTex.offset.y = (dist / 16) % 2;   /* % 2: the puddle mask reads half the road texture's scale, so it wraps seamlessly too */ shoulderTex.offset.y = (dist / 4) % 1; groundTex.offset.y = (dist / 13.3) % 1;
     updateStrips();
     for (i = 0; i < loops.length; i++) {
       var lg = loops[i]; lg.position.z = dist % lg.userData.period;
@@ -1650,9 +1650,9 @@
       d.m.rotation.x += d.rx * dt; d.m.rotation.z += d.rz * dt;
       /* a burning piece trails fire and smoke while it flies */
       if (d.burn > 0) { d.burn -= dt; d.trail -= dt; if (d.trail <= 0) { d.trail = 0.05 / Math.max(0.4, fxK); spawnP('glow', p.x, p.y, p.z, 0, 0.5, d.vz * 0.4 + veff * 0.6, 0.28, 0.9, 0.2, Math.random() < 0.5 ? COL.fire : COL.fire2, 0.85, 0.3); if (Math.random() < 0.5) spawnP('smoke', p.x, p.y + 0.2, p.z, 0, 1.2, veff * 0.8, 0.9, 0.5, 1.8, smokeColor(COL.smokeD), 0.45, 0.5); } }
-      if (p.y < 0.15) {
+      if (p.y < (d.hy || 0.15)) {
         if (d.metal && d.vy < -5) sparks(p.x, 0.12, p.z, 4, 6, veff * 0.7);   /* metal scrapes the road */
-        p.y = 0.15; d.vy = Math.abs(d.vy) * 0.35; d.vx *= 0.6; d.vz = lerp(d.vz, veff, 0.5); d.rx *= 0.5; d.rz *= 0.5;
+        p.y = d.hy || 0.15; d.vy = Math.abs(d.vy) * 0.35; d.vx *= 0.6; d.vz = lerp(d.vz, veff, 0.5); d.rx *= 0.5; d.rz *= 0.5;
       }
     }
     for (i = 0; i < rings.length; i++) {

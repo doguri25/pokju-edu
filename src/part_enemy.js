@@ -5,9 +5,9 @@
     });
   }
   /* traffic and pursuers get the same clearcoat paint as the player's cars (graphics upgrade 3): smooth, rounded panels that reflect the sky */
-  var PAINTED = { bike: 1, sedan: 1, civ: 1, taxi: 1, cbus: 1, dump: 1, buggy: 1, tractor: 1 }, GROUNDED = { sedan: 1, civ: 1, taxi: 1, cbus: 1, dump: 1, buggy: 1, tractor: 1, bike: 1, boss: 1 };
+  var PAINTED = { bike: 1, sedan: 1, civ: 1, taxi: 1, cbus: 1, dump: 1, buggy: 1,  }, GROUNDED = { sedan: 1, civ: 1, taxi: 1, cbus: 1, dump: 1, buggy: 1, tractor: 1, bike: 1, boss: 1 };
   /* big flat panels (a bus's back, a truck's box) face our headlights square on and would throw them straight back: those get a satin finish */
-  var SATIN = { cbus: 1, dump: 1, tractor: 1 };
+  var SATIN = { cbus: 1, dump: 1 };
   function enemyPaint(hex, satin) {
     var m = satin ? new T.MeshPhysicalMaterial({ color: C(hex), roughness: 0.6, metalness: 0.1, clearcoat: 0.2, clearcoatRoughness: 0.4, flatShading: false })
       : new T.MeshPhysicalMaterial({ color: C(hex), roughness: 0.4, metalness: 0.22, clearcoat: 0.7, clearcoatRoughness: 0.12, flatShading: false });
@@ -33,7 +33,7 @@
       if (c.isSprite) { c.material = c.material.clone(); if (headGlows.indexOf(o) >= 0) headGlows.push(c); }
     }
     for (k in src.mounts) src.mounts[k].forEach(function (m) { var cm = co[so.indexOf(m)]; if (cm) while (cm.children.length) cm.remove(cm.children[0]); });   /* no player weapons on traffic */
-    g.visible = true; g.position.set(0, 0, 0); g.rotation.set(0, 0, 0);
+    g.visible = true; g.position.set(0, 0, 0); g.rotation.set(0, 0, 0); groundShadow(g);
     if (type === 'sedan') {   /* the pursuer's roof gun and push bar */
       g.add(cyl(0.26, 0.3, 0.22, 10, M.gun, 0, H + 0.08, -0.2));
       g.add(cyl(0.07, 0.07, 1.1, 8, M.dark, 0, H + 0.12, -0.8, 'z'));

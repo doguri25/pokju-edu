@@ -42,7 +42,7 @@
   /* ---------- graphics quality: three levels; 「자동」 starts high and, when frames take too long during a run, first lowers the
      rendering resolution a little at a time, and only then steps down a level. The rear-view mirror stays at every level ---------- */
   var GFX = { high: { pr: 2, shadow: true, fx: 1, map: 2048, mir: 1, post: 1, mw: 384, msaa: 4 }, mid: { pr: 1.5, shadow: true, fx: 0.7, map: 1024, mir: 1, post: 0.8, mw: 336, msaa: 2 }, low: { pr: 1, shadow: false, fx: 0.45, map: 1024, mir: 2, post: 0, mw: 264, msaa: 2 } },
-    gfxNow = 'high', fxK = 1, mirEvery = 1, resK = 1, gfxWin = [], gfxHold = 0, gfxFast = 0, gfxRaised = false, gfxNoUp = false, gfxRef = [], gfxBest = 1 / 60;
+    gfxNow = 'high', fxK = 1, mirEvery = 1, resK = 1, gfxWin = [], gfxHold = 0, gfxFast = 0, gfxRaised = false, gfxNoUp = false, gfxRef = [], gfxBest = 1 / 30;
   var RES_STEPS = [1, 0.85, 0.72];
   /* 「자동」 starts one step down on a phone-sized or touch screen: those are the devices where the full setting costs frames */
   function gfxStart() { var small = Math.min(window.innerWidth, window.innerHeight) <= 520 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches); return small ? 'mid' : 'high'; }

@@ -22,7 +22,7 @@
     g.traverse(function (o) { if (!o.isMesh || !o.geometry) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); bb.copy(o.geometry.boundingBox).applyMatrix4(mm.multiplyMatrices(inv, o.matrixWorld)); b.union(bb); });
     if (b.isEmpty()) return null;
     b.getSize(sz); m = new T.Mesh(aoGeo, aoMat);
-    m.scale.set(sz.x * 1.3, 1, sz.z * 1.16); m.position.set((b.min.x + b.max.x) / 2, 0.03, (b.min.z + b.max.z) / 2); m.renderOrder = 1;
+    m.scale.set(sz.x * 1.3, 1, sz.z * 1.16); m.position.set((b.min.x + b.max.x) / 2, 0.03, (b.min.z + b.max.z) / 2); m.renderOrder = -1;
     g.add(m); return m;
   }
   /* a smoke puff: a cluster of soft lumps rather than a plain disc, lighter at the top where it catches the light (graphics upgrade 3) */
@@ -30,7 +30,7 @@
     var c = document.createElement('canvas'); c.width = c.height = 128;
     var g = c.getContext('2d'), i;
     for (i = 0; i < 16; i++) {
-      var a = Math.random() * 6.283, d = Math.random() * 30, x = 64 + Math.cos(a) * d, y = 66 + Math.sin(a) * d * 0.85, r = 18 + Math.random() * 18, l = Math.round(205 + 50 * (1 - y / 128));
+      var a = Math.random() * 6.283, d = Math.random() * 30, x = 64 + Math.cos(a) * d, y = 66 + Math.sin(a) * d * 0.85, r = 18 + Math.random() * 18, l = Math.round(rnd(215, 245));   /* evenly lit: the puff turns */
       var rg = g.createRadialGradient(x, y, 0, x, y, r);
       rg.addColorStop(0, 'rgba(' + l + ',' + l + ',' + l + ',0.5)'); rg.addColorStop(0.55, 'rgba(' + l + ',' + l + ',' + l + ',0.28)'); rg.addColorStop(1, 'rgba(' + l + ',' + l + ',' + l + ',0)');
       g.fillStyle = rg; g.fillRect(0, 0, 128, 128);

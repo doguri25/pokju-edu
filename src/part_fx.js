@@ -32,7 +32,7 @@
     if (!d) { d = { m: new T.Mesh(debrisGeo, mat) }; d.m.castShadow = true; scene.add(d.m); }
     d.m.geometry = DEB_GEOS[(Math.random() * DEB_GEOS.length) | 0];
     d.m.material = mat; d.m.visible = true; d.m.position.set(x, y, z);
-    d.m.scale.set(rnd(0.3, 0.75), rnd(0.25, 0.6), rnd(0.3, 0.8));
+    d.m.scale.set(rnd(0.3, 0.75), rnd(0.25, 0.6), rnd(0.3, 0.8)); d.hy = Math.max(d.m.scale.x, d.m.scale.y, d.m.scale.z) * 0.45;
     d.vx = rnd(-9, 9); d.vy = rnd(5, 13); d.vz = vzRel + rnd(-8, 8); d.rx = rnd(-10, 10); d.rz = rnd(-10, 10); d.life = rnd(1.4, 2.0);
     d.burn = hot && Math.random() < 0.45 ? rnd(0.8, 1.6) : 0; d.metal = mat === M.metal || mat === M.steel || mat === M.dark; d.trail = 0;
     debris.push(d);
