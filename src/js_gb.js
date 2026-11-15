@@ -68,7 +68,7 @@
     var car = CARS[carKey];
     player.x = fromRun ? keepX : 2; player.vx = 0; failWhy = ''; tPlay = 0; kills = 0; civHits = 0; score = 0; scrap = 0; hitFlash = 0; distStart = dist; steerWant = null; apWant = player.x; apT = 0; survLevel = 1;
     if (fromRun && !rolling) { player.v = clamp(keepV, car.vmin, car.vmax); player.thr = keepThr; }
-    crateT = isDemo ? 5 : 9; paused = false; titleOn = false;
+    crateT = isDemo ? 5 : 9; paused = false; titleOn = false; document.body.classList.remove('paused');
     if (mission.goal === 'boss') { boss = spawnEnemy('boss', 0, -130, 0); boss.hpMax = mission.bossHp || boss.cfg.hp; boss.hp = boss.hpMax; }
     if (mission.rivals) setupRivals(mission.rivals, carKey);
     if (mission.goal === 'escort') setupAlly(carKey);
@@ -376,7 +376,7 @@
     if (name === 'mode') scrollSel();
   }
   function toMenu() {
-    closeInfo(); mode = 'menu'; tr.on = false; tr.phase = ''; tr.fade = 0; $('card').hidden = true; $('demo').classList.remove('carded'); paused = false; briefT = 0; titleOn = false;
+    closeInfo(); mode = 'menu'; tr.on = false; tr.phase = ''; tr.fade = 0; $('card').hidden = true; $('demo').classList.remove('carded'); paused = false; briefT = 0; titleOn = false; document.body.classList.remove('paused');
     $('pause').hidden = true; $('ending').hidden = true; $('title').hidden = true; $('coach').hidden = true; $('story').hidden = true; setMusic('menu');
     if (runKind === 'tut') runKind = 'mis';
     mission = missionFor(selKind); target = PRESETS[mission.time]; setRegion(mission.region || 'city'); setWeather(mission.weather || 'clear', true); runTA = -1; rolling = false;
@@ -395,6 +395,7 @@
     if (mode !== 'play' || briefT > 0) return;
     if (!p && (!$('help').hidden || !$('info').hidden)) return;   /* a dialog is open over the paused game: it is closed first */
     paused = p; $('pause').hidden = !p; if (p) engineOff();
+    document.body.classList.toggle('paused', p);
     if (p) $('pause-text').textContent = mission.name + ' · ' + CARS[player.car].name + ' · 시간 ' + fmtT(tPlay);
     for (var k in keys) keys[k] = false;
   }
@@ -1175,7 +1176,7 @@
     setText('basic-cd', bcd > 0 ? Math.ceil(bcd) + '초 뒤' : (touchUI || vw <= 720 ? '준비됨' : '준비됨 · X'));
     var pcFire = EDU.arms && finePtr && !touchUI;
     if (hudCache.pcFire !== pcFire) { hudCache.pcFire = pcFire; $('btn-fire').hidden = !pcFire; }
-    if (pcFire) { setText('fire-cd', fireIn ? '발사 중' : (vw <= 720 ? 'Z' : '누르는 동안 · Z')); if (hudCache.firing !== fireIn) { hudCache.firing = fireIn; $('btn-fire').classList.toggle('on', fireIn); } }
+    if (pcFire) { setText('fire-cd', fireIn ? '발사 중' : (vw <= 720 ? 'Z' : '길게 · Z')); if (hudCache.firing !== fireIn) { hudCache.firing = fireIn; $('btn-fire').classList.toggle('on', fireIn); } }
     if (hudCache.bcool !== (bcd > 0)) { hudCache.bcool = bcd > 0; $('btn-basic').classList.toggle('cool', hudCache.bcool); $('btn-basic').setAttribute('aria-disabled', hudCache.bcool ? 'true' : 'false'); }
     setStyle('basic-bar', 'transform', 'scaleX(' + (1 - bcd / BASICS[car.basic].cd).toFixed(2) + ')');
     hudMock(car);

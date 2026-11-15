@@ -215,11 +215,13 @@
 
   /* ---------- pictures for the item tab: weapons are rendered from their own 3D models, supply items are drawn as crates with a symbol ---------- */
   var THUMB = {};
+  /* picture tiles in the dark glass theme: a slate spot light, darker at the edges */
+  function tileBg(x) { var g = x.createRadialGradient(160, 110, 20, 160, 120, 210); g.addColorStop(0, '#4a5276'); g.addColorStop(1, '#262b45'); x.fillStyle = g; x.fillRect(0, 0, 320, 240); }
   function itemIcon(it) {
     var c = document.createElement('canvas'); c.width = 320; c.height = 240;
     var x = c.getContext('2d'), col = '#' + ('000000' + it.color.toString(16)).slice(-6);
-    x.fillStyle = '#e3ebf5'; x.fillRect(0, 0, 320, 240);
-    x.fillStyle = 'rgba(0,0,0,0.14)'; x.beginPath(); x.ellipse(160, 206, 74, 12, 0, 0, 6.3); x.fill();
+    tileBg(x);
+    x.fillStyle = 'rgba(0,0,0,0.3)'; x.beginPath(); x.ellipse(160, 206, 74, 12, 0, 0, 6.3); x.fill();
     x.fillStyle = col; x.fillRect(92, 52, 136, 136);
     x.fillStyle = 'rgba(255,255,255,0.9)'; x.fillRect(86, 76, 148, 12); x.fillRect(86, 152, 148, 12);
     x.fillStyle = 'rgba(0,0,0,0.16)'; x.fillRect(200, 52, 28, 136);
@@ -246,8 +248,8 @@
   function tireIcon(t) {
     var c = document.createElement('canvas'); c.width = 320; c.height = 240;
     var x = c.getContext('2d'), col = '#' + ('000000' + t.color.toString(16)).slice(-6), i;
-    x.fillStyle = '#e3ebf5'; x.fillRect(0, 0, 320, 240);
-    x.fillStyle = 'rgba(0,0,0,0.14)'; x.beginPath(); x.ellipse(160, 214, 80, 10, 0, 0, 6.3); x.fill();
+    tileBg(x);
+    x.fillStyle = 'rgba(0,0,0,0.3)'; x.beginPath(); x.ellipse(160, 214, 80, 10, 0, 0, 6.3); x.fill();
     x.fillStyle = '#17181c'; x.beginPath(); x.arc(160, 118, 92, 0, 6.3); x.fill();
     x.strokeStyle = col; x.lineWidth = 7; x.lineCap = 'round';
     for (i = 0; i < 20; i++) { var a = i / 20 * 6.283; x.beginPath(); x.moveTo(160 + Math.cos(a) * 70, 118 + Math.sin(a) * 70); x.lineTo(160 + Math.cos(a + 0.16) * 88, 118 + Math.sin(a + 0.16) * 88); x.stroke(); }
@@ -258,10 +260,10 @@
   }
   function makeThumbs() {
     var sc = new T.Scene(), cam = new T.PerspectiveCamera(30, 4 / 3, 0.05, 60), box = new T.Box3(), ctr = new T.Vector3(), size = new T.Vector3(), w;
-    sc.background = new T.Color(0xe3ebf5);
+    sc.background = new T.Color(0x323957);
     sc.add(legacy(new T.HemisphereLight(0xffffff, 0x9aa3b0, 1.05)));
     var dl = legacy(new T.DirectionalLight(0xffffff, 1.3)); dl.position.set(4, 6, 2); sc.add(dl);
-    var floor = new T.Mesh(new T.CircleGeometry(1, 28), new T.MeshBasicMaterial({ color: 0xcfd8e4 })); floor.rotation.x = -Math.PI / 2; sc.add(floor);
+    var floor = new T.Mesh(new T.CircleGeometry(1, 28), new T.MeshBasicMaterial({ color: 0x48507a })); floor.rotation.x = -Math.PI / 2; sc.add(floor);
     var pr = renderer.getPixelRatio(), ex = renderer.toneMappingExposure, keepView = viewU.value;
     renderer.setPixelRatio(1); renderer.setSize(320, 240, false); renderer.toneMappingExposure = 1; viewU.value = cam.matrixWorldInverse;
     for (w in WEAPONS) {

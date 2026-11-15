@@ -24,7 +24,7 @@
     var at = a0 + (a1 - a0) * (car.vmin + tg * (car.vmax - car.vmin)) / car.vmax;
     x.fillStyle = '#ffffff'; x.beginPath(); x.arc(c + Math.cos(at) * (r + W * 0.06), c + Math.sin(at) * (r + W * 0.06), W * 0.018, 0, Math.PI * 2); x.fill();
     /* nitro bar under the number */
-    var bw = W * 0.36, by = c + r * 0.62;
+    var bw = W * 0.36, by = c + r * 0.76;   /* below the terrain label */
     x.lineCap = 'butt';
     x.fillStyle = 'rgba(255,255,255,0.12)'; x.beginPath(); x.roundRect(c - bw / 2, by, bw, W * 0.03, W * 0.015); x.fill();
     if (nitro > 0) { x.fillStyle = '#22e1ff'; x.beginPath(); x.roundRect(c - bw / 2, by, bw * nitro, W * 0.03, W * 0.015); x.fill(); }

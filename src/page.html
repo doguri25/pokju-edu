@@ -177,7 +177,7 @@ body.cine #caption { bottom: calc(9% + 14px); font-size: 16px; }
 .slot { font-size: 14px; font-weight: 700; }
 .slot label { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; gap: 8px; }
 .slot-body, .arm-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.pic { width: 88px; height: 66px; padding: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #e3ebf5; display: block; }
+.pic { width: 88px; height: 66px; padding: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #323957; display: block; }
 .pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pic.empty { background: var(--track); border-style: dashed; }
 .arm-btns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
@@ -185,13 +185,13 @@ body.cine #caption { bottom: calc(9% + 14px); font-size: 16px; }
 .arm p.stat { color: var(--chip-fg); font-weight: 700; font-variant-numeric: tabular-nums; }
 .result.info { width: min(400px, calc(100% - 32px)); text-align: left; gap: 8px; max-height: calc(100% - 32px); overflow-y: auto; z-index: 3; }
 .result.info p { text-align: left; }
-.info img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 14px; border: 1px solid var(--line); background: #e3ebf5; display: block; }
+.info img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 14px; border: 1px solid var(--line); background: #323957; display: block; }
 .info b { font-size: 26px; }
 .info .detail dd { color: var(--chip-fg); }
 .slot select { min-height: 44px; border-radius: 12px; border: 2px solid var(--line); background: var(--chip); color: var(--chip-fg); font-family: var(--body); font-size: 15px; font-weight: 700; padding: 0 10px; }
 .slot p { margin: 0; font-size: 12.5px; font-weight: 500; line-height: 1.45; color: var(--chip-sub); }
 .opt { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px; font-weight: 700; }
-.opt input { width: 20px; height: 20px; accent-color: var(--accent); }
+.opt input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
 .opt.sel select { flex: 1 1 auto; min-width: 0; min-height: 44px; border-radius: 12px; border: 2px solid var(--line); background: var(--chip); color: var(--chip-fg); font-family: var(--body); font-size: 14px; font-weight: 700; padding: 0 10px; }
 .plain { align-self: flex-start; min-height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid var(--line); background: transparent; font-size: 14px; font-weight: 700; }
 .missions { display: flex; flex-direction: column; gap: 5px; }
@@ -466,6 +466,39 @@ body.cine #card { bottom: 9%; }
   #qtoast b { font-size: 54px; } #qtoast span { font-size: 16px; }
   #obj-dots { gap: 3px; } #obj-dots i { width: 9px; height: 9px; }
   .hud .chip.obj, .hud .chip.status { height: auto; min-height: 84px; }
+}
+
+/* 1.1 layering and fitting fixes (found by the UI review): a pause or a dialog sits over the question card, the toast and the coach;
+   the strike warning shows over the card; cards and the toast use the whole width they are allowed */
+#pause { z-index: 5; }
+.result.help, .result.info { z-index: 6; }
+body.paused #qtoast, body.paused #coach, body.paused #qbox { visibility: hidden; }
+#banner { z-index: 4; }
+.qbox:not(.long) { width: max-content; max-width: calc(100vw - 32px); }
+#qtoast { width: max-content; max-width: calc(100vw - 32px); }
+#qtoast span { display: inline-block; margin-top: 10px; padding: 2px 12px; border-radius: 12px; background: rgba(10, 12, 26, 0.72); }
+.status .line.sub span { white-space: nowrap; }
+@media (max-width: 720px) {
+  #combo { display: none !important; }   /* the card and the toast already say 「3개 연속」; in the narrow chip it broke the row */
+  #qtoast { top: 64%; }                   /* below the question card and its explanation */
+  #coach { top: calc(112px + env(safe-area-inset-top, 0px)); }
+}
+/* short screens (a phone on its side): the card goes right under the mirror and gets small, so the gates below it stay in sight */
+@media (max-height: 520px) {
+  .qbox, .qbox:not(.long) { top: calc(var(--mb, 14px) + 2px); padding: 2px 14px 5px; min-width: 0; }
+  .qbox #q-kick { font-size: 11px; }
+  .qbox b { font-size: 26px; }
+  .qbox.long b { font-size: 19px; }
+  .qbox #q-why { font-size: 13px; }
+  #qtoast { top: 58%; }
+  #qtoast b { font-size: 40px; } #qtoast span { font-size: 14px; margin-top: 6px; }
+  #caption { max-width: calc(100% - 500px); min-width: 220px; z-index: 2; }
+  #title { justify-content: safe flex-end; overflow-y: auto; padding-top: 12px; padding-bottom: 16px; gap: 6px; }
+  #title b { font-size: clamp(40px, 9vw, 64px); }
+  #title .more { font-size: 14px; }
+  #title .kind span { display: none; }
+  #title button { min-height: 44px; font-size: 18px; }
+  .panel:not(.result) .brand { padding-top: 2px; padding-bottom: 2px; }
 }
 </style>
 

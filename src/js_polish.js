@@ -100,10 +100,10 @@
     var key = carQ.shift(), car = CARS[key], W = 256, H = 160, g = car.g, par = g.parent, vis = g.visible, hid = [], L = car.spec.L, i, j, d;
     if (!thumbRT) {
       thumbRT = new T.WebGLRenderTarget(W, H); thumbRT.texture.colorSpace = T.SRGBColorSpace; thumbRT.isXRRenderTarget = true;   /* tone-mapped like the game */
-      thumbScene = new T.Scene(); thumbScene.background = new T.Color(0xdfe8f3);
+      thumbScene = new T.Scene(); thumbScene.background = new T.Color(0x323957);
       thumbScene.add(legacy(new T.HemisphereLight(0xffffff, 0x9aa3b0, 1.0)));
       var dl = legacy(new T.DirectionalLight(0xffffff, 1.25)); dl.position.set(-5, 8, -6); thumbScene.add(dl);
-      var fl = new T.Mesh(new T.CircleGeometry(40, 32), new T.MeshBasicMaterial({ color: C(0xc9d4e2) })); fl.rotation.x = -Math.PI / 2; fl.position.y = -0.02; thumbScene.add(fl);
+      var fl = new T.Mesh(new T.CircleGeometry(40, 32), new T.MeshBasicMaterial({ color: C(0x4a5380) })); fl.rotation.x = -Math.PI / 2; fl.position.y = -0.02; thumbScene.add(fl);
       thumbCam = new T.PerspectiveCamera(26, W / H, 0.1, 120);
       thumbCv = document.createElement('canvas'); thumbCv.width = W; thumbCv.height = H; thumbBuf = new Uint8Array(W * H * 4);
     }
