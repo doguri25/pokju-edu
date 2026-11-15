@@ -277,17 +277,113 @@
     scene.add(m); scenery.push(m);
   }
   for (var bi = 0; bi < 14; bi++) { makeBuilding(-1, -250 + bi * 22 + rnd(-3, 3)); makeBuilding(1, -250 + bi * 22 + rnd(-3, 3)); }
-  var leafMats = [std(0x4f9a52, 0.9), std(0x6fb35a, 0.9), std(0x3f8257, 0.9)];
-  var coneGeoA = new T.ConeGeometry(1.5, 2.6, 7), coneGeoB = new T.ConeGeometry(1.1, 2.2, 7), coneGeoC = new T.ConeGeometry(0.7, 1.5, 7), trunkGeo = new T.CylinderGeometry(0.18, 0.24, 1.6, 5);
-  var leafTop = [std(0x63ad5e, 0.9), std(0x86c66b, 0.9), std(0x55966a, 0.9)];
-  for (var ti = 0; ti < 30; ti++) {
-    var tr = new T.Group(), lm = pick(leafMats);
-    var tk = shadowed(new T.Mesh(trunkGeo, M.trunk)); tk.position.y = 0.8; tr.add(tk);
-    var c1 = shadowed(new T.Mesh(coneGeoA, lm)); c1.position.y = 2.5; tr.add(c1);
-    var c2 = shadowed(new T.Mesh(coneGeoB, lm)); c2.position.y = 3.9; tr.add(c2);
-    var c3 = shadowed(new T.Mesh(coneGeoC, leafTop[leafMats.indexOf(lm)])); c3.position.y = 5.0; c3.rotation.y = 0.4; tr.add(c3);   /* a lighter top tier */
-    var sc2 = rnd(0.8, 1.35); tr.scale.set(sc2, sc2, sc2);
-    tr.position.set((ti % 2 ? 1 : -1) * rnd(13.2, 14.8), 0, -250 + ti * 10.3 + rnd(-2, 2)); tr.userData.baseY = 0;
+  var coneGeoA = new T.ConeGeometry(1.5, 2.6, 7), coneGeoB = new T.ConeGeometry(1.1, 2.2, 7), trunkGeo = new T.CylinderGeometry(0.18, 0.24, 1.6, 5);
+  /* ---------- trees (graphics upgrade 5): Korean roadside species, each with its own shape and colours ----------
+     은행나무 (ginkgo, tall pointed oval, gold), 단풍나무 (maple, wide dome, red to orange), 벚나무 (cherry, low spreading, pink),
+     느티나무 (zelkova, vase of branches under a broad umbrella), 소나무 (red pine, a leaning red-brown trunk and flat cloud-like layers),
+     자작나무 (birch, a slender white trunk), 가문비 (spruce, tiers) and a bare winter tree. A tree is a trunk with branches and lumpy,
+     faceted clumps of leaves at their ends; autumn trees drop a ring of fallen leaves round their feet */
+  var CLUMP_GEOS = [0, 1, 2].map(function () {
+    var g = new T.IcosahedronGeometry(1, 1), a, i, seen = {};
+    if (g.index) g = g.toNonIndexed();
+    a = g.attributes.position;
+    for (i = 0; i < a.count; i++) {   /* the same corner moves the same way on every face: a closed, lumpy ball */
+      var key = a.getX(i).toFixed(3) + ',' + a.getY(i).toFixed(3) + ',' + a.getZ(i).toFixed(3), k = seen[key] || (seen[key] = rnd(0.78, 1.22));
+      a.setXYZ(i, a.getX(i) * k, a.getY(i) * k * (a.getY(i) < -0.3 ? 0.75 : 1), a.getZ(i) * k);
+    }
+    g.computeVertexNormals(); return g;
+  });
+  var BRANCH_GEO = new T.CylinderGeometry(0.5, 1, 1, 6); BRANCH_GEO.translate(0, 0.5, 0);   /* unit branch: base at 0, tip at 1, tapering */
+  function leaves(hexes) { return hexes.map(function (h) { var m = std(h, 0.85); m.flatShading = true; return m; }); }
+  var TREE_MAT = {
+    ginkgo: leaves([0xf2c12e, 0xe8b31c, 0xf5d24a, 0xd9a417]), ginkgoG: leaves([0x7fae3e, 0x93bb48]),
+    maple: leaves([0xc8331d, 0xe0552a, 0xa82418, 0xe8862a, 0xd9461f]), cherry: leaves([0xf4b8c8, 0xf7cad6, 0xeaa2b8, 0xfbe0e8]),
+    zelkova: leaves([0x6f9a3e, 0x8a9a3a, 0xb7792e, 0x5e8a3a]), green: leaves([0x4f8f3e, 0x6aa84f, 0x5c9a46]),
+    pine: leaves([0x2f5e3a, 0x3c6e44, 0x284f33]), birch: leaves([0xb9c65a, 0xd4c24a, 0xa9bd52]), spruce: leaves([0x2a5a40, 0x23503a, 0x30664a])
+  };
+  var BARK = { brown: std(0x5e4330, 0.95), dark: std(0x3f3128, 0.95), red: std(0x9a5a3a, 0.9), white: std(0xe8e4da, 0.8), grey: std(0x7a746c, 0.95) };
+  /* fallen leaves: a disc of scattered autumn leaves, fading out at the rim */
+  var litterMats = {};
+  function litterMat(kind) {
+    if (litterMats[kind]) return litterMats[kind];
+    var cols = { ginkgo: ['#f2c12e', '#e8b31c', '#f5d24a', '#c99a14'], maple: ['#c8331d', '#e0552a', '#a82418', '#e8862a', '#8a3a1c'], cherry: ['#f4b8c8', '#fbe0e8', '#eaa2b8'], zelkova: ['#b7792e', '#8a6a2a', '#a0662a'] }[kind];
+    var c = document.createElement('canvas'); c.width = c.height = 128;
+    var g = c.getContext('2d'), i;
+    for (i = 0; i < 420; i++) {
+      var r = Math.pow(Math.random(), 0.7) * 60, a = Math.random() * 6.283, x = 64 + Math.cos(a) * r, y = 64 + Math.sin(a) * r;
+      g.save(); g.translate(x, y); g.rotate(Math.random() * 6.283); g.globalAlpha = 0.95 * (1 - Math.pow(r / 62, 3));
+      g.fillStyle = pick(cols); g.beginPath(); g.ellipse(0, 0, rnd(1.6, 3), rnd(1, 1.8), 0, 0, 6.283); g.fill(); g.restore();
+    }
+    var t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace;
+    return (litterMats[kind] = new T.MeshStandardMaterial({ map: t, transparent: true, depthWrite: false, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
+  }
+  var litterGeo = new T.CircleGeometry(1, 20); litterGeo.rotateX(-Math.PI / 2);
+  function branch(g, mat, x0, y0, z0, x1, y1, z1, r) {
+    var b = shadowed(new T.Mesh(BRANCH_GEO, mat)), dx = x1 - x0, dy = y1 - y0, dz = z1 - z0, len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    b.position.set(x0, y0, z0); b.scale.set(r, len, r);
+    b.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), new T.Vector3(dx / len, dy / len, dz / len)); g.add(b); return b;
+  }
+  function clump(g, mats, x, y, z, sx, sy, sz) {
+    var m = shadowed(new T.Mesh(pick(CLUMP_GEOS), pick(mats))); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.rotation.set(rnd(0, 6), rnd(0, 6), rnd(0, 6)); g.add(m); return m;
+  }
+  function mkTree(kind, sc) {
+    var g = new T.Group(), i, a, r, h, n, x, z, L = TREE_MAT;
+    if (kind === 'ginkgo') {   /* tall trunk, a pointed oval of gold (a few still green) */
+      var gm = Math.random() < 0.18 ? L.ginkgoG : L.ginkgo; h = rnd(2.4, 3.0);
+      branch(g, BARK.grey, 0, 0, 0, rnd(-0.1, 0.1), h + 3.5, rnd(-0.1, 0.1), 0.26);
+      for (i = 0; i < 6; i++) { var t = i / 5, rr = 1.75 * Math.sin(Math.PI * (0.18 + 0.75 * t)) * (1 - 0.35 * t); a = rnd(0, 6.28); clump(g, gm, Math.cos(a) * rr * 0.35, h + 0.6 + t * 4.2, Math.sin(a) * rr * 0.35, rr, rnd(1.0, 1.25), rr); }
+      if (gm === L.ginkgo) { var lt = new T.Mesh(litterGeo, litterMat('ginkgo')); lt.scale.setScalar(rnd(2.2, 3)); lt.position.y = 0.03; lt.renderOrder = -1; g.add(lt); }
+    } else if (kind === 'maple' || kind === 'cherry' || kind === 'green') {   /* short trunk, branches to a wide dome */
+      var mm = L[kind]; h = rnd(1.4, 1.9); n = kind === 'cherry' ? 5 : 4;
+      branch(g, kind === 'cherry' ? BARK.dark : BARK.brown, 0, 0, 0, 0, h, 0, 0.24);
+      for (i = 0; i < n; i++) {
+        a = i / n * 6.28 + rnd(-0.4, 0.4); r = rnd(1.0, 1.7) * (kind === 'cherry' ? 1.2 : 1);
+        x = Math.cos(a) * r; z = Math.sin(a) * r; var ty = h + rnd(1.1, 1.8) * (kind === 'cherry' ? 0.8 : 1);
+        branch(g, kind === 'cherry' ? BARK.dark : BARK.brown, 0, h - 0.1, 0, x, ty, z, 0.12);
+        clump(g, mm, x, ty + 0.5, z, rnd(1.3, 1.7), rnd(1.0, 1.3) * (kind === 'cherry' ? 0.8 : 1), rnd(1.3, 1.7));
+      }
+      clump(g, mm, 0, h + 2.3, 0, rnd(1.5, 1.9), rnd(1.1, 1.4), rnd(1.5, 1.9));
+      if (kind !== 'green') { var lm = new T.Mesh(litterGeo, litterMat(kind)); lm.scale.setScalar(rnd(2.6, 3.4)); lm.position.y = 0.03; lm.renderOrder = -1; g.add(lm); }
+    } else if (kind === 'zelkova') {   /* a vase of branches under a broad umbrella */
+      h = rnd(1.8, 2.2); branch(g, BARK.grey, 0, 0, 0, 0, h, 0, 0.32);
+      for (i = 0; i < 6; i++) { a = i / 6 * 6.28 + rnd(-0.3, 0.3); x = Math.cos(a) * rnd(1.8, 2.4); z = Math.sin(a) * rnd(1.8, 2.4); branch(g, BARK.grey, 0, h - 0.2, 0, x, h + rnd(2.0, 2.6), z, 0.13); clump(g, L.zelkova, x, h + 3.0, z, rnd(1.5, 1.9), rnd(0.9, 1.1), rnd(1.5, 1.9)); }
+      clump(g, L.zelkova, 0, h + 3.7, 0, 2.2, 1.1, 2.2);
+      if (Math.random() < 0.6) { var lz = new T.Mesh(litterGeo, litterMat('zelkova')); lz.scale.setScalar(rnd(3, 3.8)); lz.position.y = 0.03; lz.renderOrder = -1; g.add(lz); }
+    } else if (kind === 'pine') {   /* 소나무: a leaning red trunk, flat layered clouds of needles */
+      var lean = rnd(-0.35, 0.35), bx2 = lean * 2.2; h = rnd(4.2, 5.4);
+      branch(g, BARK.red, 0, 0, 0, bx2 * 0.5, h * 0.55, 0, 0.26); branch(g, BARK.red, bx2 * 0.5, h * 0.55, 0, bx2, h, rnd(-0.3, 0.3), 0.19);
+      for (i = 0; i < 4; i++) {
+        var py = h * (0.5 + i * 0.17), pa = rnd(0, 6.28), pr = rnd(0.6, 1.4) * (1 - i * 0.15), px2 = bx2 * (py / h) + Math.cos(pa) * pr, pz = Math.sin(pa) * pr;
+        branch(g, BARK.red, bx2 * (py / h) * 0.9, py - 0.4, 0, px2, py, pz, 0.08);
+        clump(g, L.pine, px2, py + 0.15, pz, rnd(1.2, 1.7) * (1 - i * 0.12), rnd(0.38, 0.5), rnd(1.1, 1.5) * (1 - i * 0.12));
+      }
+    } else if (kind === 'birch') {   /* slender white trunk, small light crown */
+      h = rnd(3.2, 4); branch(g, BARK.white, 0, 0, 0, rnd(-0.15, 0.15), h + 2.2, 0, 0.15);
+      for (i = 0; i < 4; i++) { a = rnd(0, 6.28); clump(g, L.birch, Math.cos(a) * 0.6, h + i * 0.6, Math.sin(a) * 0.6, rnd(0.8, 1.1), rnd(0.9, 1.2), rnd(0.8, 1.1)); }
+    } else if (kind === 'spruce' || kind === 'spruceSnow') {   /* tiers of cones */
+      var sm = pick(L.spruce); branch(g, BARK.dark, 0, 0, 0, 0, 1.2, 0, 0.22);
+      for (i = 0; i < 4; i++) { var cn = shadowed(new T.Mesh(i < 2 ? coneGeoA : coneGeoB, sm)); cn.position.y = 1.9 + i * 1.05; cn.scale.setScalar(1.15 - i * 0.22); cn.rotation.y = i * 0.7; g.add(cn); }
+      if (kind === 'spruceSnow') for (i = 0; i < 3; i++) { var sn = new T.Mesh(coneGeoB, BARK.white); sn.position.y = 2.5 + i * 1.05; sn.scale.set(0.75 - i * 0.16, 0.45, 0.75 - i * 0.16); g.add(sn); }
+    } else {   /* bare winter tree */
+      h = rnd(1.8, 2.4); branch(g, BARK.dark, 0, 0, 0, 0, h, 0, 0.22);
+      for (i = 0; i < 5; i++) { a = i / 5 * 6.28 + rnd(-0.3, 0.3); x = Math.cos(a) * rnd(1, 1.8); z = Math.sin(a) * rnd(1, 1.8); var by = h + rnd(1.2, 2.2); branch(g, BARK.dark, 0, h - 0.2, 0, x, by, z, 0.09); branch(g, BARK.dark, x, by, z, x * 1.3, by + 0.8, z * 1.3, 0.05); }
+    }
+    g.scale.setScalar(sc || rnd(0.85, 1.25)); g.rotation.y = rnd(0, 6.28); g.userData.baseY = 0;
+    return g;
+  }
+  /* which species where: weights per kind of place */
+  var TREE_MIX = { street: [['ginkgo', 5], ['zelkova', 2], ['maple', 2], ['cherry', 1]], broad: [['maple', 4], ['ginkgo', 2], ['zelkova', 2], ['cherry', 1], ['green', 2], ['birch', 1]],
+    conifer: [['pine', 5], ['spruce', 3], ['maple', 1], ['birch', 1]], snow: [['spruceSnow', 4], ['bare', 3], ['birch', 2]], coast: [['pine', 5], ['green', 1]] };
+  function pickTree(mix, sc) {
+    var list = TREE_MIX[mix], sum = 0, i, r;
+    for (i = 0; i < list.length; i++) sum += list[i][1];
+    r = Math.random() * sum;
+    for (i = 0; i < list.length - 1 && r >= list[i][1]; i++) r -= list[i][1];
+    return mkTree(list[i][0], sc);
+  }
+  for (var ti = 0; ti < 30; ti++) {   /* street trees along the city's pavements */
+    var tr = pickTree('street', rnd(0.85, 1.15));
+    tr.position.set((ti % 2 ? 1 : -1) * rnd(13.2, 14.8), 0, -250 + ti * 10.3 + rnd(-2, 2));
     scene.add(tr); scenery.push(tr);
   }
 

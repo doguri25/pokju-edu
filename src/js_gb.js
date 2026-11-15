@@ -74,7 +74,7 @@
     if (mission.goal === 'escort') setupAlly(carKey);
     rushLimit = mission.goal === 'rush' ? Math.round(mission.n / (car.vmax * mission.limitK)) : 0;
     if (rolling && isDemo) addProp('gate', dist + mission.n, 0);
-    $('menu').hidden = true; $('result').hidden = true; $('pause').hidden = true; $('ending').hidden = true; $('title').hidden = true; $('hud').hidden = true; $('demo').hidden = !isDemo;
+    $('menu').hidden = true; $('result').hidden = true; $('pause').hidden = true; $('ending').hidden = true; $('title').hidden = true; $('hud').hidden = true; $('demo').hidden = !isDemo; $('story').hidden = true;
     setMusic('drive');
     if (!isDemo) {
       briefT = 3.2; mixEnv(1); tr.fade = 1; shotCut = true; offX = 0; offY = 0;
@@ -477,7 +477,7 @@
   }
   /* basic skill: a small move on a short cooldown, the same for every car of one kind */
   function useBasic() {
-    if (!EDU.arms || !live() || player.dead || player.bcd > 0) return;
+    if (!EDU.arms || !live() || player.dead || player.bcd > 0 || paused || (mode === 'play' && briefT > 0)) return;
     var car = CARS[player.car], k = car.basic, i, e, p, px = player.x, dir, id;
     player.bcd = BASICS[k].cd;
     if (k === 'step') {
@@ -514,7 +514,7 @@
     }
   }
   function useSkill() {
-    if (!EDU.arms || !live() || player.dead || player.cd > 0) return;
+    if (!EDU.arms || !live() || player.dead || player.cd > 0 || paused || (mode === 'play' && briefT > 0)) return;
     var car = CARS[player.car], i, e, k = car.skill, pw = 1 + 0.25 * power;
     player.cd = car.cd; sfx('skill');
     if (mode === 'demo') say('고유 기술 ' + car.skillName + ': ' + car.skillDesc + '.', 3.2);
@@ -666,6 +666,7 @@
   window.addEventListener('touchend', audioInit, true); window.addEventListener('click', audioInit, true);   /* iOS only lets sound start from the end of a touch or a click */
   window.addEventListener('keydown', audioInit, true);
   window.addEventListener('keydown', function (e) {
+    if (e.repeat && (isKey(e, 'KeyM', 'm') || e.key === 'Escape' || isKey(e, 'KeyP', 'p') || isKey(e, 'KeyC', 'c') || isKey(e, 'KeyV', 'v'))) return;   /* a held key toggles once */
     if (isKey(e, 'KeyM', 'm')) { toggleMute(!save.muted); return; }
     if (e.key === 'Escape' && !$('help').hidden) { closeHelp(); return; }
     if (e.key === 'Escape' && !$('info').hidden) { closeInfo(); return; }
@@ -679,7 +680,9 @@
     else if (isKey(e, 'KeyX', 'x') || isKey(e, 'KeyE', 'e') || isKey(e, 'KeyF', 'f')) { if (!e.repeat) useBasic(); e.preventDefault(); }
   });
   window.addEventListener('keyup', function (e) { keySet(e, false); });
-  window.addEventListener('blur', function () { keys.l = keys.r = keys.u = keys.d = keys.f = false; fireBtn = false; });   /* a key released while another window has the focus would otherwise stay down */
+  function autoPause() { if (mode === 'play' && briefT <= 0 && !paused && !player.dead) setPaused(true); }   /* nobody is driving: stop rather than crash unattended */
+  window.addEventListener('blur', function () { keys.l = keys.r = keys.u = keys.d = keys.f = false; fireBtn = false; autoPause(); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) autoPause(); });   /* a key released while another window has the focus would otherwise stay down */
   cv.addEventListener('pointerdown', function (e) {
     if (mode !== 'play' || paused) return;
     var zone = e.clientX < window.innerWidth * 0.38 ? 'thr' : 'steer';
@@ -696,7 +699,7 @@
   (function () {
     var lever = $('lever'), track = $('lever-track');
     function setFrom(e) { var r = track.getBoundingClientRect(); player.thr = clamp(1 - (e.clientY - r.top) / r.height, 0, 1); }
-    lever.addEventListener('pointerdown', function (e) { leverDown = true; leverTouch = e.pointerType !== 'mouse'; setFrom(e); try { lever.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); });
+    lever.addEventListener('pointerdown', function (e) { if (paused) return; leverDown = true; leverTouch = e.pointerType !== 'mouse'; setFrom(e); try { lever.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); });
     lever.addEventListener('pointermove', function (e) { if (leverDown) setFrom(e); });
     ['pointerup', 'pointercancel'].forEach(function (ev) { lever.addEventListener(ev, function () { leverDown = false; }); });
     lever.addEventListener('keydown', function (e) {
@@ -844,7 +847,7 @@
   $('kinds').addEventListener('click', function (e) { var b = hit(e.target, 'data-kind'); if (!b) return; sfx('click'); setKind(b.getAttribute('data-kind')); });
   $('title-kinds').addEventListener('click', function (e) { var b = hit(e.target, 'data-kind'); if (!b) return; sfx('click'); selKind = b.getAttribute('data-kind'); toMenu(); setTab('mode'); });
   [['dan', 'opt-dan'], ['type', 'opt-qtype'], ['pace', 'opt-pace'], ['foe', 'opt-foe'], ['style', 'opt-style'], ['spell', 'opt-spell']].forEach(function (p) {
-    $(p[1]).addEventListener('change', function () { save.quiz.sel[p[0]] = $(p[1]).value; storeSave(); sfx('click'); renderQuiz(); renderFoot(); });
+    $(p[1]).addEventListener('change', function () { save.quiz.sel[p[0]] = $(p[1]).value; if (linkKeep) linkKeep[p[0]] = $(p[1]).value; storeSave(); sfx('click'); renderQuiz(); renderFoot(); });
   });
   ['region', 'time', 'weather'].forEach(function (k) {
     $('opt-' + k).addEventListener('change', function () { cond[k] = $('opt-' + k).value; sfx('click'); pickCourse(); renderCond(); renderFoot(); });

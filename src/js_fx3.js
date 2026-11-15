@@ -82,7 +82,7 @@
   var fbCam = new T.Vector3();
   function fx3Step(dt) {
     var i, f, t, n = 0, k;
-    waterU.uWT.value = time % 600; waterU.uWD.value = dist; seaStep(dt); playerAOStep();
+    waterU.uWT.value = time % 600; waterU.uWD.value = dist; seaStep(dt); playerAOStep(); leafStep(dt);
     for (i = 0; i < FB_N; i++) {
       f = fireballs[i];
       if (f.life <= 0) continue;
@@ -286,4 +286,48 @@
       splashC.setRGB(0.92, 0.95, 0.97).multiplyScalar(1 - 0.75 * cur.night);
       for (var i = 0; i < n; i++) spawnP('smoke', -17.4 + rnd(-0.8, 0.6), rnd(0.2, 0.8), z + rnd(-1.5, 1.5), rnd(-1.2, 1.2), rnd(3, 6.5), veff, rnd(0.7, 1.2), rnd(0.5, 0.9), rnd(2, 3.4), splashC, rnd(0.45, 0.7), 1);
     }
+  }
+
+  /* falling leaves (graphics upgrade 5): yellow ginkgo, red and orange maple and brown zelkova leaves come off the roadside trees,
+     flutter down turning over and drift across the road on the wind; one instanced mesh, a colour per leaf */
+  var LEAF_N = 150, LEAF_REG = { city: 1, country: 1, highway: 1, creek: 1, mountain: 1, offroad: 1 };
+  var leafGeo3 = (function () {
+    var p = [0, 0.012, 0, 0, 0, 0.1, -0.055, 0, 0.01, 0, 0.012, 0, 0.055, 0, 0.01, 0, 0, 0.1, 0, 0.012, 0, -0.045, 0, -0.03, 0, 0, -0.08, 0, 0.012, 0, 0, 0, -0.08, 0.045, 0, -0.03,
+      0, 0.012, 0, -0.055, 0, 0.01, -0.045, 0, -0.03, 0, 0.012, 0, 0.045, 0, -0.03, 0.055, 0, 0.01];
+    var g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(p, 3)); g.computeVertexNormals(); return g;
+  })();
+  var leafMesh = new T.InstancedMesh(leafGeo3, new T.MeshStandardMaterial({ roughness: 0.8, side: T.DoubleSide }), LEAF_N);
+  leafMesh.frustumCulled = false; leafMesh.visible = false; scene.add(leafMesh);
+  var LEAF_COLS = { city: [0xf2c12e, 0xe8b31c, 0xf5d24a, 0xd9a417, 0xe0552a, 0xb7792e], other: [0xc8331d, 0xe0552a, 0xe8862a, 0xf2c12e, 0xb7792e, 0x8a5a2a] };
+  var leafs = [], lm4 = new T.Matrix4(), lq = new T.Quaternion(), le = new T.Euler(), lsv = new T.Vector3(), lpv = new T.Vector3(), lcol = new T.Color(), leafRegion = '';
+  for (var lfi = 0; lfi < LEAF_N; lfi++) leafs.push({ x: 0, y: -1, z: 0, vx: 0, vy: 0, ph: 0, rx: 0, ry: 0, rz: 0, sx: 0, sy: 0, sz: 0, s: 1 });
+  function leafSpawn(f, anywhere) {
+    var side = Math.random() < 0.5 ? -1 : 1;
+    f.x = side * rnd(9, 22); f.y = anywhere ? rnd(0.5, 8) : rnd(4, 8.5); f.z = anywhere ? rnd(-120, 10) : rnd(-130, -60);
+    f.vx = -side * rnd(0, 1.4); f.vy = -rnd(0.6, 1.3); f.ph = rnd(0, 6.28);
+    f.rx = rnd(0, 6.28); f.ry = rnd(0, 6.28); f.rz = rnd(0, 6.28); f.sx = rnd(-4, 4); f.sy = rnd(-2, 2); f.sz = rnd(-4, 4); f.s = rnd(1.3, 2.0);
+  }
+  function leafRecolor() {
+    var cols = LEAF_COLS[region.key === 'city' ? 'city' : 'other'];
+    for (var i = 0; i < LEAF_N; i++) leafMesh.setColorAt(i, lcol.setHex(pick(cols)).multiplyScalar(rnd(0.85, 1.1)));
+    leafMesh.instanceColor.needsUpdate = true;
+  }
+  function leafStep(dt) {
+    var on = !!LEAF_REG[region.key] && tunK < 0.3 && fxK > 0.4 && snowCover < 0.3, i, f, n;
+    leafMesh.visible = on;
+    if (!on) return;
+    if (leafRegion !== region.key) { leafRegion = region.key; leafRecolor(); for (i = 0; i < LEAF_N; i++) leafSpawn(leafs[i], true); }
+    n = Math.round(LEAF_N * Math.min(1, fxK));
+    var wind = (gust ? gust.v * (gust.dir || 1) : 0) * 0.15, fall = 1 + 1.6 * rainK;
+    for (i = 0; i < n; i++) {
+      f = leafs[i];
+      f.ph += dt * 2.6;
+      f.x += (f.vx + Math.sin(f.ph) * 1.1 + wind) * dt; f.y += f.vy * fall * dt * (0.7 + 0.3 * Math.sin(f.ph * 1.7)); f.z += (veff + Math.cos(f.ph * 0.8) * 0.6) * dt;
+      f.rx += f.sx * dt; f.ry += f.sy * dt; f.rz += f.sz * dt;
+      if (f.y < 0.04) { f.y = 0.04; f.vx = 0; f.sx = f.sy = f.sz = 0; f.vy = 0; }   /* landed: it lies on the road and travels with it */
+      if (f.z > 14) leafSpawn(f, false);
+      le.set(f.y <= 0.04 ? 0 : f.rx, f.ry, f.y <= 0.04 ? 0 : f.rz); lq.setFromEuler(le); lsv.setScalar(f.s); lpv.set(f.x, f.y, f.z);
+      leafMesh.setMatrixAt(i, lm4.compose(lpv, lq, lsv));
+    }
+    leafMesh.count = n; leafMesh.instanceMatrix.needsUpdate = true;
   }

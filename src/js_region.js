@@ -64,18 +64,9 @@
   }
   function zAt(i, n, jit) { return -250 + (i + 0.5) * 308 / n + rnd(-(jit || 0), jit || 0); }
   var leafGeo = new T.IcosahedronGeometry(1.6, 0), rockGeo = new T.IcosahedronGeometry(1, 0), capGeoA = new T.ConeGeometry(1.1, 1.0, 7), capGeoB = new T.ConeGeometry(0.75, 0.9, 7);
-  function roundTree(sc) {
-    var g = new T.Group(), tk = shadowed(new T.Mesh(trunkGeo, M.trunk)); tk.position.y = 0.8; g.add(tk);
-    var cn = shadowed(new T.Mesh(leafGeo, pick(RM.leaf))); cn.position.y = 2.8; cn.scale.set(1, rnd(0.85, 1.15), 1); cn.rotation.y = rnd(0, 3); g.add(cn);
-    g.scale.setScalar(sc || rnd(0.8, 1.4)); return g;
-  }
-  function pineTree(sc, snowy) {
-    var g = new T.Group(), lm = pick(RM.pine), tk = shadowed(new T.Mesh(trunkGeo, M.trunk)); tk.position.y = 0.8; g.add(tk);
-    var c1 = shadowed(new T.Mesh(coneGeoA, lm)); c1.position.y = 2.5; g.add(c1);
-    var c2 = shadowed(new T.Mesh(coneGeoB, lm)); c2.position.y = 3.9; g.add(c2);
-    if (snowy) { var s1 = new T.Mesh(capGeoA, RM.snow); s1.position.y = 3.25; g.add(s1); var s2 = new T.Mesh(capGeoB, RM.snow); s2.position.y = 4.6; g.add(s2); }
-    g.scale.setScalar(sc || rnd(0.9, 1.7)); return g;
-  }
+  /* the region builders below ask for a broadleaf (roundTree) or a conifer (pineTree); the species come from js_world3.js's tree set */
+  function roundTree(sc) { return pickTree('broad', sc ? sc * 0.8 : rnd(0.8, 1.2)); }
+  function pineTree(sc, snowy) { return pickTree(snowy ? 'snow' : 'conifer', sc ? sc * 0.75 : rnd(0.8, 1.25)); }
   function boulder(r, mat) {
     var m = shadowed(new T.Mesh(rockGeo, mat || RM.rock)); m.scale.set(r * rnd(0.9, 1.3), r * rnd(0.6, 0.9), r * rnd(0.9, 1.3)); m.rotation.set(rnd(0, 3), rnd(0, 3), rnd(0, 3)); return m;
   }
@@ -209,7 +200,7 @@
     }
     for (i = 0; i < 5; i++) mount(k, -rnd(190, 360), -700 + i * 180 + rnd(-40, 40), rnd(28, 60), rnd(14, 30), 0x3f7a56);
     for (i = 0; i < 12; i++) { var rk = boulder(rnd(2.2, 4.6), i % 2 ? RM.rockB : RM.rock); rk.scale.y *= 1.5; scn(k, rk, rnd(17.5, 30), zAt(i, 12, 8), 1.2); }
-    for (i = 0; i < 16; i++) scn(k, pineTree(), rnd(16.2, 36), zAt(i, 16, 6), 0);
+    for (i = 0; i < 16; i++) scn(k, pickTree('coast'), rnd(16.2, 36), zAt(i, 16, 6), 0);   /* 해송: black pines by the sea */
     for (i = 0; i < 5; i++) {
       var w = rnd(8, 12), h = rnd(4, 7); g = new T.Group();
       g.add(bx(w, h, 8, pick(RM.cafe), 0, h / 2, 0)); g.add(bx(0.1, h * 0.45, 6, M.glass, -w / 2 - 0.03, h * 0.5, 0)); g.add(bx(w + 0.6, 0.3, 8.6, M.white, 0, h + 0.15, 0));
