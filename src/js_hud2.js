@@ -41,7 +41,10 @@
       k = dk.main + ':' + first.length + ':' + (quiz.phase === 'ask' ? 1 : 0);
       if (hudCache.dots !== k) {
         hudCache.dots = k;
-        for (i = 0; i < dk.main; i++) dots += '<i class="' + (i < first.length ? (first[i].ok ? 'ok' : 'no') : (i === first.length && dk.i <= dk.main ? 'cur' : '')) + '"></i>';
+        if (dk.main > 12) {   /* a long run (순서대로 over several 단): one bar, right and wrong in their colours, instead of dozens of dots */
+          var okN = first.filter(function (r) { return r.ok; }).length, pc = function (v) { return (v / dk.main * 100).toFixed(1) + '%'; };
+          dots = '<b class="pbar"><i class="ok" style="width:' + pc(okN) + '"></i><i class="no" style="width:' + pc(first.length - okN) + '"></i></b>';
+        } else for (i = 0; i < dk.main; i++) dots += '<i class="' + (i < first.length ? (first[i].ok ? 'ok' : 'no') : (i === first.length && dk.i <= dk.main ? 'cur' : '')) + '"></i>';
         $('obj-dots').innerHTML = dots;
       }
     }

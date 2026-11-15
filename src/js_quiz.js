@@ -89,20 +89,30 @@
   var QUIZ_MIX = [['weak', 0.4], ['new', 0.4], ['good', 0.2]];
   function qDraw(all, n, stats, rf) {
     if (!all.length) return [];
-    var bins = { weak: [], 'new': [], good: [] }, facts = [], i;
+    var bins = { weak: [], 'new': [], good: [] }, facts = [], i, guard = 0;
     all.forEach(function (f) { var l = factLevel(stats && stats[f.key]); bins[l === 'hard' || l === 'learn' ? 'weak' : l].push(f); });
+    /* no fact more often than it has to be: once each while there are enough facts, twice when a 단 has fewer facts than questions.
+       Without this a share holding one fact gave it its whole 40%: one weak fact came up three to five times in a run */
+    var used = {}, cap = Math.max(1, Math.ceil(n / all.length));
+    function free(f) { return (used[f.key] || 0) < cap; }
     var src = {}; for (var k in bins) src[k] = [];
     function from(bin) {   /* each share is a shuffled bag, so a fact comes back only after the rest of its share */
-      if (!src[bin].length) src[bin] = qShuffle(bins[bin].slice(), rf);
-      return src[bin].pop();
+      for (var t = 0; t < 2; t++) {
+        while (src[bin].length) { var f = src[bin].pop(); if (free(f)) return f; }
+        src[bin] = qShuffle(bins[bin].filter(free), rf);
+      }
+      return null;
     }
-    while (facts.length < n) {
-      var live = QUIZ_MIX.filter(function (b) { return bins[b[0]].length; }), sum = 0, r;
+    while (facts.length < n && guard++ < n * 60) {
+      var live = QUIZ_MIX.filter(function (b) { return bins[b[0]].some(free); }), sum = 0, r;
+      if (!live.length) break;
       live.forEach(function (b) { sum += b[1]; });
       r = rf() * sum;
       for (i = 0; i < live.length - 1 && r >= live[i][1]; i++) r -= live[i][1];
       var f = from(live[i][0]);
-      if (facts.length && f === facts[facts.length - 1] && all.length > 1) continue;   /* a bin with one fact in it: draw again */
+      if (!f) continue;
+      if (facts.length && f === facts[facts.length - 1] && all.length > 1 && guard < n * 50) continue;   /* the same fact twice running: draw again */
+      used[f.key] = (used[f.key] || 0) + 1;
       facts.push(f);
     }
     return facts;

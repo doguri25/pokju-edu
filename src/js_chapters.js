@@ -61,8 +61,11 @@
   var selChapter = 0;
   /* 을/를 after a word, by whether its last syllable has a final consonant */
   function objJosa(w) { var c = w.charCodeAt(w.length - 1) - 0xac00; return w + (c >= 0 && c < 11172 && c % 28 ? '을' : '를'); }
-  function chapterOpen(i) { return save.unlockAll || i <= (save.story.open || 0) || i === linkCh; }
-  function chapterStars(sc) { var r = sc.right / sc.total; return r >= 1 ? 3 : (r >= 0.9 ? 2 : (r >= 0.7 ? 1 : 0)); }
+  /* open: everything up to the student's progress, the chapter a class link points at, and any chapter cleared (or right after one cleared),
+     so a chapter played through a link keeps its stars and leads on to the next one without opening everything before it */
+  function chapterOpen(i) { var st = save.story.stars || {}; return save.unlockAll || i <= (save.story.open || 0) || i === linkCh || st[i] > 0 || st[i - 1] > 0; }
+  /* stars: 70% to clear (1), only one miss (2), all right (3); counted in misses so a 9-question run can earn two stars too */
+  function chapterStars(sc) { var r = sc.total ? sc.right / sc.total : 0; return r >= 1 ? 3 : (r >= 0.7 && sc.total - sc.right <= 1 ? 2 : (r >= 0.7 ? 1 : 0)); }
   function storyMission(i) {
     var ch = CHAPTERS[i] || CHAPTERS[0], m, k, keep = {};
     for (k in cond) keep[k] = cond[k];
@@ -126,5 +129,5 @@
     var cb = $('ch-' + selChapter); if (cb && cb.scrollIntoView && !$('menu').hidden && !$('pane-story').hidden) cb.scrollIntoView({ block: 'nearest' });
     var m = storyMission(selChapter);
     $('ch-brief').innerHTML = (chapterOpen(selChapter) ? '' : row('잠금', (selChapter) + '장 「' + CHAPTERS[selChapter - 1].name + '」' + objJosa(CHAPTERS[selChapter - 1].name).slice(CHAPTERS[selChapter - 1].name.length) + ' 깨면 열립니다')) +
-      row('고칠 것', ch.fix) + row('문제', ch.sets ? '맞춤법 ' + (ch.last ? '모든 묶음 섞어서' : SPELL_SETS[ch.sets[0]].name) : (ch.last ? '1단~9단과 0의 곱 섞어서' : ch.dans[0] + '단 ' + QUIZ_TYPES[m.quiz.type].name)) + row('길', m.why) + row('깨기', '10문제 가운데 7문제 이상 (순서대로는 9문제 가운데 7문제). 별은 7개 이상 1개, 9개 이상 2개, 모두 맞히면 3개');
+      row('고칠 것', ch.fix) + row('문제', ch.sets ? '맞춤법 ' + (ch.last ? '모든 묶음 섞어서' : SPELL_SETS[ch.sets[0]].name) : (ch.last ? '1단~9단과 0의 곱 섞어서' : ch.dans[0] + '단 ' + QUIZ_TYPES[m.quiz.type].name)) + row('길', m.why) + row('깨기', '10문제 가운데 7문제 이상 (순서대로는 9문제 가운데 7문제). 별은 깨면 1개, 하나만 틀리면 2개, 모두 맞히면 3개');
   }
