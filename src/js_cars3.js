@@ -1,5 +1,5 @@
   /* ---------- paints and trim ---------- */
-  var M_BEFORE = Object.keys(M);
+  var M_BEFORE = Object.keys(M).map(function (k) { return M[k]; });   /* the material objects themselves: a paint redefined below under an old name still counts as new */
   M.mint = std(0xa9dccd, 0.4, 0.1); M.carWhite = std(0xf1f1ee, 0.35, 0.1); M.sea = std(0x4d6688, 0.3, 0.35);
   M.sage = std(0x8fa58a, 0.5, 0.15); M.ivory = std(0xcfc9bd, 0.35, 0.2); M.nocturne = std(0x5b616b, 0.35, 0.3); M.arctic = std(0x7fb5d6, 0.35, 0.2);
   M.coral = std(0xf2a7b5, 0.4, 0.1); M.deepBlue = std(0x2a4a9a, 0.3, 0.3); M.obsidian = std(0x1c1d20, 0.28, 0.4); M.busGreen = std(0x3aa655, 0.5, 0.1);
@@ -25,7 +25,7 @@
     var METAL = { rim: 1, rimDark: 1, chrome: 1, gloss: 1 };
     Object.keys(M).forEach(function (k) {
       var m = M[k];
-      if (M_BEFORE.indexOf(k) >= 0 || !m || !m.isMeshStandardMaterial) return;
+      if (M_BEFORE.indexOf(m) >= 0 || !m || !m.isMeshStandardMaterial) return;
       var p = METAL[k]
         ? new T.MeshPhysicalMaterial({ color: m.color, roughness: Math.min(m.roughness, k === 'chrome' ? 0.12 : 0.28), metalness: Math.max(m.metalness, k === 'gloss' ? 0.5 : 0.9), clearcoat: k === 'gloss' ? 1 : 0.4, clearcoatRoughness: 0.08, flatShading: false })
         : new T.MeshPhysicalMaterial({ color: m.color, roughness: clamp(m.roughness * 0.9, 0.22, 0.5), metalness: clamp(m.metalness + 0.1, 0.15, 0.55), clearcoat: 1, clearcoatRoughness: 0.05, flatShading: false });

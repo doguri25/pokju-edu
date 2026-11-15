@@ -48,13 +48,14 @@
     if (hudCache.hasDots !== !!dk) { hudCache.hasDots = !!dk; $('obj-dots').hidden = !dk; document.querySelector('.chip.obj').classList.toggle('dots', !!dk); }
     var combo = dk && quiz.combo >= 2 ? quiz.combo + ' 연속' : '';
     if (hudCache.combo !== combo) { hudCache.combo = combo; $('combo').textContent = combo; $('combo').hidden = !combo; }
-    if (dk && quiz.phase === 'ask' && quiz.askLen) setStyle('q-timer-bar', 'width', pct((performance.now() - quiz.askAt) / quiz.askLen));
+    /* the bar fills as the gates come up (they are the real deadline), or over the thinking time when shooting */
+    if (dk && quiz.phase === 'ask' && quiz.askLen) setStyle('q-timer-bar', 'width', pct(quiz.g && quiz.d > quiz.askD0 ? (dist - quiz.askD0) / (quiz.d - quiz.askD0) : quiz.askE / quiz.askLen));
   }
   /* the toast: 「정답!」 or 「아쉬워요」 big in the middle of the road */
-  function quizToast(ok, q, first) {
+  function quizToast(ok, q, again) {
     var el = $('qtoast');
     $('qtoast-t').textContent = ok ? (quiz.combo >= 3 ? quiz.combo + '개 연속!' : '정답!') : '아쉬워요';
-    $('qtoast-s').textContent = ok ? (EDU.arms ? '수리 +20% · 니트로' : '니트로') : q.full + (first ? ' · 끝에 한 번 더' : '');
+    $('qtoast-s').textContent = ok ? (EDU.arms ? '수리 +20% · 니트로' : '니트로') : q.full + (again ? ' · 끝에 한 번 더' : '');
     el.style.setProperty('--tc', ok ? '#35e08a' : '#ff5468');
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
   }

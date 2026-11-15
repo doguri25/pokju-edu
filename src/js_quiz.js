@@ -35,7 +35,7 @@
   }
   /* a fact is [a, b]: a is the 단 */
   function qQuestion(a, b, type, rf) {
-    var t = QUIZ_TYPES[type] || QUIZ_TYPES.mix, q = { a: a, b: b, key: a + 'x' + b, type: type, n: t.opts };
+    var t = Object.prototype.hasOwnProperty.call(QUIZ_TYPES, type) ? QUIZ_TYPES[type] : QUIZ_TYPES.mix, q = { a: a, b: b, key: a + 'x' + b, type: type, n: t.opts };
     if (type === 'blank') { q.text = a + ' × □ = ' + a * b; q.ans = b; q.full = a + ' × ' + b + ' = ' + a * b; q.opts = qOptions(b, qWrongsFactor(a, b), t.opts, rf); }
     else if (type === 'rev') { q.text = a * b + ' = ' + a + ' × □'; q.ans = b; q.full = a * b + ' = ' + a + ' × ' + b; q.opts = qOptions(b, qWrongsFactor(a, b), t.opts, rf); }
     else { q.text = a + ' × ' + b + ' = ?'; q.ans = a * b; q.full = a + ' × ' + b + ' = ' + a * b; q.opts = qOptions(a * b, qWrongsMul(a, b), t.opts, rf); }
@@ -54,9 +54,10 @@
   /* where the right answer sits, over the whole deck: with two gates it is left exactly half the time and never more than twice running on the same side */
   function qSlots(count, n, rf) {
     var s = [], i, run, tries;
+    var off = (rf() * n) | 0;   /* when the count is not a multiple of n, the spare places fall on a random gate, not always the left ones */
     for (tries = 0; tries < 40; tries++) {
       s.length = 0;
-      for (i = 0; i < count; i++) s.push(i % n);
+      for (i = 0; i < count; i++) s.push((i + off) % n);
       qShuffle(s, rf);
       for (run = 1, i = 1; i < s.length; i++) { if (s[i] === s[i - 1]) { if (++run > 2) break; } else run = 1; }
       if (i >= s.length) break;
@@ -87,6 +88,7 @@
   /* which facts a mixed run asks: weak ones (hard or still learning) about 40%, new ones 40%, known ones 20%. A share with nothing in it goes to the others */
   var QUIZ_MIX = [['weak', 0.4], ['new', 0.4], ['good', 0.2]];
   function qDraw(all, n, stats, rf) {
+    if (!all.length) return [];
     var bins = { weak: [], 'new': [], good: [] }, facts = [], i;
     all.forEach(function (f) { var l = factLevel(stats && stats[f.key]); bins[l === 'hard' || l === 'learn' ? 'weak' : l].push(f); });
     var src = {}; for (var k in bins) src[k] = [];
@@ -109,7 +111,7 @@
      맞춤법: o = { subject: 'spell', sets: ['dwae'], bank: { dwae: { items: [...] } }, n: 10, stats }. Facts are drawn the same way, weak ones first */
   function quizDeck(o, rf) {
     rf = rf || Math.random;
-    var spell = o.subject === 'spell', type = spell ? 'spell' : (QUIZ_TYPES[o.type] && !QUIZ_TYPES[o.type].own ? o.type : 'mix'), dans = o.dans && o.dans.length ? o.dans.slice() : [2], sets = o.sets || [], all = [], i, j;
+    var spell = o.subject === 'spell', type = spell ? 'spell' : (Object.prototype.hasOwnProperty.call(QUIZ_TYPES, o.type) && !QUIZ_TYPES[o.type].own ? o.type : 'mix'), dans = o.dans && o.dans.length ? o.dans.slice() : [2], sets = o.sets || [], all = [], i, j;
     if (spell) sets.forEach(function (k) { (o.bank[k] ? o.bank[k].items : []).forEach(function (it, n) { all.push({ set: k, item: it, key: 'sp:' + k + ':' + n }); }); });
     else for (i = 0; i < dans.length; i++) for (j = o.zero ? 0 : 1; j <= 9; j++) all.push(mulFact(dans[i], j));   /* zero: 7×0 as well (0의 곱) */
     var facts = type === 'seq' ? all : qDraw(all, o.n || 10, o.stats || null, rf), qs = facts.map(function (f) { return qMake(f, type, rf); });
@@ -126,7 +128,9 @@
     rf = rf || Math.random;
     var ok = picked === q.slot, retry = deck.i > deck.main;
     deck.log.push({ key: q.key, ok: ok, retry: retry, picked: picked < 0 ? null : q.opts[picked] });
+    deck.queued = false;   /* whether this miss comes back at the end (a fact asked twice in one deck comes back only once) */
     if (!ok && !retry && !deck.retried[q.key]) {
+      deck.queued = true;
       deck.retried[q.key] = true;
       var again = qMake(q.fact, q.type, rf);
       deck.items.push(qPlace(again, (rf() * again.n) | 0));

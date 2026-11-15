@@ -1,11 +1,13 @@
   /* ---------- sky: a dome that travels with the camera. Horizon-to-zenith gradient, sun or moon with a halo, stars at night, drifting clouds that thicken with the weather.
      Colours are written as they should appear on screen, like the plain background colour behind it ---------- */
   var skyU = { uTop: { value: new T.Color() }, uHor: { value: new T.Color() }, uSun: { value: new T.Vector3(0, 1, 0) }, uSunCol: { value: new T.Color() }, uDark: { value: new T.Color() },
-    uNight: { value: 0 }, uCloud: { value: 0.3 }, uTime: { value: 0 }, uDim: { value: 1 } };
-  var skyDome = new T.Mesh(new T.SphereGeometry(480, 32, 16), new T.ShaderMaterial({ uniforms: skyU, side: T.BackSide, depthWrite: false, depthTest: false, fog: false,
-    vertexShader: 'varying vec3 vDir;\nvoid main() {\n\tvDir = position;\n\tgl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4( position, 1.0 );\n}',
-    fragmentShader: GLSL_SKY_FRAG }));   /* src/shaders/sky.frag */
-  skyDome.renderOrder = -100; skyDome.frustumCulled = false; scene.add(skyDome);
+    uNight: { value: 0 }, uCloud: { value: 0.3 }, uTime: { value: 0 }, uDim: { value: 1 }, uLin: { value: 0 } };
+  /* the dome is drawn after everything solid, on the far plane itself (z = w), so its clouds are worked out only where the sky shows
+     and no camera's far plane can cut it off (the mirror's reaches 75 m) */
+  var SKY_VS = 'varying vec3 vDir;\nvoid main() {\n\tvDir = position;\n\tgl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4( position, 1.0 );\n\tgl_Position.z = gl_Position.w;\n}';
+  var skyDome = new T.Mesh(new T.SphereGeometry(480, 32, 16), new T.ShaderMaterial({ uniforms: skyU, side: T.BackSide, depthWrite: false, fog: false,
+    vertexShader: SKY_VS, fragmentShader: GLSL_SKY_FRAG }));   /* src/shaders/sky.frag */
+  skyDome.renderOrder = 1000; skyDome.frustumCulled = false; scene.add(skyDome);
   function updSky() {
     var W = weather, g;
     skyU.uHor.value.copy(scene.background);
@@ -17,22 +19,78 @@
     if (tunGlare > 0.001) { skyU.uHor.value.lerp(tunWhite, tunGlare); skyU.uTop.value.lerp(tunWhite, tunGlare * 0.8); }
     skyU.uDim.value = 1 - 0.96 * tunK * (1 - tunOut); skyU.uDark.value.copy(tunDark);
     skyDome.position.copy(camera.position);
+    updFar();
   }
 
-  /* ---------- graphics quality: three levels; 「자동」 starts high and steps down when frames take too long ---------- */
-  var GFX = { high: { pr: 2, shadow: true, fx: 1, map: 2048, mir: 1, post: 1 }, mid: { pr: 1.5, shadow: true, fx: 0.7, map: 1024, mir: 1, post: 0.8 }, low: { pr: 1, shadow: false, fx: 0.45, map: 1024, mir: 3, post: 0 } }, gfxNow = 'high', gfxAcc = 0, gfxN = 0, fxK = 1, mirEvery = 2;
+  /* ---------- far skyline (graphics upgrade 2): a ring of silhouettes beyond the road that travels with the sky dome. Towers in
+     town, hills in the country, mountains in the hills, snowy peaks in the snow; worked out in src/shaders/skyline.frag ---------- */
+  var farU = { uTop: skyU.uTop, uHor: skyU.uHor, uSun: skyU.uSun, uSunCol: skyU.uSunCol, uDark: skyU.uDark, uNight: skyU.uNight, uTime: skyU.uTime, uDim: skyU.uDim,
+    uNear: { value: new T.Color() }, uVis: { value: 1 }, uKind: { value: 1 }, uSea: { value: 0 }, uScale: { value: 1 } };
+  var FAR_KIND = { city: [1, 1, 0], highway: [1, 0.72, 0], country: [2, 1, 0], creek: [2, 0.9, 0], coast: [2, 0.85, 1], offroad: [3, 0.75, 0], mountain: [3, 1, 0], snow: [4, 0.95, 0] };
+  var farRing = new T.Mesh(new T.CylinderGeometry(430, 430, 135, 96, 1, true).translate(0, 47.5, 0), new T.ShaderMaterial({ uniforms: farU, side: T.BackSide,
+    depthWrite: false, fog: false, alphaToCoverage: true, vertexShader: SKY_VS, fragmentShader: GLSL_SKYLINE_FRAG }));   /* src/shaders/skyline.frag */
+  farRing.renderOrder = 1001; farRing.frustumCulled = false; skyDome.add(farRing);
+  var farGrey = new T.Color(0.36, 0.38, 0.44);
+  function updFar() {
+    var k = FAR_KIND[region.key] || FAR_KIND.city;
+    farU.uKind.value = k[0]; farU.uScale.value = k[1]; farU.uSea.value = k[2];
+    if (k[0] === 1) farU.uNear.value.copy(farGrey).multiply(tintC); else farU.uNear.value.copy(groundMat.color).multiplyScalar(0.8);
+    farU.uVis.value = clamp((envFogF - 85) / 100, 0, 1) * (1 - 0.6 * boltF);
+    farRing.visible = farU.uVis.value > 0.02;
+  }
+
+  /* ---------- graphics quality: three levels; 「자동」 starts high and, when frames take too long during a run, first lowers the
+     rendering resolution a little at a time, and only then steps down a level. The rear-view mirror stays at every level ---------- */
+  var GFX = { high: { pr: 2, shadow: true, fx: 1, map: 2048, mir: 1, post: 1, mw: 384, msaa: 4 }, mid: { pr: 1.5, shadow: true, fx: 0.7, map: 1024, mir: 1, post: 0.8, mw: 336, msaa: 2 }, low: { pr: 1, shadow: false, fx: 0.45, map: 1024, mir: 2, post: 0, mw: 264, msaa: 2 } },
+    gfxNow = 'high', fxK = 1, mirEvery = 1, resK = 1, gfxWin = [], gfxHold = 0, gfxFast = 0, gfxRaised = false, gfxNoUp = false, gfxRef = [], gfxBest = 1 / 60;
+  var RES_STEPS = [1, 0.85, 0.72];
   /* 「자동」 starts one step down on a phone-sized or touch screen: those are the devices where the full setting costs frames */
   function gfxStart() { var small = Math.min(window.innerWidth, window.innerHeight) <= 520 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches); return small ? 'mid' : 'high'; }
-  function applyGfx(k) {
+  function gfxRatio() { var q = GFX[gfxNow] || GFX.high; return Math.max(0.5, Math.min(window.devicePixelRatio || 1, q.pr) * resK); }
+  function applyGfx(k, keepRes) {
     var q = GFX[k] || GFX.high;
-    gfxNow = GFX[k] ? k : 'high'; fxK = q.fx; sun.castShadow = q.shadow; mirEvery = q.mir;
+    gfxNow = GFX[k] ? k : 'high'; fxK = q.fx; mirEvery = q.mir;
+    /* turning shadows off recompiles every lit material: in the middle of a run that waits for the menu */
+    if (!(mode === 'play' && sun.castShadow && !q.shadow)) sun.castShadow = q.shadow;
+    if (!keepRes) resK = 1;
     if (sun.shadow.mapSize.x !== q.map) { sun.shadow.mapSize.set(q.map, q.map); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q.pr)); resize();
+    if (typeof mirrorRT !== 'undefined' && mirrorRT.width !== q.mw) mirrorRT.setSize(q.mw, Math.round(q.mw / 3));
+    gfxWin.length = 0; gfxHold = 2;
+    renderer.setPixelRatio(gfxRatio()); resize();
   }
+  function setRes(k) { resK = k; gfxWin.length = 0; gfxHold = 1.5; gfxFast = 0; renderer.setPixelRatio(gfxRatio()); resize(); }
+  /* one step slower: the resolution first; then a level down, at a resolution that keeps the pixel count from going up again */
+  function gfxSlower() {
+    var i = RES_STEPS.indexOf(resK), pr0 = gfxRatio(), base, j;
+    if (i >= 0 && i < RES_STEPS.length - 1) { setRes(RES_STEPS[i + 1]); return; }
+    if (gfxNow === 'low') return;
+    applyGfx(gfxNow === 'high' ? 'mid' : 'low', true);
+    base = Math.min(window.devicePixelRatio || 1, GFX[gfxNow].pr);
+    for (j = 0; j < RES_STEPS.length - 1 && base * RES_STEPS[j] > pr0 + 1e-3; j++) {}
+    setRes(RES_STEPS[j]);
+  }
+  /* frame times are judged by their median over about 1.5 s of driving, so a single stall (a shader compiling as something new
+     comes into view, the sky's reflections being redrawn) does not count. They are measured against the screen's own refresh,
+     taken from the quickest steady frames seen anywhere (a phone saving battery runs at 30 Hz, and that is not a slow device).
+     Menus, pauses and the first moments of a run are not judged */
   function gfxTick(rdt) {
-    if (save.gfx !== 'auto' || paused) return;
-    gfxAcc += rdt; gfxN++;
-    if (gfxN >= 120) { var avg = gfxAcc / gfxN; gfxAcc = 0; gfxN = 0; if (avg > 0.028 && gfxNow !== 'low') applyGfx(gfxNow === 'high' ? 'mid' : 'low'); }
+    if (paused || document.hidden || rdt <= 0) { gfxWin.length = 0; return; }
+    gfxRef.push(rdt);
+    if (gfxRef.length >= 60) { gfxBest = Math.max(1 / 150, Math.min(gfxBest, gfxRef.sort(function (a, b) { return a - b; })[12])); gfxRef.length = 0; }
+    if (mode !== 'play') { gfxWin.length = 0; var sh = (GFX[gfxNow] || GFX.high).shadow; if (sun.castShadow !== sh) sun.castShadow = sh; return; }
+    if (save.gfx !== 'auto') return;
+    if (gfxHold > 0) { gfxHold -= rdt; return; }
+    gfxWin.push(rdt);
+    if (gfxWin.length < 90) return;
+    var m = gfxWin.slice().sort(function (a, b) { return a - b; })[45], i = RES_STEPS.indexOf(resK), slow = Math.max(0.026, gfxBest * 1.35), fast = Math.max(0.0185, gfxBest * 1.12);
+    gfxWin.length = 0;
+    if (m > slow) {
+      if (gfxRaised) gfxNoUp = true;   /* going back up made it slow again: stay where it is from now on */
+      gfxRaised = false; gfxFast = 0; gfxSlower();
+    } else if (m < fast && i > 0 && !gfxNoUp) {
+      gfxRaised = false;
+      if (++gfxFast >= 4) { setRes(RES_STEPS[i - 1]); gfxRaised = true; }
+    } else { gfxRaised = false; gfxFast = 0; }
   }
 
   /* ---------- pictures for the car cards: every car model is rendered once into a small off-screen target, one per frame so start-up is not held back ---------- */
@@ -41,7 +99,7 @@
     if (!carQ.length) return;
     var key = carQ.shift(), car = CARS[key], W = 256, H = 160, g = car.g, par = g.parent, vis = g.visible, hid = [], L = car.spec.L, i, j, d;
     if (!thumbRT) {
-      thumbRT = new T.WebGLRenderTarget(W, H); thumbRT.texture.colorSpace = T.SRGBColorSpace;
+      thumbRT = new T.WebGLRenderTarget(W, H); thumbRT.texture.colorSpace = T.SRGBColorSpace; thumbRT.isXRRenderTarget = true;   /* tone-mapped like the game */
       thumbScene = new T.Scene(); thumbScene.background = new T.Color(0xdfe8f3);
       thumbScene.add(legacy(new T.HemisphereLight(0xffffff, 0x9aa3b0, 1.0)));
       var dl = legacy(new T.DirectionalLight(0xffffff, 1.25)); dl.position.set(-5, 8, -6); thumbScene.add(dl);
@@ -127,7 +185,7 @@
 
   /* ---------- rear-view mirror: the road behind is drawn into a small target every other frame and shown, flipped left to right, on a panel at the top of the screen ---------- */
   /* the rear-view mirror is drawn every frame at a small size; its buffer gets the same tone mapping as the main picture (see js_fx2.js) */
-  var mirrorRT = new T.WebGLRenderTarget(336, 112, { type: renderer.capabilities.isWebGL2 ? T.HalfFloatType : T.UnsignedByteType }); mirrorRT.texture.colorSpace = T.SRGBColorSpace; mirrorRT.isXRRenderTarget = true;
+  var mirrorRT = new T.WebGLRenderTarget(GFX[gfxNow].mw, Math.round(GFX[gfxNow].mw / 3), { type: HALF_RT ? T.HalfFloatType : T.UnsignedByteType }); mirrorRT.texture.colorSpace = T.SRGBColorSpace; mirrorRT.isXRRenderTarget = true;
   var mirrorCam = new T.PerspectiveCamera(40, 3, 0.5, 75), mirrorN = 0;
   var mirrorQuad = new T.Mesh(new T.PlaneGeometry(1, 1), new T.ShaderMaterial({ uniforms: { tMap: { value: mirrorRT.texture } }, depthTest: false, depthWrite: false, transparent: true, fog: false,
     vertexShader: 'varying vec2 vUv;\nvoid main() {\n\tvUv = uv;\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}',
@@ -143,7 +201,7 @@
     document.documentElement.style.setProperty('--mb', Math.round(mirTop + hpx + 10) + 'px');
   }
   function mirrorPass(force) {
-    var car = CARS[player.car], on = save.mirror && gfxNow !== 'low' && mode === 'play' && !player.dead && runKind !== 'tut';
+    var car = CARS[player.car], on = save.mirror && mode === 'play' && !player.dead && runKind !== 'tut';
     mirrorQuad.visible = on;
     if (!on) { if (mirLay !== -99) { mirLay = -99; document.documentElement.style.removeProperty('--mb'); } return; }
     if (mirLay === -99) mirLay = 0;

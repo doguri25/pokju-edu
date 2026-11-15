@@ -4,7 +4,7 @@
   var dashGlow = glowSprite(0xffe08a, 9, 0); dashGlow.position.set(0, 1.0, 0.5); playerRoot.add(dashGlow);
   var beam = legacy(new T.SpotLight(0xfff0d0, 0, 80, 0.55, 0.7, 1));
   beam.position.set(0, 1.4, -2.7); beam.target.position.set(0, 0, -30); playerRoot.add(beam); playerRoot.add(beam.target);
-  var beamPool = new T.Mesh(new T.PlaneGeometry(13, 26), new T.MeshBasicMaterial({ map: texGlow, color: C(0xfff0d0), blending: T.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0, fog: false }));
+  var beamPool = new T.Mesh(new T.PlaneGeometry(13, 26, 1, 6),   /* rows, so it bends with the road over a crest */ new T.MeshBasicMaterial({ map: texGlow, color: C(0xfff0d0), blending: T.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0, fog: false }));
   beamPool.rotation.x = -Math.PI / 2; beamPool.position.set(0, 0.06, -15); playerRoot.add(beamPool);
   var tailPool = new T.Mesh(new T.PlaneGeometry(2.6, 9), new T.MeshBasicMaterial({ map: texGlow, color: C(0xff2a1a), blending: T.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0, fog: false }));
   tailPool.rotation.x = -Math.PI / 2; tailPool.position.set(0, 0.07, 6); playerRoot.add(tailPool);

@@ -1,6 +1,8 @@
   /* ---------- 수업 링크: a teacher picks a mode and its settings, and shares one address. Opening it skips the prologue and lands on that mode,
      already set; nothing is sent anywhere, the settings ride in the address itself (?m=quiz&dan=7&type=mix…). A story link opens its chapter even if it is still locked ---------- */
-  var classLink = null, linkCh = -1;
+  var classLink = null, linkCh = -1, linkKeep = null;   /* linkKeep: the student's own choices, which are what gets saved while a link is open */
+  /* a name is a real entry of a table only if the table holds it itself: 'constructor' or 'toString' must not pass for a setting */
+  function own(o, k) { return typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k); }
   function linkParams() {
     var out = {}, src = (location.search || '').slice(1) + '&' + (location.hash || '').replace(/^#/, '');
     src.split('&').forEach(function (kv) { var p = kv.split('='); if (p[0]) { try { out[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || ''); } catch (e) {} } });
@@ -10,12 +12,13 @@
   function applyLink() {
     var p = linkParams(), s = save.quiz.sel, m = p.m;
     if (!m || KIND_ORDER.indexOf(m) < 0) return;
+    linkKeep = JSON.parse(JSON.stringify(s));
     if (p.dan && DAN_OPTS.some(function (o) { return o[0] === p.dan; })) s.dan = p.dan;
-    if (p.type && QUIZ_TYPES[p.type] && !QUIZ_TYPES[p.type].own) s.type = p.type;
-    if (p.pace && QUIZ_PACE[p.pace]) s.pace = p.pace;
+    if (own(QUIZ_TYPES, p.type) && !QUIZ_TYPES[p.type].own) s.type = p.type;
+    if (own(QUIZ_PACE, p.pace)) s.pace = p.pace;
     if (p.foe === 'on' || p.foe === 'off') s.foe = p.foe;
     if (p.style === 'gate' || p.style === 'shoot') s.style = p.style;
-    if (p.set && (p.set === 'all' || SPELL_SETS[p.set])) s.spell = p.set;
+    if (p.set === 'all' || own(SPELL_SETS, p.set)) s.spell = p.set;
     if (m === 'story') { var ch = (parseInt(p.ch, 10) || 1) - 1; if (ch >= 0 && ch < CHAPTERS.length) { selChapter = ch; linkCh = ch; } }
     selKind = m; classLink = { label: linkLabel(m) };
   }

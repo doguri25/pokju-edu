@@ -6,8 +6,25 @@
   var $ = function (id) { return document.getElementById(id); };
   var cv = $('c');
   var renderer;
+  /* Canvas2D roundRect arrived late on older iPads (iPadOS 15): the signs, gate panels and gauge draw with it at start-up */
+  if (window.CanvasRenderingContext2D && !CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+      var a = typeof r === 'number' ? r : (r && r.length ? +r[0] || 0 : 0);
+      a = Math.max(0, Math.min(a, Math.abs(w) / 2, Math.abs(h) / 2));
+      this.moveTo(x + a, y); this.arcTo(x + w, y, x + w, y + h, a); this.arcTo(x + w, y + h, x, y + h, a); this.arcTo(x, y + h, x, y, a); this.arcTo(x, y, x + w, y, a); this.closePath();
+    };
+  }
+  /* can this device draw into half-float buffers? Then the picture is finished off screen (js_fx2.js), multisampled there, and the
+     canvas itself needs no multisampling (that would only cost memory) */
+  var HALF_RT = (function () {
+    try {
+      var g = document.createElement('canvas').getContext('webgl2'), ok = !!(g && (g.getExtension('EXT_color_buffer_half_float') || g.getExtension('EXT_color_buffer_float')));
+      var l = g && g.getExtension('WEBGL_lose_context'); if (l) l.loseContext();
+      return ok;
+    } catch (e) { return false; }
+  })();
   try {
-    renderer = new T.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' });
+    renderer = new T.WebGLRenderer({ canvas: cv, antialias: !HALF_RT, powerPreference: 'high-performance' });
   } catch (e) {
     $('err').hidden = false; $('menu').hidden = true;
     return;

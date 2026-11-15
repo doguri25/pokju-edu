@@ -54,6 +54,7 @@
   }
   /* cont: the run follows straight on from the one before (next mission, retry), so the car keeps its lane and its speed instead of being put back */
   function beginRun(carKey, misIdx, isDemo, taIdx, kind, cont) {
+    closeInfo(); if (!$('help').hidden) { $('help').hidden = true; helpThen = null; }
     var keepX = clamp(player.x, -6.6, 6.6), keepV = player.v, keepThr = player.thr, fromRun = !!cont && !isDemo && player.car === carKey && !player.dead;
     runKind = kind || (taIdx === undefined || taIdx === null ? 'mis' : 'ta');
     runTA = runKind === 'ta' || runKind === 'race' ? taIdx : -1;
@@ -392,6 +393,7 @@
   }
   function setPaused(p) {
     if (mode !== 'play' || briefT > 0) return;
+    if (!p && (!$('help').hidden || !$('info').hidden)) return;   /* a dialog is open over the paused game: it is closed first */
     paused = p; $('pause').hidden = !p; if (p) engineOff();
     if (p) $('pause-text').textContent = mission.name + ' · ' + CARS[player.car].name + ' · 시간 ' + fmtT(tPlay);
     for (var k in keys) keys[k] = false;
@@ -902,8 +904,11 @@
   $('opt-sound').addEventListener('change', function () { setSfx($('opt-sound').checked); sfx('click'); });
   $('opt-unlock').addEventListener('change', function () { save.unlockAll = $('opt-unlock').checked; storeSave(); renderMenu(); });
   $('opt-reset').addEventListener('click', function () {
+    /* a shared classroom device: the next child starts clean, story chapters, stars and the 구구단·맞춤법 records included */
+    if (window.confirm && !window.confirm('이야기 진행, 별, 구구단·맞춤법 기록을 모두 지우고 처음부터 시작할까요?')) return;
+    save.story = { open: 0, stars: {}, tries: {}, done: false }; save.quiz.facts = {}; save.quiz.runs = [];
     save.scrap = 500; save.cars = { laser: true }; save.cleared = []; save.loadouts = {}; save.best = {}; save.bestT = {}; save.ta = {}; save.race = {}; save.surv = {}; save.tires = { allseason: 1 }; save.tire = {}; save.weapons = { mg: 1 }; save.unlockAll = false; grantStock(); storeSave();
-    $('opt-unlock').checked = false; selCar = 'laser'; selMission = 0; selTrack = 0; selKind = 'free'; toMenu(); setTab('car');
+    $('opt-unlock').checked = false; selCar = 'laser'; selMission = 0; selTrack = 0; selKind = 'story'; selChapter = 0; toMenu(); setTab('car');
   });
 
   /* ---------- camera and resize ---------- */
@@ -1798,7 +1803,7 @@
       if (!(o && o.brief)) briefT = 0.001;
     },
     setCond: function (o) { for (var k in o) cond[k] = o[k]; if (mode === 'menu') { pickCourse(); renderCond(); renderFoot(); } },
-    kind: function (k) { setKind(k); }, mirror: function () { mirrorPass(true); return mirrorQuad.visible; }, gfx: function (k) { save.gfx = k; applyGfx(k === 'auto' ? 'high' : k); return gfxNow; }, thumbs: function () { while (carQ.length) carThumbStep(); return Object.keys(THUMB).length; }, help: openHelp, ally: function () { return allyE ? { hp: Math.round(allyE.hp), ahead: Math.round(allyE.d - dist), x: +allyE.x.toFixed(1), kmh: Math.round(allyE.sp.v * 3.6), fin: allyE.fin } : null; }, mounts: function () { return sceneryNow.filter(function (o) { return o.userData.mount; }).map(function (o) { return [Math.round(o.position.x), Math.round(o.position.z), o.material.color.getHexString(), o.userData.base.getHexString(), o.visible]; }); }, dbg: function () { return { rv: rainMesh.visible, ro: rainMat.opacity, n: rainGeo.drawRange.count, p: [rainPos[0], rainPos[1], rainPos[2], rainPos[3], rainPos[4], rainPos[5]], sv: snowMesh.visible, so: snowMat.opacity, sp: [snowPos[0], snowPos[1], snowPos[2]], rainK: rainK, snowK: snowK, tunK: tunK }; }, regions: REGIONS, weathers: WEATHERS, missions: MISSIONS, addProp: function (t, ahead, x, o) { return addProp(t, dist + ahead, x, o); },
+    kind: function (k) { setKind(k); }, mirror: function () { mirrorPass(true); return mirrorQuad.visible; }, gfxFeed: function (dt, n) { for (var i = 0; i < n; i++) gfxTick(dt); return { level: gfxNow, res: resK, pr: +renderer.getPixelRatio().toFixed(2), mw: mirrorRT.width, noUp: gfxNoUp, best: +gfxBest.toFixed(4), shadow: sun.castShadow }; }, gfx: function (k) { save.gfx = k; applyGfx(k === 'auto' ? 'high' : k); return gfxNow; }, thumbs: function () { while (carQ.length) carThumbStep(); return Object.keys(THUMB).length; }, help: openHelp, ally: function () { return allyE ? { hp: Math.round(allyE.hp), ahead: Math.round(allyE.d - dist), x: +allyE.x.toFixed(1), kmh: Math.round(allyE.sp.v * 3.6), fin: allyE.fin } : null; }, mounts: function () { return sceneryNow.filter(function (o) { return o.userData.mount; }).map(function (o) { return [Math.round(o.position.x), Math.round(o.position.z), o.material.color.getHexString(), o.userData.base.getHexString(), o.visible]; }); }, dbg: function () { return { rv: rainMesh.visible, ro: rainMat.opacity, n: rainGeo.drawRange.count, p: [rainPos[0], rainPos[1], rainPos[2], rainPos[3], rainPos[4], rainPos[5]], sv: snowMesh.visible, so: snowMat.opacity, sp: [snowPos[0], snowPos[1], snowPos[2]], rainK: rainK, snowK: snowK, tunK: tunK }; }, regions: REGIONS, weathers: WEATHERS, missions: MISSIONS, addProp: function (t, ahead, x, o) { return addProp(t, dist + ahead, x, o); },
     rivals: function () { return rivals.map(function (e) { return { key: e.key, ahead: Math.round(e.d - dist), x: +e.x.toFixed(1), kmh: Math.round(e.sp.v * 3.6), fin: e.fin, stun: +e.stun.toFixed(1), hp: e.hp }; }); },
     auto: function (sec) { autoT = sec; },
     cam: function (m) { setCam(m, true); },
@@ -1817,7 +1822,7 @@
     perf: function () {
       var r = {}, n = 0, vis = 0, t0, i;
       renderer.render(scene, camera); r.calls = renderer.info.render.calls; r.tris = renderer.info.render.triangles;
-      mirrorPass(true); r.geos = renderer.info.memory.geometries; r.tex = renderer.info.memory.textures;
+      mirrorPass(true); r.mirCalls = renderer.info.render.calls; r.mirTris = renderer.info.render.triangles; r.geos = renderer.info.memory.geometries; r.tex = renderer.info.memory.textures;
       scene.traverse(function (o) { n++; }); scene.traverseVisible(function (o) { if (o.isMesh || o.isSprite || o.isLine || o.isPoints) vis++; });
       r.objs = n; r.visMesh = vis; r.baked = bakeStat.before + '>' + bakeStat.after;
       t0 = performance.now(); for (i = 0; i < 300; i++) step(1 / 60); r.stepMs = +((performance.now() - t0) / 300).toFixed(3);

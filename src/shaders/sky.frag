@@ -2,7 +2,7 @@
 // Horizon-to-zenith gradient with a warm band around the sun at dusk, a sun disc or a moon, twinkling stars at night,
 // and layered fbm clouds lit from the sun's side, thickening with the weather.
 uniform vec3 uTop; uniform vec3 uHor; uniform vec3 uSun; uniform vec3 uSunCol; uniform vec3 uDark;
-uniform float uNight; uniform float uCloud; uniform float uTime; uniform float uDim;
+uniform float uNight; uniform float uCloud; uniform float uTime; uniform float uDim; uniform float uLin;
 varying vec3 vDir;
 
 float hash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
@@ -51,5 +51,7 @@ void main() {
     cc += uSunCol * pow(sd, 5.0) * 0.3;
     col = mix(col, cc, c * (0.6 + 0.35 * uCloud));
   }
-  gl_FragColor = vec4(mix(uDark, col, uDim), 1.0);
+  col = mix(uDark, col, uDim);
+  if (uLin > 0.5) col = pow(max(col, vec3(0.0)), vec3(2.2));   // baking the reflection map: light, not display colours
+  gl_FragColor = vec4(col, 1.0);
 }

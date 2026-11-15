@@ -63,6 +63,8 @@ function generate() {
 function document(body) {
   return '<!doctype html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n'
     + '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">\n'
+    + '<meta name="theme-color" content="#0b0d1a">\n'
+    + '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%230b0d1a%27/%3E%3Ctext x=%2732%27 y=%2744%27 font-size=%2730%27 font-family=%27sans-serif%27 font-weight=%27900%27 text-anchor=%27middle%27 fill=%27%2338e1ff%27%3E9%C3%979%3C/text%3E%3C/svg%3E">\n'
     + '<style>html, body { margin: 0; height: 100%; } body { font: 14px system-ui, sans-serif; }</style>\n</head>\n<body>\n'
     + body + '</body>\n</html>\n';
 }

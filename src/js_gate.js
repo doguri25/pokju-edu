@@ -56,7 +56,7 @@
       var bw = Math.min(W - 0.7, 4.4), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
       m.position.set(cx, 3.3, 0.05); g.add(m);
       var am = new T.MeshBasicMaterial({ map: chevTex, color: base.clone().multiplyScalar(1.4), transparent: true, opacity: 0.85, depthWrite: false, blending: T.AdditiveBlending });
-      var lane = new T.Mesh(new T.PlaneGeometry(Math.min(W - 1.2, 6), 24), am);
+      var lane = new T.Mesh(new T.PlaneGeometry(Math.min(W - 1.2, 6), 24, 1, 6), am);
       lane.rotation.x = -Math.PI / 2; lane.position.set(cx, 0.04, 12); g.add(lane);
       s.banners.push({ c: c, tx: tx, m: m, arrows: am });
     }
@@ -92,7 +92,7 @@
   }
   var SPELL_SETS = {}; SPELL_DATA.sets.forEach(function (st) { SPELL_SETS[st.key] = st; });
   var SPELL_ORDER = SPELL_DATA.sets.map(function (st) { return st.key; });
-  function spellSel() { var s = save.quiz.sel, k = s.spell || 'dwae'; return { subject: 'spell', sets: k === 'all' ? SPELL_ORDER.slice() : [SPELL_SETS[k] ? k : 'dwae'], type: 'spell', pace: s.pace, foe: s.foe !== 'off', style: s.style === 'shoot' ? 'shoot' : 'gate' }; }
+  function spellSel() { var s = save.quiz.sel, k = s.spell || 'dwae'; return { subject: 'spell', sets: k === 'all' ? SPELL_ORDER.slice() : [own(SPELL_SETS, k) ? k : 'dwae'], type: 'spell', pace: s.pace, foe: s.foe !== 'off', style: s.style === 'shoot' ? 'shoot' : 'gate' }; }
   function setLabel(sets) { return sets.length === SPELL_ORDER.length ? '모든 묶음' : sets.map(function (k) { return SPELL_SETS[k].name; }).join('·'); }
   function quizSel() { var s = save.quiz.sel; return { dans: s.dan === 'all' ? [2, 3, 4, 5, 6, 7, 8, 9] : s.dan.split(',').map(Number), type: s.type, pace: s.pace, foe: s.foe !== 'off', style: s.style === 'shoot' ? 'shoot' : 'gate' }; }
   /* enemies on a quiz road, as in the original missions: f = { drones, kami, strike, buggy, traffic }. null: only the gates */
@@ -115,7 +115,7 @@
     var o = mission.quiz || quizSel();
     quizOff();
     quiz.deck = o.subject === 'spell' ? quizDeck({ subject: 'spell', sets: o.sets, bank: SPELL_SETS, n: 10, stats: save.quiz.facts }) : quizDeck({ dans: o.dans, type: o.type, n: 10, stats: save.quiz.facts, zero: !!o.zero });
-    quiz.style = o.style === 'shoot' && EDU.arms ? 'shoot' : 'gate'; quiz.pace = QUIZ_PACE[o.pace] || QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0; quiz.hinted = false;
+    quiz.style = o.style === 'shoot' && EDU.arms ? 'shoot' : 'gate'; quiz.pace = own(QUIZ_PACE, o.pace) ? QUIZ_PACE[o.pace] : QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0; quiz.hinted = false;
     quiz.phase = 'wait'; quiz.t = 0.8;
   }
   function qboxSet(kick, text, cls, q, why) {
@@ -181,9 +181,9 @@
       qboxSet((quiz.combo >= 3 ? quiz.combo + '개 연속 정답!' : '정답!') + (EDU.arms ? ' · 수리 +20%' : ''), q.full, 'ok');
     } else {
       quiz.combo = 0; player.v = Math.max(car.vmin, player.v * 0.7); sfx('thud');
-      qboxSet(first ? '정답은 이거예요 · 끝에 한 번 더 나와요' : '정답은 이거예요', q.full, 'no', null, q.why);
+      qboxSet(dk.queued ? '정답은 이거예요 · 끝에 한 번 더 나와요' : '정답은 이거예요', q.full, 'no', null, q.why);
     }
-    quizToast(ok, q, first);
+    quizToast(ok, q, dk.queued);
     quiz.phase = 'show'; quiz.t = ok ? 1.6 : (q.why ? 3.6 : 2.4);   /* a spelling miss shows why, which takes longer to read */
   }
   function quizStep(dt, px, car) {
@@ -204,11 +204,12 @@
       bs.items.forEach(function (it, i) { it.g.position.y = Math.sin(time * 2 + i) * 0.15; });
     }
     quiz.t -= dt;
+    if (quiz.phase === 'ask') quiz.askE += dt;   /* game time: a pause or a hidden tab does not run the clock */
     if (quiz.phase === 'wait' && quiz.t <= 0) {
       q = quiz.q = quizNext(dk);
       if (!q) { quiz.phase = 'done'; finish(true); return; }
       var think = quiz.pace.t + QUIZ_TYPES[q.type].think;
-      quiz.phase = 'ask'; quiz.shotPick = -1; quiz.askAt = performance.now(); quiz.askLen = think * 1000;
+      quiz.phase = 'ask'; quiz.shotPick = -1; quiz.askE = 0; quiz.askLen = think; quiz.askD0 = dist;
       if (quiz.g) { quiz.g.g.visible = false; quiz.g = null; }
       if (quiz.b) { quiz.b.g.visible = false; quiz.b = null; }
       if (quiz.style === 'shoot') { balloonsShow(q); quiz.hold = think; }

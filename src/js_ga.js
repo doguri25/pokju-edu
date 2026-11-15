@@ -193,8 +193,8 @@
         if (s.quiz && typeof s.quiz === 'object') {
           var qs = s.quiz.sel || {};
           if (DAN_OPTS.some(function (o) { return o[0] === qs.dan; })) save.quiz.sel.dan = qs.dan;
-          if (QUIZ_TYPES[qs.type]) save.quiz.sel.type = qs.type;
-          if (QUIZ_PACE[qs.pace]) save.quiz.sel.pace = qs.pace;
+          if (own(QUIZ_TYPES, qs.type) && !QUIZ_TYPES[qs.type].own) save.quiz.sel.type = qs.type;
+          if (own(QUIZ_PACE, qs.pace)) save.quiz.sel.pace = qs.pace;
           if (qs.foe === 'off') save.quiz.sel.foe = 'off';
           if (qs.style === 'shoot') save.quiz.sel.style = 'shoot';
           if (qs.spell === 'all' || SPELL_DATA.sets.some(function (st) { return st.key === qs.spell; })) save.quiz.sel.spell = qs.spell;
@@ -208,7 +208,12 @@
     } catch (e) {}
     save.cars.laser = true; save.tires.allseason = 1; grantStock();
   }
-  function storeSave() { try { window.localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
+  /* a class link's settings last for this visit only: the student's own choices are what is stored */
+  function storeSave() {
+    var sel = save.quiz.sel;
+    try { if (linkKeep) save.quiz.sel = linkKeep; window.localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
+    save.quiz.sel = sel;
+  }
   function carOpen(k) { return true; }   /* learning edition: every car can be driven from the start */
   function missionOpen(i) { return save.unlockAll || i === 0 || save.cleared.indexOf(i - 1) >= 0; }
   function fits(w, slot) { return WEAPONS[w] && WEAPONS[w].slots.indexOf(slotKind(slot)) >= 0; }
@@ -286,6 +291,7 @@
   var dmgLog = {};
   function hurt(d, kind) {
     if (!live() || player.dead || player.invuln > 0) return;
+    if (quizRun() && quiz.deck && quiz.phase !== 'ask' && quiz.deck.log.length >= quiz.deck.items.length) return;   /* every question answered: the run is won, nothing can undo it */
     var car = CARS[player.car];
     if (kind === 'bullet') { if (car.evade && Math.random() < car.evade) return; d *= car.bulletMul; }
     if (kind === 'ram' || kind === 'debris') d *= car.ramMul * (hasSaw ? sawMul : 1);

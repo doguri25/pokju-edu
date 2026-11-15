@@ -51,7 +51,7 @@
       go: '고갯길 날씨 안내판에 「기온이 낫습니다」래. 낫다, 낮다, 났다, 낳다야. 이번엔 문이 세 개야.', hint: '병이 좋아지면 「낫다」, 높지 않으면 「낮다」, 생기면 「났다」, 아기는 「낳다」야.',
       done: '안내판에 「기온이 낮습니다. 눈길 조심」이 떴다. 제설차가 안내판 옆을 지나갔다.' },
     { sets: ['often'], region: 'coast', time: 'sunset', weather: 'clear', fix: '등대 일지', foes: { drones: 0.85, kami: 0.6, strike: 0.6, buggy: true, traffic: 1.1 }, name: '틀린 말투성이 등대 일지',
-      go: '등대지기 일지가 「몇일」, 「금새」 투성이야. 자주 틀리는 말들이니까 하나씩 고쳐 보자.', hint: '「며칠」은 언제나 「며칠」이야. 「몇일」이라는 말은 없어!',
+      go: '등대지기 일지가 「몇일」, 「금새」투성이야. 자주 틀리는 말들이니까 하나씩 고쳐 보자.', hint: '「며칠」은 언제나 「며칠」이야. 「몇일」이라는 말은 없어!',
       done: '등대 일지가 반듯하게 고쳐졌다. 「며칠 동안 바다가 잔잔했다. 배들이 금세 돌아왔다.」' },
     { sets: ['dwae', 'an', 'mat', 'wen', 'deun', 'garu', 'nat', 'often', 'bara', 'ro'], region: 'city', time: 'night', weather: 'clear', fix: '마성의 글자 칩', ending: 2, name: '다시 마성 타워', last: true,
       foes: { drones: 1, kami: 0.75, strike: 0.85, buggy: true, traffic: 1.05, strikes: ['lane', 'cross', 'diag', 'chase', 'cluster'] },
@@ -83,7 +83,7 @@
   }
   /* 새벽 reads out a hint once, halfway through */
   function storyRadio(dk) {
-    if (runKind !== 'story' || quiz.hinted || dk.i !== Math.ceil(dk.main / 2)) return;
+    if (runKind !== 'story' || quiz.hinted || dk.i < Math.ceil(dk.main / 2) || dk.i > dk.main) return;   /* halfway, or the next question if a caption was still up */
     quiz.hinted = radio('새벽', CHAPTERS[runMission].hint, 5);
   }
   /* after a chapter run: stars, the next chapter, the scene. Called from quizResult */
@@ -91,11 +91,11 @@
     var i = runMission, ch = CHAPTERS[i], st = win ? chapterStars(sc) : 0, was = save.story.stars[i] || 0;
     save.story.tries[i] = (save.story.tries[i] || 0) + 1;
     if (st > was) save.story.stars[i] = st;
-    if (st && i + 1 > (save.story.open || 0)) save.story.open = Math.min(CHAPTERS.length - 1, i + 1);
+    if (st && i <= (save.story.open || 0) && i + 1 > (save.story.open || 0)) save.story.open = Math.min(CHAPTERS.length - 1, i + 1);
     if (st && ch.last) save.story.done = true;
     storeSave();
     $('res-title').textContent = st ? objJosa(ch.fix) + ' 고쳤다! ' + '★★★'.slice(0, st) : '조금만 더!';
-    $('res-story').textContent = st ? ch.done : !win ? '오 사장: “막내야, 차는 내가 금방 고친다. 다시 가 봐.” (' + failWhy + ')' : '새벽: “괜찮아, 틀린 건 다음에 더 자주 나와. 한 번 더 해 보자.” (10문제 가운데 7문제를 맞히면 다음 장이 열려요)';
+    $('res-story').textContent = st ? ch.done : !win ? '오 사장: “막내야, 차는 내가 금방 고친다. 다시 가 봐.” (' + failWhy + ')' : '새벽: “괜찮아, 틀린 건 다음에 더 자주 나와. 한 번 더 해 보자.” (문제의 70% 이상을 맞히면 다음 장이 열려요)';
     $('res-next').textContent = '다음 장';
     $('res-next').hidden = !(st && !ch.last);
     $('res-ending').hidden = !(st && ch.last);
