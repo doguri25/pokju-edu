@@ -57,6 +57,7 @@
   /* the toast: 「정답!」 or 「아쉬워요」 big in the middle of the road */
   function quizToast(ok, q, again) {
     var el = $('qtoast');
+    $('caption').hidden = true; capHold = 0;   /* a radio hint still showing would sit under the toast */
     $('qtoast-t').textContent = ok ? (quiz.combo >= 3 ? quiz.combo + '개 연속!' : '정답!') : '아쉬워요';
     $('qtoast-s').textContent = ok ? (EDU.arms ? '수리 +20% · 니트로' : '니트로') : q.full + (again ? ' · 끝에 한 번 더' : '');
     el.style.setProperty('--tc', ok ? '#35e08a' : '#ff5468');
