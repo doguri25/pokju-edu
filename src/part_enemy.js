@@ -4,8 +4,20 @@
       var s = glowSprite(0xfff0c0, 1.7, 0); s.position.set(sx, y, -f - 0.15); g.add(s); nightGlows.push(s);
     });
   }
+  /* traffic and pursuers get the same clearcoat paint as the player's cars (graphics upgrade 3): smooth, rounded panels that reflect the sky */
+  var PAINTED = { sedan: 1, civ: 1, taxi: 1, cbus: 1, dump: 1, buggy: 1, tractor: 1 }, GROUNDED = { sedan: 1, civ: 1, taxi: 1, cbus: 1, dump: 1, buggy: 1, tractor: 1, bike: 1, boss: 1 };
+  /* big flat panels (a bus's back, a truck's box) face our headlights square on and would throw them straight back: those get a satin finish */
+  var SATIN = { cbus: 1, dump: 1, tractor: 1 };
+  function enemyPaint(hex, satin) {
+    var m = satin ? new T.MeshPhysicalMaterial({ color: C(hex), roughness: 0.6, metalness: 0.1, clearcoat: 0.2, clearcoatRoughness: 0.4, flatShading: false })
+      : new T.MeshPhysicalMaterial({ color: C(hex), roughness: 0.4, metalness: 0.22, clearcoat: 0.7, clearcoatRoughness: 0.12, flatShading: false });
+    m.envMapIntensity = 0.45; ENV_MATS.push(m);
+    if (typeof envRT !== 'undefined' && envRT) m.envMap = envRT.texture;   /* built after the sky map was baked: take it now */
+    return m;
+  }
   function buildEnemy(type) {
-    var g = new T.Group(), wheels = [], body = std(type === 'civ' ? pick(civColors) : (type === 'cbus' ? pick([0x2f6fd0, 0x3aa655]) : (type === 'taxi' ? pick([0xe8862a, 0xd9dde2]) : pick(enemyReds))), 0.45, 0.1), i;
+    var hex = type === 'civ' ? pick(civColors) : (type === 'cbus' ? pick([0x2f6fd0, 0x3aa655]) : (type === 'taxi' ? pick([0xe8862a, 0xd9dde2]) : pick(enemyReds)));
+    var g = new T.Group(), wheels = [], body = PAINTED[type] ? enemyPaint(hex, SATIN[type]) : std(hex, 0.45, 0.1), i;
     if (type === 'sedan' || type === 'civ' || type === 'taxi') {
       g.add(prof([[-2.2, 0.35], [2.2, 0.35], [2.25, 0.75], [1.9, 0.98], [-1.95, 0.98], [-2.25, 0.8]], 1.8, body, 0.06));
       g.add(prof([[-1.5, 0.98], [1.05, 0.98], [0.35, 1.5], [-1.0, 1.5]], 1.6, M.glass, 0.02));
@@ -132,6 +144,7 @@
       g.userData.hover = d;
     }
     bake(g, wheels); wheels.forEach(function (wh) { bake(wh); }); if (g.userData.hover) bake(g.userData.hover);
+    if (GROUNDED[type]) groundShadow(g);
     return { g: g, type: type, cfg: TYPES[type], body: body, wheels: wheels, hp: 1, x0: 0, phase: 0, flash: 0, fireT: 1, ws: 0, t: 0 };
   }
   var enemies = [], epool = { bike: [], sedan: [], civ: [], dump: [], drone: [], boss: [], buggy: [], kami: [], cbus: [], taxi: [], tractor: [] };

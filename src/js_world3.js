@@ -98,11 +98,48 @@
     if (drop) dropStrips.push(m);
     return m;
   }
-  var noise = noiseTex(1);
+  /* asphalt (graphics upgrade 3): one lane wide and 16 m long per tile. Stone chips in the binder, two darker wheel paths and an oily
+     strip down the middle where cars drip, a few sealed cracks and a repair patch; the colour itself comes from the material */
+  function asphaltTex() {
+    var W = 256, H = 1024, c = document.createElement('canvas'); c.width = W; c.height = H;
+    var g = c.getContext('2d'), i, x, y, v;
+    g.fillStyle = '#c6c6c6'; g.fillRect(0, 0, W, H);
+    for (i = 0; i < 60; i++) {   /* broad mottling */
+      x = rnd(0, W); y = rnd(0, H); v = Math.random() < 0.5 ? 0 : 255;
+      var mg = g.createRadialGradient(x, y, 0, x, y, rnd(30, 90)); mg.addColorStop(0, 'rgba(' + v + ',' + v + ',' + v + ',0.05)'); mg.addColorStop(1, 'rgba(' + v + ',' + v + ',' + v + ',0)');
+      g.fillStyle = mg; g.fillRect(0, 0, W, H);
+    }
+    [[0.28, 0.13], [0.72, 0.13], [0.5, 0.06]].forEach(function (b) {   /* wheel paths and the oily middle */
+      var bx = b[0] * W, lg = g.createLinearGradient(bx - 26, 0, bx + 26, 0);
+      lg.addColorStop(0, 'rgba(0,0,0,0)'); lg.addColorStop(0.5, 'rgba(20,20,24,' + b[1] + ')'); lg.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = lg; g.fillRect(bx - 26, 0, 52, H);
+    });
+    for (i = 0; i < 26; i++) { g.fillStyle = 'rgba(10,10,12,' + rnd(0.06, 0.16) + ')'; g.beginPath(); g.ellipse(W * 0.5 + rnd(-10, 10), rnd(0, H), rnd(3, 9), rnd(5, 16), 0, 0, 6.283); g.fill(); }   /* drips */
+    for (i = 0; i < 9000; i++) {   /* the stone chips */
+      v = Math.random() < 0.55 ? Math.round(rnd(215, 255)) : Math.round(rnd(60, 110));
+      g.fillStyle = 'rgba(' + v + ',' + v + ',' + v + ',' + rnd(0.12, 0.38) + ')';
+      g.fillRect(Math.random() * W, Math.random() * H, rnd(0.8, 2.2), rnd(0.8, 2.2));
+    }
+    x = rnd(30, W - 110); y = rnd(200, H - 360); v = rnd(120, 260);   /* a repair patch */
+    var pw = rnd(60, 100);
+    g.fillStyle = 'rgba(30,30,34,0.13)'; g.fillRect(x, y, pw, v);
+    g.strokeStyle = 'rgba(20,20,22,0.25)'; g.lineWidth = 1.5; g.strokeRect(x, y, pw, v);
+    g.lineCap = 'round';
+    for (i = 0; i < 4; i++) {   /* sealed cracks: dark wandering lines, a little wider where the sealant spread */
+      x = rnd(20, W - 20); y = rnd(60, H - 160);
+      g.strokeStyle = 'rgba(12,12,14,' + rnd(0.3, 0.5) + ')'; g.lineWidth = rnd(1.2, 2.6);
+      g.beginPath(); g.moveTo(x, y);
+      for (var s = 0, n = 6 + (Math.random() * 10 | 0); s < n; s++) { x = clamp(x + rnd(-14, 14), 4, W - 4); y += rnd(6, 16); g.lineTo(x, y); }
+      g.stroke();
+    }
+    var t = new T.CanvasTexture(c);
+    t.wrapS = t.wrapT = T.RepeatWrapping; t.colorSpace = T.SRGBColorSpace; t.anisotropy = 8;
+    return t;
+  }
   var groundTex = noiseTex(0.3); groundTex.repeat.set(90, 33);
   var groundMat = new T.MeshStandardMaterial({ map: groundTex, roughness: 1 });
   strip(0, 1200, -0.06, groundMat, true);
-  var roadTex = noise; roadTex.repeat.set(4, 110);
+  var roadTex = asphaltTex(); roadTex.repeat.set(1, 27.5);   /* each lane strip runs 0..1 across, so one tile is one lane; 440 m / 27.5 = 16 m per tile */
   var roadMat = new T.MeshStandardMaterial({ map: roadTex, roughness: 0.85, shadowSide: T.DoubleSide });
   var roadOutMat = new T.MeshStandardMaterial({ map: roadTex, roughness: 0.85, shadowSide: T.DoubleSide });
   [[-8.1148, -4.2, 1], [-4.2, -0.2052, 0], [-0.2048, 0.2048, 0], [0.2052, 4.2, 0], [4.2, 8.1148, 1]].forEach(function (r) { strip((r[0] + r[1]) / 2, r[1] - r[0], 0, r[2] ? roadOutMat : roadMat, false).castShadow = true; });

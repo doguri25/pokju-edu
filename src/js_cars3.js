@@ -192,6 +192,7 @@
       xs.forEach(function (x) { var m = new T.Group(); m.position.set(x, a[1], -a[2]); g.add(m); list.push(m); });
       car.mounts[k] = list;
     }
+    groundShadow(g);
     car.g = g; car.wheels = wheels; g.visible = false; playerRoot.add(g);
   }
   function equipCar(key, loadout) {

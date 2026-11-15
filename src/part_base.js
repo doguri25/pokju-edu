@@ -12,7 +12,34 @@
     return new T.CanvasTexture(c);
   }
   var texGlow = radialTex([[0, 1], [0.2, 0.6], [0.55, 0.14], [1, 0]]);
-  var texSmoke = radialTex([[0, 0.9], [0.45, 0.55], [0.8, 0.12], [1, 0]]);
+  /* the dark under a car where the road gets no light: keeps cars sitting on the road at night and in a tunnel, where shadows are faint */
+  var aoMat = new T.MeshBasicMaterial({ map: radialTex([[0, 0.85], [0.45, 0.6], [0.8, 0.18], [1, 0]]), color: 0x000000, transparent: true, opacity: 0.62, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+  var aoGeo = new T.PlaneGeometry(1, 1); aoGeo.rotateX(-Math.PI / 2);
+  function groundShadow(g) {
+    /* the footprint of the solid parts only (glow sprites stick out), measured in the car's own space */
+    var b = new T.Box3(), bb = new T.Box3(), inv = new T.Matrix4(), mm = new T.Matrix4(), sz = new T.Vector3(), m;
+    g.updateMatrixWorld(true); inv.copy(g.matrixWorld).invert();
+    g.traverse(function (o) { if (!o.isMesh || !o.geometry) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); bb.copy(o.geometry.boundingBox).applyMatrix4(mm.multiplyMatrices(inv, o.matrixWorld)); b.union(bb); });
+    if (b.isEmpty()) return null;
+    b.getSize(sz); m = new T.Mesh(aoGeo, aoMat);
+    m.scale.set(sz.x * 1.3, 1, sz.z * 1.16); m.position.set((b.min.x + b.max.x) / 2, 0.03, (b.min.z + b.max.z) / 2); m.renderOrder = 1;
+    g.add(m); return m;
+  }
+  /* a smoke puff: a cluster of soft lumps rather than a plain disc, lighter at the top where it catches the light (graphics upgrade 3) */
+  var texSmoke = (function () {
+    var c = document.createElement('canvas'); c.width = c.height = 128;
+    var g = c.getContext('2d'), i;
+    for (i = 0; i < 16; i++) {
+      var a = Math.random() * 6.283, d = Math.random() * 30, x = 64 + Math.cos(a) * d, y = 66 + Math.sin(a) * d * 0.85, r = 18 + Math.random() * 18, l = Math.round(205 + 50 * (1 - y / 128));
+      var rg = g.createRadialGradient(x, y, 0, x, y, r);
+      rg.addColorStop(0, 'rgba(' + l + ',' + l + ',' + l + ',0.5)'); rg.addColorStop(0.55, 'rgba(' + l + ',' + l + ',' + l + ',0.28)'); rg.addColorStop(1, 'rgba(' + l + ',' + l + ',' + l + ',0)');
+      g.fillStyle = rg; g.fillRect(0, 0, 128, 128);
+    }
+    g.globalCompositeOperation = 'destination-in';   /* keep it round overall, so no square edge ever shows */
+    var m = g.createRadialGradient(64, 64, 20, 64, 64, 64); m.addColorStop(0, 'rgba(0,0,0,1)'); m.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = m; g.fillRect(0, 0, 128, 128);
+    return new T.CanvasTexture(c);
+  })();
   function noiseTex(strength) {
     var c = document.createElement('canvas'); c.width = c.height = 256;
     var g = c.getContext('2d');

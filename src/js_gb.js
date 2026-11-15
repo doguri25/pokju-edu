@@ -14,7 +14,7 @@
     crate.active = false; trackM = null; quizOff();
     boss = null; plane.visible = false; bannerT = 0; $('banner').hidden = true; $('caption').hidden = true; capHold = 0; capSeen = {};
     spawnT = 0.3; nextRowDist = dist + 20; droneT = 3; strikeT = 4.5; salvoN = 0; maxX = 9.9; minX = -9.9; workHitT = 0; slowT = 0; timeScale = 1;
-    strikeQ.length = 0; clearHulks(); planeShadow.visible = false; kamiT = 6; sirenT = 0; fireHitT = 0;
+    strikeQ.length = 0; clearHulks(); planeShadow.visible = false; kamiT = 6; sirenT = 0; fireHitT = 0; fx3Clear();
     resetRoad(undefined, mission.road);
   }
   function setCar(key, lo, plain) {
@@ -1244,7 +1244,7 @@
     streakMat.opacity = night * (0.25 + 0.75 * wetK) * 0.85;
     tailPool.material.opacity = (0.25 * night + 0.45 * wetK) * (mode === 'play' || mode === 'demo' ? 1 : 0.6);
     for (i = 0; i < bMats.length; i++) bMats[i][0].emissiveIntensity = night * 0.95;
-    beam.intensity = Math.max(night, tunK) * 4.5; beamPool.material.opacity = Math.max(night, tunK) * 0.5;
+    beam.intensity = Math.max(night, tunK) * 2.6; beamPool.material.opacity = Math.max(night, tunK) * 0.55;   /* lower: a flat panel straight ahead (a bus's back) blew out to white */
     beam.position.z = -car.hl; beamPool.position.z = -car.hl - 13; tailPool.position.z = car.hl + 4;
 
     if (mode === 'demo') updTrailer(dt);
@@ -1336,7 +1336,7 @@
     if (car.blink) { var bph = Math.sin(time * 12) > 0; car.blink[0].visible = bph; car.blink[1].visible = !bph; }
 
     /* scenery scroll; everything beside the road follows the elevation profile */
-    roadTex.offset.y = (dist / 4) % 1; shoulderTex.offset.y = roadTex.offset.y; groundTex.offset.y = (dist / 13.3) % 1;
+    roadTex.offset.y = (dist / 16) % 1; shoulderTex.offset.y = (dist / 4) % 1; groundTex.offset.y = (dist / 13.3) % 1;
     updateStrips();
     for (i = 0; i < loops.length; i++) {
       var lg = loops[i]; lg.position.z = dist % lg.userData.period;
@@ -1640,13 +1640,19 @@
       p.vz += (veff - p.vz) * dt * 1.6 * p.drift; if (p.kind === 'glow') p.vy -= 9 * dt;
       p.s.position.x += p.vx * dt; p.s.position.y += p.vy * dt; p.s.position.z += p.vz * dt;
       p.s.scale.set(s, s, 1); p.s.material.opacity = p.a0 * (1 - t * t);
+      if (p.rs) p.s.material.rotation += p.rs * dt;
     }
     for (i = debris.length - 1; i >= 0; i--) {
       var d = debris[i]; d.life -= dt; p = d.m.position;
       if (d.life <= 0 || p.z > 22) { d.m.visible = false; dpool.push(d); debris.splice(i, 1); continue; }
       d.vy -= 28 * dt; p.x += d.vx * dt; p.y += d.vy * dt; p.z += d.vz * dt;
       d.m.rotation.x += d.rx * dt; d.m.rotation.z += d.rz * dt;
-      if (p.y < 0.15) { p.y = 0.15; d.vy = Math.abs(d.vy) * 0.35; d.vx *= 0.6; d.vz = lerp(d.vz, veff, 0.5); d.rx *= 0.5; d.rz *= 0.5; }
+      /* a burning piece trails fire and smoke while it flies */
+      if (d.burn > 0) { d.burn -= dt; d.trail -= dt; if (d.trail <= 0) { d.trail = 0.05 / Math.max(0.4, fxK); spawnP('glow', p.x, p.y, p.z, 0, 0.5, d.vz * 0.4 + veff * 0.6, 0.28, 0.9, 0.2, Math.random() < 0.5 ? COL.fire : COL.fire2, 0.85, 0.3); if (Math.random() < 0.5) spawnP('smoke', p.x, p.y + 0.2, p.z, 0, 1.2, veff * 0.8, 0.9, 0.5, 1.8, smokeColor(COL.smokeD), 0.45, 0.5); } }
+      if (p.y < 0.15) {
+        if (d.metal && d.vy < -5) sparks(p.x, 0.12, p.z, 4, 6, veff * 0.7);   /* metal scrapes the road */
+        p.y = 0.15; d.vy = Math.abs(d.vy) * 0.35; d.vx *= 0.6; d.vz = lerp(d.vz, veff, 0.5); d.rx *= 0.5; d.rz *= 0.5;
+      }
     }
     for (i = 0; i < rings.length; i++) {
       var r = rings[i]; if (r.life <= 0) continue;
@@ -1671,6 +1677,7 @@
       }
     }
     for (i = 0; i < flashes.length; i++) flashes[i].intensity = Math.max(0, flashes[i].intensity - dt * 22);
+    fx3Step(dt);
 
     /* mission progress, road hints and captions */
     if (on) {
@@ -1797,6 +1804,7 @@
       if (skipBrief) { briefT = 0.001; }
     },
     spawn: function (type, x, z, ws) { return spawnEnemy(type, x, z, ws === undefined ? 0 : ws); },
+    boom: function (x, z, s) { explode(x, 0.8, z, s || 1.5, veff * 0.4, M.dark); },
     startKind: function (kind, carKey, idx, o) {
       var k; selCar = carKey; selKind = kind; if (o) for (k in o) if (cond[k] !== undefined) cond[k] = o[k];
       if (kind === 'ta' || kind === 'race') selTrack = idx || 0; else if (kind === 'mis') selMission = idx || 0; else if (kind === 'story') selChapter = idx || 0;

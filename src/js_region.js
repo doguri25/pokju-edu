@@ -405,6 +405,7 @@
     }
     /* how much the road reflects the sky (graphics upgrade): a wet road strongly, a dry one a little after dark */
     roadRefl = clamp(wetK * 1.05 + cur.night * 0.3, 0, 1) * (1 - cover);
+    if (typeof roadWetU !== 'undefined') roadWetU.value = wetK * (1 - cover) * (1 - tunK);   /* puddles (js_fx3.js) */
     roadMat.roughness = roadOutMat.roughness = 0.85 - 0.6 * roadRefl;
     roadMat.envMapIntensity = roadOutMat.envMapIntensity = roadRefl * 0.85;
     if (cover > 0.01) {
