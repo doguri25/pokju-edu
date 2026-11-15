@@ -379,6 +379,11 @@ body.cine #card { bottom: 9%; }
 .inline { border-color: #8a5cff; background: rgba(124, 92, 255, 0.08); }
 .missions .part { color: var(--cyan); }
 .opt.sel select, .slot select { background: rgba(255, 255, 255, 0.06); color: #fff; border-color: var(--line); }
+/* 1.4: the open list of a drop-down. On Windows (Chrome, Edge) and in Firefox it takes the box's white text but paints its own white
+   background, so the choices could not be read: the list gets a solid dark background of its own */
+select { color-scheme: dark; }
+select option, select optgroup { background-color: var(--solid); color: #fff; }
+select option:checked { background-color: #2c2f55; }
 .pic, .info img { background: #1d2038; }
 .card img { background: #1d2038; }
 .meter b, .hud .bar i { background: var(--grad); }
