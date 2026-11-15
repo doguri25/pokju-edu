@@ -376,7 +376,7 @@
     if (name === 'mode') scrollSel();
   }
   function toMenu() {
-    closeInfo(); mode = 'menu'; tr.on = false; tr.phase = ''; tr.fade = 0; $('card').hidden = true; $('demo').classList.remove('carded'); paused = false; briefT = 0; titleOn = false; document.body.classList.remove('paused');
+    closeInfo(); if (!$('help').hidden) $('help').hidden = true; helpThen = null; autoPauseLater = false; mode = 'menu'; tr.on = false; tr.phase = ''; tr.fade = 0; $('card').hidden = true; $('demo').classList.remove('carded'); paused = false; briefT = 0; titleOn = false; document.body.classList.remove('paused');
     $('pause').hidden = true; $('ending').hidden = true; $('title').hidden = true; $('coach').hidden = true; $('story').hidden = true; setMusic('menu');
     if (runKind === 'tut') runKind = 'mis';
     mission = missionFor(selKind); target = PRESETS[mission.time]; setRegion(mission.region || 'city'); setWeather(mission.weather || 'clear', true); runTA = -1; rolling = false;
@@ -680,7 +680,9 @@
     else if (isKey(e, 'KeyX', 'x') || isKey(e, 'KeyE', 'e') || isKey(e, 'KeyF', 'f')) { if (!e.repeat) useBasic(); e.preventDefault(); }
   });
   window.addEventListener('keyup', function (e) { keySet(e, false); });
-  function autoPause() { if (mode === 'play' && briefT <= 0 && !paused && !player.dead) setPaused(true); }   /* nobody is driving: stop rather than crash unattended */
+  var autoPauseLater = false;
+  function autoPause() { if (mode === 'play' && briefT > 0) { autoPauseLater = true; return; } if (mode === 'play' && !paused && !player.dead) setPaused(true); }
+  window.addEventListener('focus', function () { autoPauseLater = false; });   /* nobody is driving: stop rather than crash unattended */
   window.addEventListener('blur', function () { keys.l = keys.r = keys.u = keys.d = keys.f = false; fireBtn = false; autoPause(); });
   document.addEventListener('visibilitychange', function () { if (document.hidden) autoPause(); });   /* a key released while another window has the focus would otherwise stay down */
   cv.addEventListener('pointerdown', function (e) {
@@ -805,7 +807,7 @@
   $('pause-menu').addEventListener('click', toMenu);
   /* back to the title from anywhere: the pause panel, the result, the menu's home button, or the Home key */
   ['pause-home', 'res-home', 'brand-title'].forEach(function (id) { $(id).addEventListener('click', function () { sfx('click'); showTitle(); }); });
-  window.addEventListener('keydown', function (e) { if (e.key === 'Home' && (mode === 'menu' || paused || mode === 'result') && $('title').hidden) { e.preventDefault(); showTitle(); } });
+  window.addEventListener('keydown', function (e) { if (e.key === 'Home' && !nativeCtl(document.activeElement) && (mode === 'menu' || paused || mode === 'result') && $('title').hidden) { e.preventDefault(); showTitle(); } });
   $('res-ending').addEventListener('click', function () { if (runKind === 'story') storyEnding(); else showEnding(); });
   $('ending-title').addEventListener('click', showTitle);
   $('ending-menu').addEventListener('click', toMenu);
@@ -1209,6 +1211,7 @@
       if (rolling) { player.thr = 0; player.v = car.vmin; player.a = 0; }
       if (briefT <= 0) {
         $('card').hidden = true; $('hud').hidden = false; distStart = dist; sfx('go');
+        if (autoPauseLater) { autoPauseLater = false; if (document.hasFocus && !document.hasFocus()) setTimeout(function () { setPaused(true); }, 0); }   /* the window lost focus during the card */
         if (rolling) { addProp('gate', dist + 6, 0); addProp('gate', dist + mission.n, 0); }
       }
     }

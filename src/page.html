@@ -472,7 +472,7 @@ body.cine #card { bottom: 9%; }
    the strike warning shows over the card; cards and the toast use the whole width they are allowed */
 #pause { z-index: 5; }
 .result.help, .result.info { z-index: 6; }
-body.paused #qtoast, body.paused #coach, body.paused #qbox { visibility: hidden; }
+body.paused #qtoast, body.paused #coach, body.paused #qbox, body.paused #caption { visibility: hidden; }
 #banner { z-index: 4; }
 .qbox:not(.long) { width: max-content; max-width: calc(100vw - 32px); }
 #qtoast { width: max-content; max-width: calc(100vw - 32px); }
@@ -481,7 +481,7 @@ body.paused #qtoast, body.paused #coach, body.paused #qbox { visibility: hidden;
 @media (max-width: 720px) {
   #combo { display: none !important; }   /* the card and the toast already say 「3개 연속」; in the narrow chip it broke the row */
   #qtoast { top: 64%; }                   /* below the question card and its explanation */
-  #coach { top: calc(112px + env(safe-area-inset-top, 0px)); }
+  #coach { top: calc(128px + env(safe-area-inset-top, 0px)); }   /* below the two chips, now the same height */
 }
 /* short screens (a phone on its side): the card goes right under the mirror and gets small, so the gates below it stay in sight */
 @media (max-height: 520px) {
