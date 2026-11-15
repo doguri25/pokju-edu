@@ -12,7 +12,7 @@ export class Hud {
   }
   resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.w = window.innerWidth; this.h = window.innerHeight;
+    this.w = Math.max(1, window.innerWidth || document.documentElement.clientWidth); this.h = Math.max(1, window.innerHeight || document.documentElement.clientHeight);
     this.c.width = this.w * dpr; this.c.height = this.h * dpr;
     this.x.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.portrait = this.h > this.w;

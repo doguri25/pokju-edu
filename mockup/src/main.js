@@ -31,24 +31,40 @@ const rnd = (a, b) => a + Math.random() * (b - a);
 const pick = (a) => a[(Math.random() * a.length) | 0];
 
 async function fontsReady() {
-  const wait = Promise.all([document.fonts.load('400 100px "Black Han Sans"'), document.fonts.load('700 20px "Noto Sans KR"')]).catch(() => {});
+  let wait = Promise.resolve();
+  try { wait = Promise.all([document.fonts.load('400 100px "Black Han Sans"'), document.fonts.load('700 20px "Noto Sans KR"')]).catch(() => {}); } catch (e) {}
   await Promise.race([wait, new Promise((r) => setTimeout(r, 2500))]);
 }
+// some viewers lay the page out at zero size first (a hidden frame); wait until there is something to draw into
+function viewSize() { const e = document.documentElement; return [Math.max(1, window.innerWidth || e.clientWidth), Math.max(1, window.innerHeight || e.clientHeight)]; }
+async function hasSize() {
+  for (let i = 0; i < 100 && !(window.innerWidth > 0 && window.innerHeight > 0); i++) await new Promise((r) => setTimeout(r, 100));
+}
+// anything that goes wrong is shown on the page, instead of leaving it black
+function showError(msg) {
+  let el = document.getElementById('err');
+  if (!el) { el = document.createElement('pre'); el.id = 'err'; document.body.appendChild(el); }
+  el.textContent = '화면을 그리지 못했습니다.\n' + msg;
+}
+window.addEventListener('error', (e) => showError(e.message || String(e)));
+window.addEventListener('unhandledrejection', (e) => showError((e.reason && (e.reason.stack || e.reason.message)) || String(e.reason)));
 
 async function main() {
-  await fontsReady();
+  await Promise.all([fontsReady(), hasSize()]);
+  const probe = document.createElement('canvas');
+  if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) throw new Error('이 기기나 앱에서는 WebGL(3D 그래픽)을 켤 수 없습니다.');
 
   /* ---------- renderer ---------- */
   const canvas = document.getElementById('gl');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(...viewSize());
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.82;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.3, 1200);
+  const camera = new THREE.PerspectiveCamera(58, viewSize()[0] / viewSize()[1], 0.3, 1200);
 
   /* ---------- palette: a sunset after rain ---------- */
   const skyLow = C('#ff9466'), skyMid = C('#b4507e'), skyHigh = C('#191c48');
@@ -245,11 +261,12 @@ async function main() {
   });
 
   /* ---------- post-processing: bloom, then the grade pass (GLSL), then tone mapping ---------- */
-  const rt = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, { type: THREE.HalfFloatType, samples: 4 });
+  const gl2 = renderer.capabilities.isWebGL2;
+  const rt = new THREE.WebGLRenderTarget(...viewSize(), { type: gl2 ? THREE.HalfFloatType : THREE.UnsignedByteType, samples: gl2 ? 4 : 0 });
   const composer = new EffectComposer(renderer, rt);
   composer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.6, 0.45, 1.0);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(...viewSize()), 0.6, 0.45, 1.0);
   composer.addPass(bloom);
   const grade = new ShaderPass({
     uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uSpeed: { value: 0 }, uFlash: { value: 0 }, uFlashColor: { value: C('#35e08a') } },
@@ -260,11 +277,17 @@ async function main() {
   composer.addPass(new OutputPass());
 
   const hud = new Hud(document.getElementById('hud'));
-  window.addEventListener('resize', () => {
-    const w = window.innerWidth, h = window.innerHeight;
+  let lastW = 0, lastH = 0;
+  function fit() {
+    const [w, h] = viewSize();
+    if (w === lastW && h === lastH) return;
+    lastW = w; lastH = h;
     renderer.setSize(w, h); composer.setSize(w, h); bloom.setSize(w, h);
     camera.aspect = w / h; camera.updateProjectionMatrix(); hud.resize();
-  });
+  }
+  window.addEventListener('resize', fit);
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(document.documentElement);
+  fit();
 
   /* ---------- the demo run ---------- */
   const QUESTIONS = [[7, 8], [6, 9], [8, 7], [9, 4], [7, 6], [8, 8], [6, 7], [9, 9], [7, 9], [8, 6]];
@@ -405,9 +428,12 @@ async function main() {
   let last = performance.now(), frozen = false;
   function frame(now) {
     const dt = Math.min((now - last) / 1000, 1 / 20); last = now;
-    if (!frozen) step(dt);
-    composer.render();
-    hud.draw(st);
+    fit();   // cheap when nothing changed; catches frames that resize without a resize event
+    try {
+      if (!frozen) step(dt);
+      composer.render();
+      hud.draw(st);
+    } catch (e) { showError(e.stack || e.message); return; }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
@@ -420,4 +446,4 @@ async function main() {
   };
 }
 
-main();
+main().catch((e) => showError(e.stack || e.message || String(e)));
