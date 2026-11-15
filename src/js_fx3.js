@@ -6,7 +6,7 @@
      - puddles: on a wet road some patches turn into mirrors, and the whole surface darkens */
 
   /* fireballs: a small pool, reused */
-  var FB_N = 8, fireballs = [], fbGeo = new T.IcosahedronGeometry(1, 3);
+  var FB_N = 16, fireballs = [], fbGeo = new T.IcosahedronGeometry(1, 3);
   fbGeo.boundingSphere = new T.Sphere(new T.Vector3(), 1.5);
   for (var fbi = 0; fbi < FB_N; fbi++) {
     var fbm = new T.ShaderMaterial({ uniforms: { uT: { value: 0 }, uSeed: { value: fbi * 7.31 }, uHeat: { value: 1 }, uNight: { value: 0 } },
@@ -14,9 +14,15 @@
     var fbMesh = new T.Mesh(fbGeo, fbm); fbMesh.visible = false; scene.add(fbMesh);
     fireballs.push({ m: fbMesh, u: fbm.uniforms, life: 0, max: 1, size: 1, vy: 0, vz: 0, delay: 0 });
   }
-  var fbNext = 0;
+  /* a free slot, or else the one that matters least now (smallest and most burnt out): a cluster strike's big blast
+     is never taken over by the small ones going off in the same frame */
+  function fbSlot() {
+    var best = null, bw = 1e9, i, f, w;
+    for (i = 0; i < FB_N; i++) { f = fireballs[i]; if (f.life <= 0) return f; w = f.size * f.life / f.max; if (w < bw) { bw = w; best = f; } }
+    return best;
+  }
   function fireball(x, y, z, size, vz, delay, heat) {
-    var f = fireballs[fbNext++ % FB_N];
+    var f = fbSlot();
     f.m.position.set(x, y, z); f.life = f.max = 0.75 + 0.35 * Math.min(size, 2); f.size = size; f.vy = 1.6 + size; f.vz = vz; f.delay = delay || 0;
     f.u.uSeed.value = Math.random() * 50; f.u.uHeat.value = heat === undefined ? 1 : heat; f.u.uT.value = 0;
     f.m.rotation.set(rnd(0, 6), rnd(0, 6), 0); f.m.scale.setScalar(0.01); f.m.visible = f.delay <= 0;
@@ -126,6 +132,10 @@
   }
   function fx3Clear() {
     var i;
+    for (i = 0; i < parts.length; i++) { parts[i].s.visible = false; ppool[parts[i].kind].push(parts[i]); } parts.length = 0;
+    for (i = 0; i < debris.length; i++) { debris[i].m.visible = false; dpool.push(debris[i]); } debris.length = 0;
+    for (i = 0; i < rings.length; i++) { rings[i].life = 0; rings[i].m.visible = false; }
+    for (i = 0; i < flashes.length; i++) flashes[i].intensity = 0;
     for (i = 0; i < FB_N; i++) { fireballs[i].life = 0; fireballs[i].m.visible = false; }
     while (spk.length) spkFree.push(spk.pop());
     spkGeo.setDrawRange(0, 0); spkMesh.visible = false;

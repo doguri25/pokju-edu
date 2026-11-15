@@ -64,7 +64,7 @@
     spawnP('glow', x, y, z, 0, 0, vzRel, 0.22, 3 * size, 11 * size, COL.white, 1);
     /* the fireball itself (js_fx3.js): a big one and a smaller, later one off to the side */
     fireball(x, y + 0.6 * size, z, 1.25 * size, vzRel, 0, 1);
-    fireball(x + rnd(-0.9, 0.9) * size, y + 1.1 * size, z + rnd(-0.8, 0.8) * size, 0.8 * size, vzRel, 0.09, 0.8);
+    if (size >= 1) fireball(x + rnd(-0.9, 0.9) * size, y + 1.1 * size, z + rnd(-0.8, 0.8) * size, 0.8 * size, vzRel, 0.09, 0.8);   /* the second, later ball only for the big ones */
     for (i = 0; i < 6; i++) spawnP('glow', x + rnd(-0.6, 0.6) * size, y + rnd(0, 0.8), z + rnd(-0.6, 0.6) * size, rnd(-7, 7), rnd(2, 9), vzRel + rnd(-6, 6), rnd(0.35, 0.6), rnd(2.2, 3.6) * size, 0.4, i % 2 ? COL.fire : COL.fire2, 0.85);
     for (i = 0; i < 7; i++) spawnP('smoke', x + rnd(-0.8, 0.8) * size, y + rnd(0.6, 1.6), z + rnd(-0.8, 0.8) * size, rnd(-2, 2), rnd(2.5, 5.5), vzRel + rnd(-2, 2), rnd(1.1, 1.8), 1.8 * size, 6 * size, smokeColor(COL.smokeD), 0.72, 0.6);
     sparks(x, y + 0.4, z, 34 * Math.min(size, 2), 17, vzRel);
