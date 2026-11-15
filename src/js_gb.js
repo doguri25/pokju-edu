@@ -1,5 +1,5 @@
   /* ---------- flow ---------- */
-  var aimed = true, menuTab = 'car', steerWant = null, humpT = 0, gearT = 0, susp = { f: 0, vf: 0, r: 0, vr: 0, ro: 0, vro: 0, q: [] }, picks = 0, hunts = 0, huntT = 0, stepT = 0, stepDir = 0, burstT = 0, hornT = 0, padBasic = false, nextCargoD = 0, rushLimit = 0, hitGlowK = 0, helpThen = null, touchUI = false;
+  var holdX = null, aimed = true, menuTab = 'car', steerWant = null, humpT = 0, gearT = 0, susp = { f: 0, vf: 0, r: 0, vr: 0, ro: 0, vro: 0, q: [] }, picks = 0, hunts = 0, huntT = 0, stepT = 0, stepDir = 0, burstT = 0, hornT = 0, padBasic = false, nextCargoD = 0, rushLimit = 0, hitGlowK = 0, helpThen = null, touchUI = false;
   function clearAll() {
     var i;
     clearRivals(); smokeT = 0; jamT = 0; chaseT = rnd(7, 11); susp.f = susp.vf = susp.r = susp.vr = susp.ro = susp.vro = 0; susp.q.length = 0; farmT = 4; zoneNow = ''; zoneSeen = ''; humpT = 0; picks = 0; hunts = 0; huntT = 3; dmgLog = {}; stepT = 0; burstT = 0; hornT = 0; dmgReset(); nextCargoD = dist + 70; gearT = 1;
@@ -66,7 +66,7 @@
     clearAll();
     setCar(carKey, isDemo ? CARS[carKey].loadout : loadoutOf(carKey), isDemo);
     var car = CARS[carKey];
-    player.x = fromRun ? keepX : 2; player.vx = 0; failWhy = ''; tPlay = 0; kills = 0; civHits = 0; score = 0; scrap = 0; hitFlash = 0; distStart = dist; steerWant = null; apWant = player.x; apT = 0; survLevel = 1;
+    player.x = fromRun ? keepX : 2; player.vx = 0; holdX = null; failWhy = ''; tPlay = 0; kills = 0; civHits = 0; score = 0; scrap = 0; hitFlash = 0; distStart = dist; steerWant = null; apWant = player.x; apT = 0; survLevel = 1;
     if (fromRun && !rolling) { player.v = clamp(keepV, car.vmin, car.vmax); player.thr = keepThr; }
     crateT = isDemo ? 5 : 9; paused = false; titleOn = false; document.body.classList.remove('paused');
     if (mission.goal === 'boss') { boss = spawnEnemy('boss', 0, -130, 0); boss.hpMax = mission.bossHp || boss.cfg.hp; boss.hp = boss.hpMax; }
@@ -1288,6 +1288,12 @@
       else if (keys.l || keys.r) want = player.x + (keys.r ? 6 : 0) - (keys.l ? 6 : 0);
       else if (padX) want = player.x + padX * 6;
       else if (steerWant !== null) want = steerWant;
+      /* lane keeping (1.3): with no steering input the car holds the place where the player left it, so a gust or a nudge is steered out
+         by itself instead of carrying the car off (it read as the car "going right on its own" on the windy coast). Pushed far (a ram,
+         a quick step) the new place is kept */
+      var steering = autoT > 0 || keys.l || keys.r || padX || steerWant !== null || stepT > 0;
+      if (steering || holdX === null || Math.abs(holdX - player.x) > 2.4) holdX = player.x;
+      else want = holdX;
     } else if (mode === 'demo') {
       want = apWant; player.thr = lerp(player.thr, apThr, 1 - Math.exp(-dt * 3));
     } else if (mode === 'menu') {

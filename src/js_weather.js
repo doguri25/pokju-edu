@@ -92,7 +92,7 @@
     gust.next -= dt;
     if (gust.t > 0) gust.t -= dt;
     else if (gust.next <= 0) { gust.t = rnd(1.2, 2.2); gust.next = gust.t + rnd(3.5, 7.5); gust.dir = region.wind && Math.random() < 0.75 ? 1 : (Math.random() < 0.5 ? -1 : 1); }
-    gust.v = lerp(gust.v, gust.t > 0 ? gust.dir * 3.2 * k : 0, 1 - Math.exp(-dt * 2.5));
+    gust.v = lerp(gust.v, gust.t > 0 ? gust.dir * 2.0 * k : 0, 1 - Math.exp(-dt * 2.5));   /* learning edition: a gentler shove (was 3.2) */
     if (Math.abs(gust.v) > 0.8 && Math.random() < dt * 34) {
       i = gust.v > 0 ? 1 : -1;
       spawnP('glow', px - i * rnd(2, 18), rnd(0.3, 3), rnd(-50, 6), i * rnd(20, 30), rnd(1, 3), veff * 0.5, 0.4, 0.3, 0.12, smokeColor(COL.white), 0.55, 0.3);
