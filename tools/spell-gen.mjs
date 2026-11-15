@@ -46,6 +46,8 @@ function rules(name) {
   ].join('\n');
 }
 
+/* streamed: a reasoning answer can take a minute or more, and a connection that carries nothing for that long is cut on the way
+   (502 "upstream request failed"); streamed, the reasoning keeps it busy */
 async function chat(messages, opts = {}) {
   let last = '';
   for (let attempt = 0; attempt < 6; attempt++) {
@@ -53,14 +55,27 @@ async function chat(messages, opts = {}) {
       const r = await fetch(API, {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + (KEY || 'proxy-injected'), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: MODEL, messages, response_format: { type: 'json_object' }, temperature: opts.temperature ?? 0.4, ...(opts.effort ? { reasoning_effort: opts.effort, max_tokens: 24000 } : {}) })
+        body: JSON.stringify({ model: MODEL, messages, stream: true, response_format: { type: 'json_object' }, temperature: opts.temperature ?? 0.4, ...(opts.effort ? { reasoning_effort: opts.effort, max_tokens: 24000 } : {}) })
       });
       if (r.status === 429 || r.status >= 500) { last = r.status + ' ' + (await r.text()).slice(0, 160); await new Promise(res => setTimeout(res, 5000 * (attempt + 1))); continue; }   /* busy or rate-limited: wait longer each time */
-      const j = await r.json();
-      if (!r.ok) throw new Error(r.status + ' ' + JSON.stringify(j).slice(0, 300));
-      const c = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
-      if (!c) throw new Error('empty answer (' + (j.choices && j.choices[0] && j.choices[0].finish_reason) + ')');   /* reasoning ran out of room: ask again */
-      return JSON.parse(c);
+      if (!r.ok) throw new Error(r.status + ' ' + (await r.text()).slice(0, 300));
+      const rd = r.body.getReader(), dec = new TextDecoder();
+      let buf = '', content = '', finish = '';
+      for (;;) {
+        const { value, done } = await rd.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
+          if (!line.startsWith('data:')) continue;
+          const d = line.slice(5).trim();
+          if (d === '[DONE]') continue;
+          try { const c = JSON.parse(d).choices[0]; if (c.delta && c.delta.content) content += c.delta.content; if (c.finish_reason) finish = c.finish_reason; } catch (e) {}
+        }
+      }
+      if (!content) throw new Error('empty answer (' + (finish || 'cut off') + ')');   /* reasoning ran out of room or the stream broke: ask again */
+      return JSON.parse(content);
     } catch (e) {
       last = String(e.message || e);
       if (attempt === 5) throw e;
@@ -96,7 +111,13 @@ async function gen() {
   const jobs = bank.sets.map(s => ({ key: s.key, name: s.name, tip: s.tip, old: s.items, n: ADD_OLD, isNew: false }))
     .concat(NEW_SETS.map(s => ({ ...s, old: [], n: ADD_NEW, isNew: true })));
   const seen = new Set(bank.sets.flatMap(s => s.items.map(i => norm(i.q))));
-  const sets = await pool(jobs, 3, async (job) => {
+  /* a set already made in an earlier run is kept (the run can be stopped and started again); the file is saved after every set */
+  const prev = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : null, doneSets = {};
+  if (prev && prev.gen === 2) prev.sets.forEach(s => { if (s.items.filter(i => !i.form.length).length >= s.want) { doneSets[s.key] = s; s.items.forEach(i => { if (!i.form.length) seen.add(norm(i.q)); }); } });
+  const out = { gen: 2, model: MODEL, made: new Date().toISOString(), sets: [] };
+  const save = () => { fs.mkdirSync(path.dirname(OUT), { recursive: true }); out.sets.sort((x, y) => jobs.findIndex(j => j.key === x.key) - jobs.findIndex(j => j.key === y.key)); fs.writeFileSync(OUT, JSON.stringify(out, null, 1)); };
+  Object.values(doneSets).forEach(s => out.sets.push(s));
+  const sets = await pool(jobs.filter(j => !doneSets[j.key]), 3, async (job) => {
     const examples = (job.old.length ? job.old : bank.sets[0].items.slice(0, 3)).map(i => JSON.stringify(i)).join('\n');
     const kept = [], want = job.n + EXTRA;
     /* seven at a time (a long reasoning request is cut off on the way); each batch is told what is already there */
@@ -118,17 +139,18 @@ async function gen() {
       console.log(job.key, 'batch', batch, '+' + items.length, new Date().toISOString().slice(11, 19));
     }
     console.log(job.key, 'made', kept.length, 'form ok', kept.filter(i => !i.form.length).length);
-    return { key: job.key, name: job.name, tip: job.tip, isNew: job.isNew, want: job.n, items: kept };
+    const done = { key: job.key, name: job.name, tip: job.tip, isNew: job.isNew, want: job.n, items: kept };
+    out.sets.push(done); save();
+    return done;
   });
-  fs.mkdirSync(path.dirname(OUT), { recursive: true });
-  fs.writeFileSync(OUT, JSON.stringify({ model: MODEL, made: new Date().toISOString(), sets }, null, 1));
-  console.log('wrote', path.relative(ROOT, OUT));
+  save();
+  console.log('wrote', path.relative(ROOT, OUT), out.sets.length, 'sets');
 }
 
 function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 async function check() {
   const doc = JSON.parse(fs.readFileSync(OUT, 'utf8'));
-  const all = doc.sets.flatMap(s => s.items.filter(it => !it.form.length).map(it => ({ s, it })));
+  const all = doc.sets.flatMap(s => s.items.filter(it => !it.form.length && !it.review).map(it => ({ s, it })));   /* already checked ones are kept */
   let done = 0;
   await pool(all, 8, async ({ s, it }) => {
     /* 2. blind pick */
@@ -147,7 +169,7 @@ async function check() {
     it.blind = { pick: String(blind.pick || ''), reason: String(blind.reason || '').slice(0, 200), ok: String(blind.pick || '').replace(/[「」]/g, '').trim() === it.a };
     it.review = { answer_ok: !!rev.answer_ok, wrong_ok: !!rev.wrong_ok, why_ok: !!rev.why_ok, kid_ok: !!rev.kid_ok, note: String(rev.note || '').slice(0, 200) };
     it.pass = it.blind.ok && it.review.answer_ok && it.review.wrong_ok && it.review.why_ok && it.review.kid_ok;
-    if (++done % 10 === 0) console.log('checked', done, '/', all.length, new Date().toISOString().slice(11, 19));
+    if (++done % 10 === 0) { fs.writeFileSync(OUT, JSON.stringify(doc, null, 1)); console.log('checked', done, '/', all.length, new Date().toISOString().slice(11, 19)); }
   });
   doc.checked = new Date().toISOString();
   fs.writeFileSync(OUT, JSON.stringify(doc, null, 1));
