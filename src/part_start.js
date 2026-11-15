@@ -18,9 +18,14 @@
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = T.PCFShadowMap;   /* r187 removed the soft variant */
   /* r155+ dropped the old light units: lights read about π times dimmer and point lights fall off by an inverse power of distance.
-     Every light the game makes goes through legacy(), which turns physical fall-off off, and is scaled back by π while a frame renders */
+     The r128 fall-off is put back into the light shader, and every light the game makes goes through legacy() so it is scaled back by π while a frame renders */
+  (function () {
+    var src = T.ShaderChunk.lights_pars_begin, a = src.indexOf('float distanceFalloff = 1.0 / max( pow( lightDistance, decayExponent ), 0.01 );'), b = src.indexOf('return distanceFalloff;', a);
+    if (a < 0 || b < 0) { console.warn('legacy light fall-off: shader chunk not found'); return; }
+    T.ShaderChunk.lights_pars_begin = src.slice(0, a) + 'if ( cutoffDistance > 0.0 && decayExponent > 0.0 ) return pow( saturate( - lightDistance / cutoffDistance + 1.0 ), decayExponent );\n\treturn 1.0;' + src.slice(b + 'return distanceFalloff;'.length);
+  })();
   var LEGACY_LIGHTS = [];
-  function legacy(l) { if (l.decay !== undefined) l.decay = 0; LEGACY_LIGHTS.push(l); return l; }
+  function legacy(l) { LEGACY_LIGHTS.push(l); return l; }
   var rawRender = renderer.render.bind(renderer);
   renderer.render = function (s, c) {
     var i, n = LEGACY_LIGHTS.length;

@@ -912,7 +912,7 @@
   var camFov = 55, baseFov = 55, offX = 0, offY = 0, vw = 1, vh = 1;
   function resize() {
     vw = window.innerWidth; vh = window.innerHeight;
-    renderer.setSize(vw, vh, false);
+    renderer.setSize(vw, vh, false); postResize(vw, vh);
     camera.aspect = vw / vh;
     var need = 2 * Math.atan(Math.tan(T.MathUtils.degToRad(31)) / camera.aspect) * 180 / Math.PI;
     baseFov = clamp(Math.max(55, need), 55, 96);
@@ -1173,6 +1173,7 @@
     if (pcFire) { setText('fire-cd', fireIn ? '발사 중' : (vw <= 720 ? 'Z' : '누르는 동안 · Z')); if (hudCache.firing !== fireIn) { hudCache.firing = fireIn; $('btn-fire').classList.toggle('on', fireIn); } }
     if (hudCache.bcool !== (bcd > 0)) { hudCache.bcool = bcd > 0; $('btn-basic').classList.toggle('cool', hudCache.bcool); $('btn-basic').setAttribute('aria-disabled', hudCache.bcool ? 'true' : 'false'); }
     setStyle('basic-bar', 'transform', 'scaleX(' + (1 - bcd / BASICS[car.basic].cd).toFixed(2) + ')');
+    hudMock(car);
   }
 
   /* suspension: a bump lifts the front axle at once and the rear axle one wheelbase later, so the body pitches the way a real car does over a hump; a pothole does the same downward and tips the car to one side */
@@ -1234,7 +1235,7 @@
     for (i = 0; i < nightGlows.length; i++) nightGlows[i].material.opacity = night * 0.9;
     for (i = 0; i < headGlows.length; i++) headGlows[i].material.opacity = 0.3 + night * 0.7;
     poolMat.opacity = night * 0.34;
-    for (i = 0; i < bMats.length; i++) bMats[i][0].emissiveIntensity = night * 1.25;
+    for (i = 0; i < bMats.length; i++) bMats[i][0].emissiveIntensity = night * 0.95;
     beam.intensity = Math.max(night, tunK) * 4.5; beamPool.material.opacity = Math.max(night, tunK) * 0.5;
     beam.position.z = -car.hl; beamPool.position.z = -car.hl - 13;
 
@@ -1765,7 +1766,7 @@
     if (slowCd > 0) slowCd -= rdt;
     if (eventCd > 0) eventCd -= rdt;
     musicTick(); padStart();
-    if (!document.hidden && rdt > 0) { if (!paused) step(rdt * timeScale); if (carQ.length && mode === 'menu') carThumbStep(); mirrorPass(); renderer.render(scene, camera); gfxTick(rdt); }
+    if (!document.hidden && rdt > 0) { if (!paused) step(rdt * timeScale); if (carQ.length && mode === 'menu') carThumbStep(); mirrorPass(); renderFrame(); gfxTick(rdt); }
     requestAnimationFrame(frame);
   }
   /* one-off: merge the static parts of everything that loops or stands by the road */
@@ -1823,7 +1824,7 @@
       return r;
     },
     sim: function (sec) { for (var i = 0; i < sec * 60; i++) { if (eventCd > 0) eventCd -= 1 / 60; if (slowCd > 0) slowCd -= 1 / 60; step(1 / 60); } },
-    run: function (sec) { this.sim(sec); renderer.render(scene, camera); },
+    run: function (sec) { this.sim(sec); renderFrame(); },
     skill: useSkill, strike: airStrike, keys: keys, player: player, cut: cutTo, save: save, crate: crate,
     spawnCrate: spawnCrate, item: function (i) { applyItem(i); }, equip: function (slot, w) { var lo = loadoutOf(selCar); lo[slot] = w; setCar(selCar, lo); },
     state: function () {

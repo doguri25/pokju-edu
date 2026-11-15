@@ -4,44 +4,77 @@
   var QG_EDGE = 8.6, QG_COL = ['#1967d2', '#8e24aa', '#e8710a', '#00897b'];   /* blue, purple, orange, teal: no colour hints at right or wrong */
   var quiz = { deck: null, q: null, phase: 'off', t: 0, d: 0, g: null, combo: 0, best: 0, ok: 0 };
   var gateSets = {};
+  /* an answer panel, as in the mockup: a glossy plate in the gate's colour, a white rim, a big number or word with a soft shadow */
+  function shadeHex(hex, k) {
+    var n = parseInt(hex.slice(1), 16), f = function (v) { return Math.round(k >= 0 ? v + (255 - v) * k : v * (1 + k)); };
+    return 'rgb(' + f(n >> 16) + ',' + f((n >> 8) & 255) + ',' + f(n & 255) + ')';
+  }
   function gateTex(c, text, col, dim) {
-    var x = c.getContext('2d'), w = c.width, h = c.height;
+    var x = c.getContext('2d'), w = c.width, h = c.height, r = h * 0.16, m = h * 0.045;
     x.clearRect(0, 0, w, h);
-    x.globalAlpha = dim ? 0.35 : 1;
-    x.fillStyle = col; x.beginPath(); x.moveTo(16, 4); x.arcTo(w - 4, 4, w - 4, h - 4, 18); x.arcTo(w - 4, h - 4, 4, h - 4, 18); x.arcTo(4, h - 4, 4, 4, 18); x.arcTo(4, 4, w - 4, 4, 18); x.fill();
-    x.lineWidth = 8; x.strokeStyle = '#ffffff'; x.stroke();
-    var fs = Math.round(h * 0.66), font = function (z) { return '900 ' + z + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif'; };
+    x.globalAlpha = dim ? 0.3 : 1;
+    var g = x.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, shadeHex(col, 0.28)); g.addColorStop(0.55, col); g.addColorStop(1, shadeHex(col, -0.35));
+    x.fillStyle = g; x.beginPath(); x.roundRect(m, m, w - 2 * m, h - 2 * m, r); x.fill();
+    x.lineWidth = h * 0.04; x.strokeStyle = 'rgba(255,255,255,0.95)'; x.stroke();
+    var gl = x.createLinearGradient(0, m, 0, h * 0.5);
+    gl.addColorStop(0, 'rgba(255,255,255,0.45)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = gl; x.beginPath(); x.roundRect(m * 2.2, m * 2.2, w - m * 4.4, h * 0.4, r * 0.75); x.fill();
+    var fs = Math.round(h * 0.64), font = function (z) { return '400 ' + z + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif'; };
     x.font = font(fs); var tw = x.measureText(String(text)).width;
-    if (tw > w - 30) { fs = Math.floor(fs * (w - 30) / tw); x.font = font(fs); }   /* a word like 가르치셨다 shrinks to fit the sign */
-    x.fillStyle = '#ffffff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(text), w / 2, h * 0.55);
+    if (tw > w - h * 0.24) { fs = Math.floor(fs * (w - h * 0.24) / tw); x.font = font(fs); }   /* a word like 가르치셨다 shrinks to fit the sign */
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.shadowColor = 'rgba(0,0,0,0.45)'; x.shadowBlur = h * 0.07; x.shadowOffsetY = h * 0.03;
+    x.fillStyle = '#ffffff'; x.fillText(String(text), w / 2, h * 0.55);
+    x.shadowColor = 'transparent'; x.shadowBlur = 0; x.shadowOffsetY = 0;
     x.globalAlpha = 1;
   }
-  /* one set of gates per option count, built the first time it is needed */
+  /* light-painted chevrons on the lane in front of a gate, one texture for every gate; its offset makes them flow forward */
+  var chevTex = (function () {
+    var c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    var x = c.getContext('2d');
+    x.strokeStyle = '#ffffff'; x.lineWidth = 16; x.lineCap = 'round'; x.lineJoin = 'round';
+    x.shadowColor = '#ffffff'; x.shadowBlur = 10;
+    x.beginPath(); x.moveTo(18, 92); x.lineTo(64, 44); x.lineTo(110, 92); x.stroke();
+    var t = new T.CanvasTexture(c); t.wrapS = T.ClampToEdgeWrapping; t.wrapT = T.RepeatWrapping; t.repeat.set(1, 5);
+    return t;
+  })();
+  /* one set of gates per option count, built the first time it is needed. Each answer has its own neon frame in its colour */
   function gateSet(n) {
     if (gateSets[n]) return gateSets[n];
-    var g = new T.Group(), W = 2 * QG_EDGE / n, s = { g: g, n: n, W: W, banners: [], i: 0 }, i;
-    var postM = std(0xf2f2ee, 0.5), barM = std(0x2a2d34, 0.6);
-    for (i = 0; i <= n; i++) {
-      var bxX = -QG_EDGE + W * i;
-      g.add(cyl(0.16, 0.16, 4.6, 8, postM, bxX, 2.3, 0));
-      g.add(bx(0.95, 0.6, 0.05, std(parseInt(QG_COL[Math.min(i, n - 1)].slice(1), 16), 0.6), bxX + (i === n ? -0.5 : 0.5), 4.3, 0));   /* the little flag on each post */
-    }
-    g.add(bx(2 * QG_EDGE + 0.4, 0.22, 0.22, barM, 0, 4.62, 0));
+    var g = new T.Group(), W = 2 * QG_EDGE / n, s = { g: g, n: n, W: W, banners: [], neon: [], i: 0 }, i;
+    var tube = new T.BoxGeometry(1, 1, 1);
     for (i = 0; i < n; i++) {
-      var c = document.createElement('canvas'); c.width = 256; c.height = 128;
-      var tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace;
-      var bw = Math.min(W - 0.5, 4.2), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
-      m.position.set(-QG_EDGE + W * (i + 0.5), 3.3, 0.05); g.add(m);
-      var lane = new T.Mesh(new T.PlaneGeometry(W - 0.5, 3), new T.MeshBasicMaterial({ color: C(parseInt(QG_COL[i].slice(1), 16)), transparent: true, opacity: 0.32, depthWrite: false }));
-      lane.rotation.x = -Math.PI / 2; lane.position.set(m.position.x, 0.03, 0); g.add(lane);
-      s.banners.push({ c: c, tx: tx, m: m });
+      var cx = -QG_EDGE + W * (i + 0.5), hw = W / 2 - 0.3, base = C(parseInt(QG_COL[i].slice(1), 16));
+      var nm = new T.MeshBasicMaterial({ color: base.clone() });
+      s.neon.push({ m: nm, base: base });
+      [cx - hw, cx + hw].forEach(function (px) { var p = new T.Mesh(tube, nm); p.scale.set(0.2, 5.0, 0.2); p.position.set(px, 2.5, 0); g.add(p); });
+      var bar = new T.Mesh(tube, nm); bar.scale.set(2 * hw + 0.2, 0.2, 0.2); bar.position.set(cx, 5.0, 0); g.add(bar);
+      var halo = glowSprite(parseInt(QG_COL[i].slice(1), 16), Math.min(W * 1.4, 10), 0.35); halo.material.fog = false; halo.position.set(cx, 3.3, -0.4); g.add(halo);
+      var c = document.createElement('canvas'); c.width = 512; c.height = 256;
+      var tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = 4;
+      var bw = Math.min(W - 0.7, 4.4), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
+      m.position.set(cx, 3.3, 0.05); g.add(m);
+      var am = new T.MeshBasicMaterial({ map: chevTex, color: base.clone().multiplyScalar(1.4), transparent: true, opacity: 0.85, depthWrite: false, blending: T.AdditiveBlending });
+      var lane = new T.Mesh(new T.PlaneGeometry(Math.min(W - 1.2, 6), 24), am);
+      lane.rotation.x = -Math.PI / 2; lane.position.set(cx, 0.04, 12); g.add(lane);
+      s.banners.push({ c: c, tx: tx, m: m, arrows: am });
     }
     g.visible = false; scene.add(g);
     return (gateSets[n] = s);
   }
+  /* neon brightness: brighter than white so the bloom picks it up, more so at night, and a flare when an answer is taken */
+  var gatePulse = 0;
+  function gateGlow(dt) {
+    var s = quiz.g; if (!s) return;
+    gatePulse = Math.max(0, gatePulse - dt * 2);
+    var k = 1.5 + 1.8 * cur.night + gatePulse * 2.5;
+    s.neon.forEach(function (o) { o.m.color.copy(o.base).multiplyScalar(k); });
+    chevTex.offset.y = (chevTex.offset.y - dt * 1.6) % 1;
+  }
   function gatesShow(q) {
     var s = gateSet(q.n);
-    s.banners.forEach(function (b, i) { gateTex(b.c, q.opts[i], QG_COL[i], false); b.tx.needsUpdate = true; b.m.material.opacity = 1; });
+    s.banners.forEach(function (b, i) { gateTex(b.c, q.opts[i], QG_COL[i], false); b.tx.needsUpdate = true; b.m.material.opacity = 1; b.arrows.opacity = 0.85; });
     s.g.visible = true; quiz.g = s;
   }
   function gatesDim(q, picked) {
@@ -103,7 +136,7 @@
       var col = parseInt(QG_COL[i].slice(1), 16), b = new T.Group(), x = -QG_EDGE + W * (i + 0.5);
       var ball = new T.Mesh(new T.SphereGeometry(0.85, 16, 12), std(col, 0.35)); ball.scale.y = 1.15; ball.position.y = 3.3; ball.castShadow = true; b.add(ball);
       b.add(cyl(0.02, 0.02, 1.3, 4, M.white, 0, 2.05, 0));
-      var c = document.createElement('canvas'); c.width = 256; c.height = 128;
+      var c = document.createElement('canvas'); c.width = 512; c.height = 256;
       var tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace;
       var bw = Math.min(W - 0.6, 3.2), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
       m.position.y = 1.35; b.add(m);
@@ -136,8 +169,9 @@
   }
   function quizJudge(picked, px, car) {
     var dk = quiz.deck, q = quiz.q, first = dk.i <= dk.main, ok = quizAnswer(dk, q, picked);
+    postFlash(ok);
     if (first) factRecord(save.quiz.facts, q.key, ok);
-    if (quiz.g) gatesDim(q, picked);
+    if (quiz.g) { gatesDim(q, picked); quiz.g.banners.forEach(function (b) { b.arrows.opacity = 0; }); gatePulse = 1; }
     if (quiz.b) quiz.b.items.forEach(function (it, i) { if (i !== q.slot) { gateTex(it.c, q.opts[i], QG_COL[i], true); it.tx.needsUpdate = true; } if (i === picked) { it.popped = true; it.g.visible = false; spawnRing(it.x, quiz.b.g.position.z, 5, 0.35, veff, i === q.slot ? COL.cyan : COL.orange); } });
     if (ok) {
       if (first) quiz.ok++; quiz.combo++; quiz.best = Math.max(quiz.best, quiz.combo); score += 100 + 20 * Math.min(quiz.combo - 1, 5); scrap += 20;
@@ -149,11 +183,13 @@
       quiz.combo = 0; player.v = Math.max(car.vmin, player.v * 0.7); sfx('thud');
       qboxSet(first ? '정답은 이거예요 · 끝에 한 번 더 나와요' : '정답은 이거예요', q.full, 'no', null, q.why);
     }
+    quizToast(ok, q, first);
     quiz.phase = 'show'; quiz.t = ok ? 1.6 : (q.why ? 3.6 : 2.4);   /* a spelling miss shows why, which takes longer to read */
   }
   function quizStep(dt, px, car) {
     if (quiz.phase === 'off' || mode !== 'play' || briefT > 0 || player.dead) return;
     var dk = quiz.deck, q = quiz.q, bs = quiz.b;
+    gateGlow(dt);
     if (quiz.g) {
       var gz = quiz.g.g.position.z = dist - quiz.d, fade = clamp(-(gz + 2) / 12, 0, 1);   /* the signs fade as the car passes under, so they never fill the screen */
       quiz.g.banners.forEach(function (b) { b.m.material.opacity = fade; });
@@ -172,7 +208,7 @@
       q = quiz.q = quizNext(dk);
       if (!q) { quiz.phase = 'done'; finish(true); return; }
       var think = quiz.pace.t + QUIZ_TYPES[q.type].think;
-      quiz.phase = 'ask'; quiz.shotPick = -1;
+      quiz.phase = 'ask'; quiz.shotPick = -1; quiz.askAt = performance.now(); quiz.askLen = think * 1000;
       if (quiz.g) { quiz.g.g.visible = false; quiz.g = null; }
       if (quiz.b) { quiz.b.g.visible = false; quiz.b = null; }
       if (quiz.style === 'shoot') { balloonsShow(q); quiz.hold = think; }

@@ -2,41 +2,34 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@500;700&display=swap">
 <style>
 /* Layout: full-bleed live 3D scene where the car always drives up the screen. A tabbed selection panel sits on the left (bottom sheet on phones) with the view shifted so the car stays visible; the chosen car's detail opens under its own card. In play (top-down, low chase or driver's-seat view, switchable) small HUD chips hug the edges (objective with a run clock, status, speed with a centred gain/loss gauge) and a throttle lever sits at the left hand; no guidance text is drawn over the road. The trailer shows large title cards between letterbox bars. */
+/* Look (graphics upgrade, after the mockup): one dark glass look over the 3D scene. Navy glass panels with a faint top sheen,
+   white type, a cyan → violet → magenta gradient for primary actions and gauges, green and red only for right and wrong */
 :root {
-  --page: #9fd3f2;
-  --chip: rgba(255, 255, 255, 0.94);
-  --chip-fg: #202124;
-  --chip-sub: #4d5156;
-  --accent: #1967d2;
+  --page: #0b0c18;
+  --chip: rgba(14, 16, 30, 0.66);
+  --chip-fg: #ffffff;
+  --chip-sub: rgba(200, 215, 255, 0.78);
+  --accent: #7c5cff;
   --accent-fg: #ffffff;
-  --accent-soft: #e3edfc;
-  --danger: #c5221f;
+  --accent-soft: rgba(124, 92, 255, 0.24);
+  --danger: #ff5468;
   --danger-fg: #ffffff;
-  --ok: #188038;
-  --track: rgba(32, 33, 36, 0.14);
-  --line: rgba(32, 33, 36, 0.2);
-  --hit: rgba(214, 40, 30, 0.55);
+  --ok: #35e08a;
+  --track: rgba(255, 255, 255, 0.12);
+  --line: rgba(255, 255, 255, 0.16);
+  --hit: rgba(255, 64, 90, 0.55);
   --cine: #000000;
   --cine-fg: #ffffff;
-  --scrim: rgba(0, 0, 0, 0.55);
-  --warn: #b06000;
-  --solid: #ffffff;
+  --scrim: rgba(4, 5, 14, 0.62);
+  --warn: #ffb52e;
+  --solid: #15172b;
+  --cyan: #22e1ff;
+  --magenta: #ff2d95;
+  --grad: linear-gradient(90deg, #22e1ff, #8a5cff 55%, #ff2d95);
+  --sheen: linear-gradient(to bottom, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02) 40%, rgba(255, 255, 255, 0));
   --display: 'Black Han Sans', 'Noto Sans KR', system-ui, sans-serif;
   --body: 'Noto Sans KR', system-ui, sans-serif;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --page: #0d1330; --chip: rgba(28, 30, 36, 0.93); --chip-fg: #e8eaed; --chip-sub: #c4c7cc;
-    --accent: #8ab4f8; --accent-fg: #14161a; --accent-soft: #263652; --danger: #f28b82; --danger-fg: #14161a;
-    --ok: #81c995; --track: rgba(232, 234, 237, 0.18); --line: rgba(232, 234, 237, 0.26);
-    --hit: rgba(242, 80, 70, 0.5); --warn: #fdd663; --solid: #1c1e24; color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --page: #0d1330; --chip: rgba(28, 30, 36, 0.93); --chip-fg: #e8eaed; --chip-sub: #c4c7cc;
-  --accent: #8ab4f8; --accent-fg: #14161a; --accent-soft: #263652; --danger: #f28b82; --danger-fg: #14161a;
-  --ok: #81c995; --track: rgba(232, 234, 237, 0.18); --line: rgba(232, 234, 237, 0.26);
-  --hit: rgba(242, 80, 70, 0.5); --warn: #fdd663; --solid: #1c1e24; color-scheme: dark;
+  color-scheme: dark;
 }
 html, body { height: 100%; touch-action: manipulation; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { background: var(--page); color: var(--chip-fg); font-family: var(--body); overflow: hidden; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
@@ -367,6 +360,111 @@ body.cine #card { bottom: 9%; }
   .panel:not(.result) { padding: 14px; gap: 8px; }
   .card { padding: 6px 8px; }
 }
+/* ---------- mockup look: glass panels, gradient actions, the HUD pieces from the mockup ---------- */
+.chip, .panel, .qbox, #coach { background-color: var(--chip); background-image: var(--sheen); border: 1px solid var(--line); -webkit-backdrop-filter: blur(10px) saturate(1.2); backdrop-filter: blur(10px) saturate(1.2); box-shadow: 0 8px 26px rgba(0, 0, 0, 0.38); }
+.panel { background-color: rgba(12, 14, 28, 0.84); border-radius: 22px; }
+.result.help, .result.info { background-color: var(--solid); }
+.tag { background: rgba(255, 255, 255, 0.12); color: var(--chip-sub); border-radius: 8px; }
+.tag.rev { background: var(--danger); color: #fff; }
+.go, #title .go, .result .btns button.primary { background: var(--grad); color: #fff; border: 0; box-shadow: 0 6px 22px rgba(138, 92, 255, 0.45); }
+.go[disabled] { background: var(--track); box-shadow: none; }
+.foot .ghost, #title .ghost { background: rgba(255, 255, 255, 0.08); border: 1px solid var(--line); color: #fff; }
+.tabs button[aria-selected="true"] { background: rgba(255, 255, 255, 0.16); color: #fff; box-shadow: none; }
+#menu .kind[aria-checked="true"] { background: var(--grad); }
+.card[aria-pressed="true"], .mis[aria-pressed="true"], .kind[aria-checked="true"] { border-color: #8a5cff; background: var(--accent-soft); }
+.inline { border-color: #8a5cff; background: rgba(124, 92, 255, 0.08); }
+.missions .part { color: var(--cyan); }
+.opt.sel select, .slot select { background: rgba(255, 255, 255, 0.06); color: #fff; border-color: var(--line); }
+.pic, .info img { background: #1d2038; }
+.card img { background: #1d2038; }
+.meter b, .hud .bar i { background: var(--grad); }
+.brand b { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#title b { background: linear-gradient(90deg, #ffffff, #bfe9ff 40%, #ff9ad0); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 4px 18px rgba(138, 92, 255, 0.55)); text-shadow: none; }
+#title .kind { background: rgba(14, 16, 30, 0.66); border: 1px solid var(--line); color: #fff; }
+
+/* question card */
+.qbox { border-radius: 22px; padding: 10px 26px 16px; min-width: 300px; box-sizing: border-box; background-color: rgba(10, 12, 26, 0.72); }
+.qbox #q-kick { font-size: 13px; color: var(--chip-sub); }
+.qbox b { font-size: 50px; color: #fff; }
+.qbox.ok b, .qbox.ok #q-kick { color: #5dffaa; }
+.qbox.no b, .qbox.no #q-kick { color: #ff7a8a; }
+.qopts span { border-radius: 12px; padding: 3px 16px; min-width: 76px; box-sizing: border-box; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3); }
+.qbox.ok .qopts span, .qbox.no .qopts span { opacity: 0.3; }
+#q-timer { display: block; height: 4px; margin: 10px 4px 0; border-radius: 2px; background: var(--track); overflow: hidden; }
+#q-timer i { display: block; height: 100%; width: 0; background: var(--grad); border-radius: 2px; }
+.qbox.ok #q-timer, .qbox.no #q-timer { visibility: hidden; }
+
+/* top left: the run and its ten questions */
+.obj .head b { font-size: 20px; }
+#obj-dots { display: flex; gap: 5px; margin-top: 4px; }
+#obj-dots i { width: 12px; height: 12px; border-radius: 50%; background: rgba(255, 255, 255, 0.16); flex: none; }
+#obj-dots i.ok { background: var(--ok); } #obj-dots i.no { background: var(--danger); }
+#obj-dots i.cur { background: #fff; animation: dotpulse 1s ease-in-out infinite; }
+@keyframes dotpulse { 50% { opacity: 0.45; } }
+.obj.dots #obj-bar { display: none; } .obj.dots .bar { display: none; }
+
+/* top right: durability in segments, score, combo */
+.status .bar.hp { position: relative; height: 10px; border-radius: 3px; }
+.status .bar.hp i { background: linear-gradient(90deg, #35e08a, #22e1ff); border-radius: 3px; }
+.status .bar.hp i.s2 { background: var(--warn); } .status .bar.hp i.s3 { background: var(--danger); }
+.status .bar.hp::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(100% / 12 - 3px), rgba(14, 16, 30, 0.95) calc(100% / 12 - 3px) calc(100% / 12)); }
+#score { font-family: var(--display); font-weight: 400; font-size: 20px; }
+#combo { display: inline-block; padding: 2px 12px; border-radius: 13px; background: linear-gradient(90deg, #ffb52e, #ff2d95); font-family: var(--display); font-size: 14px; color: #fff; animation: combopulse 0.5s ease-in-out infinite alternate; }
+@keyframes combopulse { to { transform: scale(1.06); } }
+.status button { background: rgba(255, 255, 255, 0.08); color: #fff; border-color: var(--line); }
+
+/* bottom left: lever and a round speed gauge */
+.lever { border-radius: 34px; }
+.lever .fill { background: linear-gradient(to top, #22e1ff, #8a5cff); }
+.lever .knob { background: #fff; box-shadow: 0 0 14px rgba(138, 92, 255, 0.8); }
+.speed { position: relative; width: 150px; height: 150px; border-radius: 50%; padding: 0; align-items: center; justify-content: center; }
+#spd-gauge { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.speed .top { position: relative; flex-direction: column; align-items: center; gap: 0; margin-top: 4px; }
+.speed .top b { font-size: 36px; }
+.speed .top span { font-size: 11px; }
+#spd-target { display: none; }
+.speed .sub2 { display: none; }
+.speed .sub2.info { display: flex; position: relative; justify-content: center; margin-top: 2px; }
+.speed .sub2.info #fire-state { display: none; }
+.speed .sub2 #grade { flex: none; text-align: center; font-size: 10px; }
+
+/* bottom right: round attack and skill buttons; the ring fills as the cooldown runs out (--p from 0 to 1) */
+.acts { display: grid; grid-template-columns: auto auto; grid-template-areas: '. basic' 'fire skill'; align-items: end; justify-items: center; gap: 8px 10px; }
+#btn-basic { grid-area: basic; } #btn-fire { grid-area: fire; } #btn-skill { grid-area: skill; }
+.skill { --p: 1; --ring: #8a5cff; width: 104px; height: 104px; border-radius: 50%; border: 0; padding: 8px; align-items: center; justify-content: center; text-align: center; gap: 0; }
+.skill::before { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: conic-gradient(var(--ring) calc(var(--p) * 1turn), rgba(255, 255, 255, 0.12) 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px)); filter: drop-shadow(0 0 6px var(--ring)); }
+.skill .kicker { display: none; }
+.skill i { display: none; }
+.skill #skill-name, .skill #basic-name, .skill #fire-name { font-family: var(--display); font-weight: 400; font-size: 16px; white-space: normal; word-break: keep-all; line-height: 1.15; }
+.skill .sub { font-size: 11px; }
+.skill.basic { --ring: #35e08a; width: 80px; height: 80px; padding: 6px; }
+.skill.basic #basic-name { font-size: 13px; }
+.skill.fire { --ring: #ff5468; width: 76px; height: 76px; }
+.skill.fire.on { background-color: rgba(255, 84, 104, 0.35); }
+.skill.cool, .skill.basic.cool { border: 0; }
+
+/* the right/wrong toast in the middle of the road */
+#qtoast { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; text-align: center; z-index: 3; opacity: 0; }
+#qtoast b { display: block; font-family: var(--display); font-weight: 400; font-size: 72px; line-height: 1; color: #fff; text-shadow: 0 0 30px var(--tc, #35e08a), 0 4px 14px rgba(0, 0, 0, 0.5); }
+#qtoast span { display: block; margin-top: 10px; font-family: var(--display); font-size: 20px; color: var(--tc, #35e08a); text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6); }
+#qtoast.show { animation: toast 1.5s cubic-bezier(.2, .9, .3, 1.2) forwards; }
+@keyframes toast { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); } 12% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); } 22% { transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, calc(-50% - 26px)) scale(1); } }
+@keyframes toaststill { 0%, 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #qtoast.show { animation-name: toaststill; } #combo, #obj-dots i.cur { animation: none; } }
+
+@media (max-width: 720px) {
+  .qbox { min-width: 0; width: calc(100vw - 32px); padding: 8px 14px 12px; }
+  .qbox b { font-size: 38px; }
+  .speed { width: 118px; height: 118px; }
+  .speed .top b { font-size: 28px; }
+  .skill { width: 88px; height: 88px; }
+  .skill.basic { width: 66px; height: 66px; }
+  .skill.fire { width: 62px; height: 62px; }
+  .skill #skill-name { font-size: 14px; } .skill.basic #basic-name { font-size: 11px; }
+  #qtoast b { font-size: 54px; } #qtoast span { font-size: 16px; }
+  #obj-dots { gap: 3px; } #obj-dots i { width: 9px; height: 9px; }
+  .hud .chip.obj, .hud .chip.status { height: auto; min-height: 84px; }
+}
 </style>
 
 <canvas id="c" aria-label="무장 차량이 도로를 위쪽으로 달리며 적 차량과 드론을 상대하는 3D 전투 장면"></canvas>
@@ -382,19 +480,21 @@ body.cine #card { bottom: 9%; }
 <div id="fade"></div>
 <div id="caption" class="chip" hidden aria-live="polite"></div>
 
-<div class="qbox" id="qbox" hidden aria-live="polite"><span id="q-kick"></span><b id="q-text"></b><p id="q-why" hidden></p><div class="qopts" id="q-opts"></div></div>
+<div class="qbox" id="qbox" hidden aria-live="polite"><span id="q-kick"></span><b id="q-text"></b><p id="q-why" hidden></p><div class="qopts" id="q-opts"></div><span id="q-timer"><i id="q-timer-bar"></i></span></div>
+<div id="qtoast" aria-live="polite"><b id="qtoast-t"></b><span id="qtoast-s"></span></div>
 <div class="hud" id="hud" hidden>
   <div class="row">
     <div class="chip obj">
       <div class="head"><span class="tag" id="tag-time">낮</span><span class="tag" id="tag-dir">정주행</span><b id="obj-title">외곽 소탕</b></div>
       <div class="clock"><b id="clock">0:00.0</b><span class="sub" id="clock-best"></span></div>
       <div class="sub" id="obj-text">폭주 차량 격파 0 / 20</div>
+      <div id="obj-dots" hidden></div>
       <div class="bar"><i id="obj-bar"></i></div>
     </div>
     <div class="chip status">
       <div class="line"><b id="car-name">레이저</b><span class="sub" id="hp-text">100 / 100</span></div>
       <div class="bar hp"><i id="hp-bar"></i></div>
-      <div class="line sub"><span>점수 <b id="score">0</b></span><span>고철 <b id="scrap">0</b></span></div>
+      <div class="line sub"><span>점수 <b id="score">0</b></span><span id="combo" hidden></span><span>고철 <b id="scrap">0</b></span></div>
       <div class="line"><button type="button" id="btn-cam" aria-label="시점 바꾸기">추격 뷰</button><button type="button" id="btn-exit">일시정지</button></div>
       <div class="sub buffs" id="buffs"></div>
     </div>
@@ -406,7 +506,7 @@ body.cine #card { bottom: 9%; }
       <div class="track" id="lever-track"><i class="fill" id="lever-fill"></i><i class="knob" id="lever-knob"></i></div>
       <span>감속</span>
     </div>
-      <div class="chip speed"><div class="top"><b id="spd">100</b><span>km/h</span><span id="spd-target">목표 100</span></div><div class="sub2"><span>감속</span><i class="acc" role="img" aria-label="가감속 게이지"><i id="acc-dn"></i><i id="acc-up"></i></i><span>가속</span></div><div class="sub2 info"><span class="tag" id="fire-state">발사 대기</span><span id="grade">평지</span></div></div>
+      <div class="chip speed"><canvas id="spd-gauge" width="300" height="300" aria-hidden="true"></canvas><div class="top"><b id="spd">100</b><span>km/h</span><span id="spd-target">목표 100</span></div><div class="sub2"><span>감속</span><i class="acc" role="img" aria-label="가감속 게이지"><i id="acc-dn"></i><i id="acc-up"></i></i><span>가속</span></div><div class="sub2 info"><span class="tag" id="fire-state">발사 대기</span><span id="grade">평지</span></div></div>
     </div>
     <div class="acts">
       <button type="button" class="chip skill basic fire" id="btn-fire" aria-label="공격: 누르고 있는 동안 발사" hidden><span class="kicker">공격</span><span id="fire-name">사격</span><span class="sub" id="fire-cd">누르는 동안 · Z</span></button>
@@ -417,7 +517,7 @@ body.cine #card { bottom: 9%; }
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.8</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><b>폭주 구구단</b><span>준비 중 0.9</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
     <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false">아이템</button>

@@ -4,31 +4,7 @@
     uNight: { value: 0 }, uCloud: { value: 0.3 }, uTime: { value: 0 }, uDim: { value: 1 } };
   var skyDome = new T.Mesh(new T.SphereGeometry(480, 32, 16), new T.ShaderMaterial({ uniforms: skyU, side: T.BackSide, depthWrite: false, depthTest: false, fog: false,
     vertexShader: 'varying vec3 vDir;\nvoid main() {\n\tvDir = position;\n\tgl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4( position, 1.0 );\n}',
-    fragmentShader: [
-      'uniform vec3 uTop; uniform vec3 uHor; uniform vec3 uSun; uniform vec3 uSunCol; uniform vec3 uDark; uniform float uNight; uniform float uCloud; uniform float uTime; uniform float uDim;',
-      'varying vec3 vDir;',
-      'float hash( vec2 p ) { return fract( sin( dot( p, vec2( 127.1, 311.7 ) ) ) * 43758.5453 ); }',
-      'float noise( vec2 p ) { vec2 i = floor( p ), f = fract( p ); f = f * f * ( 3.0 - 2.0 * f ); return mix( mix( hash( i ), hash( i + vec2( 1.0, 0.0 ) ), f.x ), mix( hash( i + vec2( 0.0, 1.0 ) ), hash( i + vec2( 1.0, 1.0 ) ), f.x ), f.y ); }',
-      'void main() {',
-      '\tvec3 d = normalize( vDir );',
-      '\tfloat h = clamp( d.y, 0.0, 1.0 );',
-      '\tvec3 col = mix( uHor, uTop, pow( h, 0.55 ) );',
-      '\tfloat sd = max( dot( d, normalize( uSun ) ), 0.0 );',
-      '\tcol += uSunCol * ( pow( sd, 900.0 ) * 1.5 + pow( sd, 30.0 ) * 0.26 + pow( sd, 5.0 ) * 0.1 );',
-      '\tif ( uNight > 0.5 && d.y > 0.02 ) {',
-      '\t\tvec2 sp = d.xz / ( d.y + 0.35 ) * 70.0; float s = hash( floor( sp ) ); vec2 sf = fract( sp ) - 0.5;',
-      '\t\tfloat star = step( 0.955, s ) * smoothstep( 0.22, 0.03, length( sf ) );',
-      '\t\tcol += vec3( star ) * smoothstep( 0.5, 1.0, uNight ) * ( 0.55 + 0.45 * sin( uTime * 2.0 + s * 40.0 ) ) * smoothstep( 0.02, 0.25, d.y ) * ( 1.0 - uCloud );',
-      '\t}',
-      '\tif ( d.y > 0.0 ) {',
-      '\t\tvec2 cp = d.xz / ( d.y + 0.12 ) * 1.6 + vec2( uTime * 0.012, uTime * 0.004 );',
-      '\t\tfloat n = noise( cp ) * 0.55 + noise( cp * 2.3 + 7.1 ) * 0.3 + noise( cp * 5.1 + 3.3 ) * 0.15;',
-      '\t\tfloat c = smoothstep( 0.82 - uCloud * 0.75, 1.12 - uCloud * 0.75, n ) * smoothstep( 0.0, 0.18, d.y );',
-      '\t\tvec3 cc = mix( uHor, vec3( 1.0 ), 0.55 - 0.45 * uNight ) * ( 1.0 - 0.35 * uCloud ) + uSunCol * pow( sd, 6.0 ) * 0.22;',
-      '\t\tcol = mix( col, cc, c * ( 0.55 + 0.4 * uCloud ) );',
-      '\t}',
-      '\tgl_FragColor = vec4( mix( uDark, col, uDim ), 1.0 );',
-      '}'].join('\n') }));
+    fragmentShader: GLSL_SKY_FRAG }));   /* src/shaders/sky.frag */
   skyDome.renderOrder = -100; skyDome.frustumCulled = false; scene.add(skyDome);
   function updSky() {
     var W = weather, g;
@@ -44,7 +20,7 @@
   }
 
   /* ---------- graphics quality: three levels; 「자동」 starts high and steps down when frames take too long ---------- */
-  var GFX = { high: { pr: 2, shadow: true, fx: 1, map: 2048, mir: 2 }, mid: { pr: 1.5, shadow: true, fx: 0.7, map: 1024, mir: 3 }, low: { pr: 1, shadow: false, fx: 0.45, map: 1024, mir: 3 } }, gfxNow = 'high', gfxAcc = 0, gfxN = 0, fxK = 1, mirEvery = 2;
+  var GFX = { high: { pr: 2, shadow: true, fx: 1, map: 2048, mir: 2, post: 1 }, mid: { pr: 1.5, shadow: true, fx: 0.7, map: 1024, mir: 3, post: 0.8 }, low: { pr: 1, shadow: false, fx: 0.45, map: 1024, mir: 3, post: 0 } }, gfxNow = 'high', gfxAcc = 0, gfxN = 0, fxK = 1, mirEvery = 2;
   /* 「자동」 starts one step down on a phone-sized or touch screen: those are the devices where the full setting costs frames */
   function gfxStart() { var small = Math.min(window.innerWidth, window.innerHeight) <= 520 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches); return small ? 'mid' : 'high'; }
   function applyGfx(k) {

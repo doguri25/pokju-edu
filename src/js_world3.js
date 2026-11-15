@@ -161,6 +161,25 @@
     return [wall, wall, roof, roof, wall, wall];
   });
   var neonColors = [0xff3d8b, 0x2de2ff, 0xffd23d, 0x7dff6a];
+  /* neon shop signs (graphics upgrade, after the mockup): glowing Hangul on a dark plate, drawn with Canvas2D.
+     By day they read as signboards; at dusk and night postLights() drives them brighter than white so the bloom catches them */
+  var SIGN_TEXT = [['전설 카센터', '#2de2ff'], ['한울 분식', '#ffd23d'], ['구구단 학원', '#ff3d8b'], ['24시 편의점', '#7dff6a'], ['마성 전자', '#ff4d6d'],
+    ['노래방', '#b04dff'], ['맞춤법 서점', '#2de2ff'], ['한울 약국', '#7dff6a'], ['떡볶이', '#ff3d8b'], ['PC방', '#ffd23d']];
+  var NEON_SIGNS = [];
+  var signMats = SIGN_TEXT.map(function (t) {
+    var c = document.createElement('canvas'); c.width = 512; c.height = 160;
+    var x = c.getContext('2d');
+    x.fillStyle = 'rgba(12,10,22,0.94)'; x.beginPath(); x.roundRect(6, 6, 500, 148, 24); x.fill();
+    x.lineWidth = 6; x.strokeStyle = t[1]; x.shadowColor = t[1]; x.shadowBlur = 22; x.stroke();
+    x.font = '400 88px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    var tw = x.measureText(t[0]).width; if (tw > 460) x.font = '400 ' + Math.floor(88 * 460 / tw) + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif';
+    for (var i = 0; i < 3; i++) { x.shadowBlur = 28 - i * 10; x.fillStyle = i === 2 ? '#ffffff' : t[1]; x.fillText(t[0], 256, 86); }
+    var tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = 4;
+    var m = new T.MeshBasicMaterial({ map: tx, transparent: true });
+    NEON_SIGNS.push({ m: m, base: new T.Color(1, 1, 1), day: 1, night: 1.7 });
+    return m;
+  });
+  var stripMats = neonColors.map(function (hex) { var m = new T.MeshBasicMaterial({ color: C(hex) }); NEON_SIGNS.push({ m: m, base: C(hex), day: 1, night: 3 }); return m; });
   var scenery = [];
   function makeBuilding(side, z) {
     var w = rnd(9, 15), h = rnd(7, 24), d = rnd(9, 16);
@@ -174,12 +193,16 @@
     }
     var m = shadowed(new T.Mesh(g, pick(bMats)));
     m.position.set(side * (17.5 + w / 2 + rnd(0, 7)), h / 2, z); m.userData.baseY = h / 2;
-    if (Math.random() < 0.45) {
-      var col = pick(neonColors);
-      var sign = new T.Mesh(new T.BoxGeometry(0.3, rnd(1.2, 2.2), rnd(3, 5)), new T.MeshBasicMaterial({ color: C(col) }));
-      sign.position.set(-side * (w / 2 + 0.2), -h / 2 + rnd(4, Math.min(h - 1.5, 8)), rnd(-d / 4, d / 4));
+    if (Math.random() < 0.6) {
+      var si = (Math.random() * SIGN_TEXT.length) | 0, sw = Math.min(rnd(5, 7), d - 1);
+      var sign = new T.Mesh(new T.PlaneGeometry(sw, sw * 0.31), signMats[si]);
+      sign.position.set(-side * (w / 2 + 0.06), -h / 2 + rnd(4, Math.min(h - 1.5, 9)), rnd(-d / 5, d / 5)); sign.rotation.y = -side * Math.PI / 2;
       m.add(sign);
-      var ng = glowSprite(col, 9, 0); ng.position.copy(sign.position); ng.position.x -= side * 0.6; m.add(ng); nightGlows.push(ng);
+      var ng = glowSprite(parseInt(SIGN_TEXT[si][1].slice(1), 16), 9, 0); ng.position.copy(sign.position); ng.position.x -= side * 0.8; m.add(ng); nightGlows.push(ng);
+    }
+    if (Math.random() < 0.35) {   /* a neon strip up the corner that faces the road */
+      var strip = new T.Mesh(new T.BoxGeometry(0.16, h * 0.9, 0.16), pick(stripMats));
+      strip.position.set(-side * (w / 2 + 0.08), 0, (Math.random() < 0.5 ? -1 : 1) * (d / 2 - 0.1)); m.add(strip);
     }
     scene.add(m); scenery.push(m);
   }
