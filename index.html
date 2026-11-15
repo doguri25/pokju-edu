@@ -391,14 +391,15 @@ body.cine #card { bottom: 9%; }
 #title .kind { background: rgba(14, 16, 30, 0.66); border: 1px solid var(--line); color: #fff; }
 
 /* question card */
-.qbox { top: max(calc(var(--mb, 0px) + 4px), 118px); border-radius: 22px; padding: 10px 26px 16px; min-width: 300px; box-sizing: border-box; background-color: rgba(10, 12, 26, 0.72); }
+.qbox { top: max(calc(var(--mb, 0px) + 4px), 118px); border-radius: 20px; padding: 6px 24px 10px; min-width: 300px; box-sizing: border-box; background-color: rgba(10, 12, 26, 0.72); }
 .qbox #q-kick { font-size: 13px; color: var(--chip-sub); }
-.qbox b { font-size: 50px; color: #fff; }
+.qbox b { font-size: 44px; color: #fff; }
 .qbox.ok b, .qbox.ok #q-kick { color: #5dffaa; }
 .qbox.no b, .qbox.no #q-kick { color: #ff7a8a; }
-.qopts span { border-radius: 12px; padding: 3px 16px; min-width: 76px; box-sizing: border-box; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3); }
+/* the answers are on the gates (or balloons) themselves, so the card shows only the question: more of the road stays in view */
+.qbox .qopts { display: none !important; }
 .qbox.ok .qopts span, .qbox.no .qopts span { opacity: 0.3; }
-#q-timer { display: block; height: 4px; margin: 10px 4px 0; border-radius: 2px; background: var(--track); overflow: hidden; }
+#q-timer { display: block; height: 4px; margin: 6px 4px 0; border-radius: 2px; background: var(--track); overflow: hidden; }
 #q-timer i { display: block; height: 100%; width: 0; background: var(--grad); border-radius: 2px; }
 .qbox.ok #q-timer, .qbox.no #q-timer { visibility: hidden; }
 
@@ -461,8 +462,9 @@ body.cine #card { bottom: 9%; }
 @media (prefers-reduced-motion: reduce) { #qtoast.show { animation-name: toaststill; } #combo, #obj-dots i.cur { animation: none; } }
 
 @media (max-width: 720px) {
-  .qbox { top: max(calc(var(--mb, 0px) + 4px), 150px); min-width: 0; width: calc(100vw - 32px); padding: 8px 14px 12px; }
-  .qbox b { font-size: 38px; }
+  .qbox { top: max(calc(var(--mb, 0px) + 4px), 150px); min-width: 0; width: auto; max-width: calc(100vw - 32px); padding: 5px 18px 9px; }
+  .qbox b { font-size: 34px; }
+  .qbox.long { width: calc(100vw - 32px); }
   .speed { width: 118px; height: 118px; }
   .speed .top b { font-size: 28px; }
   .skill { width: 88px; height: 88px; }
