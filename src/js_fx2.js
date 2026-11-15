@@ -22,6 +22,10 @@
     var bloomSize = bloom.setSize.bind(bloom);
     bloom.setSize = function (w, h) { var k = Math.min(1, 1920 / Math.max(1, w)); bloomSize(Math.round(w * k), Math.round(h * k)); };
     composer.addPass(bloom);
+    /* a pixel that is not a number (NaN) or infinite, from any shader on any graphics chip, would be blurred by the bloom over the whole
+       screen and black it out: the glow only ever takes in real colours (1.4) */
+    var hp = bloom.materialHighPassFilter, hpFrom = 'vec4 texel = texture2D( tDiffuse, vUv );';
+    if (hp.fragmentShader.indexOf(hpFrom) >= 0) { hp.fragmentShader = hp.fragmentShader.replace(hpFrom, hpFrom + '\n\t\t\tif ( any( isnan( texel ) ) || any( isinf( texel ) ) ) texel = vec4( 0.0 );'); hp.needsUpdate = true; }
     var grade = new ShaderPass({
       uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uSpeed: { value: 0 }, uFlash: { value: 0 }, uFlashColor: { value: new T.Color(0.2, 0.9, 0.55) }, uNight: { value: 0 }, uDusk: { value: 0 }, uRain: { value: 0 }, uAspect: { value: 1 } },
       vertexShader: 'varying vec2 vUv;\nvoid main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
@@ -51,7 +55,42 @@
     if (envRT) envRT.dispose();
     envRT = rt;
   }
-  renderer.domElement.addEventListener('webglcontextrestored', function () { envKey = ''; envT = 0; });
+  /* ---------- the graphics chip gave up (WebGL context lost, learning edition 1.4) ----------
+     A tablet or laptop that runs short of graphics memory, or whose driver resets in a heavy moment (a blast, the effects of a gate),
+     takes the 3D picture away: the screen went black behind the panels and stayed black while the car drove on unseen. Now the run
+     pauses and says so. When the browser gives the picture back, everything is redrawn one quality step lower (the same load would
+     only stop it again); if it does not come back, a reload starts the game at a lighter setting (gfxBoot, js_polish.js) */
+  var glLost = false, glLostAt = 0, glLossN = 0, glNoteEnd = 0;
+  try { glLossN = +sessionStorage.getItem('pokju-gl-lost') || 0; } catch (e) {}
+  function glNote(txt, reload) {
+    var el = $('glnote'), pz = $('pause'), inPanel = mode === 'play' && !pz.hidden;
+    /* in a paused run it sits in the pause panel above its buttons (on a short screen a floating note covered them); elsewhere at the bottom */
+    if (inPanel && el.parentNode !== pz) pz.insertBefore(el, pz.querySelector('.btns')); else if (!inPanel && el.parentNode !== document.body) document.body.appendChild(el);
+    el.classList.toggle('inpanel', inPanel);
+    $('glnote-text').textContent = txt; $('glnote-reload').hidden = !reload; el.hidden = !txt;
+  }
+  renderer.domElement.addEventListener('webglcontextlost', function (ev) {
+    ev.preventDefault();   /* asks the browser to give the picture back */
+    glLost = true; glLostAt = performance.now(); glLossN++; glNoteEnd = 0;
+    try { sessionStorage.setItem('pokju-gl-lost', String(glLossN)); } catch (e) {}
+    if (mode === 'play' && !paused) setPaused(true);
+    glNote('그래픽 장치가 잠시 멈췄어요. 화면을 다시 그리는 중이에요…', false);
+  }, false);
+  renderer.domElement.addEventListener('webglcontextrestored', function () {
+    glLost = false; envKey = ''; envT = 0;
+    if (gfxNow !== 'low') applyGfx(gfxNow === 'high' ? 'mid' : 'low', false);
+    else setRes(RES_STEPS[RES_STEPS.length - 1]);
+    gfxNoUp = true;
+    glNote('화면이 돌아왔어요. 화질을 한 단계 낮췄어요.', false); glNoteEnd = performance.now() + 4000;
+  }, false);
+  $('glnote-reload').addEventListener('click', function () { location.reload(); });
+  /* from the main loop, every frame: after five seconds without a picture, a reload is offered */
+  function glWatch() {
+    if (glLost) {
+      if (mode === 'play' && !paused && briefT <= 0) { setPaused(true); glNote($('glnote-text').textContent, !$('glnote-reload').hidden); }   /* lost during the start card: stopped as soon as the run begins, the note moved into the panel */
+      if (performance.now() - glLostAt > 5000 && $('glnote-reload').hidden) glNote('화면이 돌아오지 않아요. 다시 불러오면 화질을 낮춰서 시작해요. 지금 판은 처음부터 다시 해요.', true); return; }
+    if (glNoteEnd && performance.now() > glNoteEnd) { glNoteEnd = 0; glNote('', false); }
+  }
   function postResize(w, h) {
     if (!post) return;
     /* fewer samples at the middle setting: on a phone the multisampled half-float buffer is the biggest cost after the pixels themselves */
@@ -89,5 +128,7 @@
     u.uRain.value = lerp(u.uRain.value, mode === 'play' && !save.calm ? rainK * (1 - tunK) : 0, 1 - Math.exp(-dt * 1.5));
     var fast = mode === 'play' && car ? clamp((veff - car.vmax * 0.92) / (car.vmax * 0.35), 0, 1) : 0;
     u.uSpeed.value = lerp(u.uSpeed.value, Math.max(fast, buff.nitro > 0 ? 0.55 : 0) * fxK, 1 - Math.exp(-dt * 5));
+    if (!isFinite(u.uSpeed.value)) u.uSpeed.value = 0;   /* a value that once went wrong would otherwise stay wrong: each frame starts from the last */
+    if (!isFinite(u.uRain.value)) u.uRain.value = 0;
     post.composer.render(dt);
   }

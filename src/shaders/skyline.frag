@@ -69,8 +69,9 @@ void main() {
     bool peaks = uKind > 2.5;
     float hf = peaks ? (22.0 + 85.0 * sharp(u, 7.0)) : (12.0 + 46.0 * ridge(u, 6.0));
     float hn = peaks ? (12.0 + 52.0 * sharp(u + 0.37, 11.0)) : (6.0 + 26.0 * ridge(u + 0.21, 13.0));
-    // by the sea the land sinks away on the left, where the water is
-    float land = mix(1.0, smoothstep(-0.25, 0.35, a) * (1.0 - smoothstep(2.6, 3.1, abs(a))), uSea);
+    // by the sea the land sinks away on the water's side: uSea 1 for a sea on the left, -1 for one on the right (1.4)
+    float sa = uSea < 0.0 ? -a : a;
+    float land = mix(1.0, smoothstep(-0.25, 0.35, sa) * (1.0 - smoothstep(2.6, 3.1, abs(sa))), abs(uSea));
     hf *= uScale * land; hn *= uScale * land;
     float inF = smoothstep(-fw, fw, hf / 430.0 - e) * step(0.0, e + 0.05) * step(0.5, hf);
     float inN = smoothstep(-fw, fw, hn / 430.0 - e) * step(0.0, e + 0.05) * step(0.5, hn);

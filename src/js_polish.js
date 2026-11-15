@@ -26,7 +26,7 @@
      town, hills in the country, mountains in the hills, snowy peaks in the snow; worked out in src/shaders/skyline.frag ---------- */
   var farU = { uTop: skyU.uTop, uHor: skyU.uHor, uSun: skyU.uSun, uSunCol: skyU.uSunCol, uDark: skyU.uDark, uNight: skyU.uNight, uTime: skyU.uTime, uDim: skyU.uDim,
     uNear: { value: new T.Color() }, uVis: { value: 1 }, uKind: { value: 1 }, uSea: { value: 0 }, uScale: { value: 1 } };
-  var FAR_KIND = { city: [1, 1, 0], highway: [1, 0.72, 0], country: [2, 1, 0], creek: [2, 0.9, 0], coast: [2, 0.85, 1], offroad: [3, 0.75, 0], mountain: [3, 1, 0], snow: [4, 0.95, 0] };
+  var FAR_KIND = { city: [1, 1, 0], highway: [1, 0.72, 0], country: [2, 1, 0], creek: [2, 0.9, 0], coast: [2, 0.85, 1], coastE: [2, 0.85, -1], offroad: [3, 0.75, 0], mountain: [3, 1, 0], snow: [4, 0.95, 0] };
   var farRing = new T.Mesh(new T.CylinderGeometry(430, 430, 135, 96, 1, true).translate(0, 47.5, 0), new T.ShaderMaterial({ uniforms: farU, side: T.BackSide,
     depthWrite: false, fog: false, alphaToCoverage: true, vertexShader: SKY_VS, fragmentShader: GLSL_SKYLINE_FRAG }));   /* src/shaders/skyline.frag */
   farRing.renderOrder = 1001; farRing.frustumCulled = false; skyDome.add(farRing);
@@ -46,7 +46,22 @@
   var RES_STEPS = [1, 0.85, 0.72];
   /* 「자동」 starts one step down on a phone-sized or touch screen: those are the devices where the full setting costs frames */
   function gfxStart() { var small = Math.min(window.innerWidth, window.innerHeight) <= 520 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches); return small ? 'mid' : 'high'; }
-  function gfxRatio() { var q = GFX[gfxNow] || GFX.high; return Math.max(0.5, Math.min(window.devicePixelRatio || 1, q.pr) * resK); }
+  /* the picture is finished off screen in a multisampled half-float buffer: on a big, sharp screen (a tablet, a 4K monitor) that alone
+     took hundreds of megabytes of graphics memory, and running short is what takes the picture away (js_fx2.js). Each level now has a
+     ceiling on the number of pixels drawn (1.4) */
+  var PX_CAP = { high: 3.2e6, mid: 2.1e6, low: 1.3e6 };
+  function gfxRatio() {
+    var q = GFX[gfxNow] || GFX.high, pr = Math.min(window.devicePixelRatio || 1, q.pr) * resK, a = Math.max(1, window.innerWidth * window.innerHeight);
+    return Math.max(0.5, Math.min(pr, Math.sqrt((PX_CAP[gfxNow] || PX_CAP.high) / a)));
+  }
+  /* after the graphics chip gave up in this browser tab, the game starts lighter: one step down, after two the lowest */
+  function gfxBoot() {
+    var k = save.gfx === 'auto' ? gfxStart() : save.gfx, n = 0;
+    try { n = +sessionStorage.getItem('pokju-gl-lost') || 0; } catch (e) {}
+    if (n >= 2) return 'low';
+    if (n >= 1 && k !== 'low') return 'mid';
+    return k;
+  }
   function applyGfx(k, keepRes) {
     var q = GFX[k] || GFX.high;
     gfxNow = GFX[k] ? k : 'high'; fxK = q.fx; mirEvery = q.mir;

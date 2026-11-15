@@ -91,7 +91,7 @@
     if (k <= 0 || inTunnel(dist)) { gust.v = lerp(gust.v, 0, 1 - Math.exp(-dt * 3)); gust.t = 0; return; }
     gust.next -= dt;
     if (gust.t > 0) gust.t -= dt;
-    else if (gust.next <= 0) { gust.t = rnd(1.2, 2.2); gust.next = gust.t + rnd(3.5, 7.5); gust.dir = region.wind && Math.random() < 0.75 ? 1 : (Math.random() < 0.5 ? -1 : 1); }
+    else if (gust.next <= 0) { gust.t = rnd(1.2, 2.2); gust.next = gust.t + rnd(3.5, 7.5); gust.dir = region.wind && Math.random() < 0.75 ? (region.sea > 0 ? -1 : 1) : (Math.random() < 0.5 ? -1 : 1); }   /* mostly from the sea (1.4: either side) */
     gust.v = lerp(gust.v, gust.t > 0 ? gust.dir * 2.0 * k : 0, 1 - Math.exp(-dt * 2.5));   /* learning edition: a gentler shove (was 3.2) */
     if (Math.abs(gust.v) > 0.8 && Math.random() < dt * 34) {
       i = gust.v > 0 ? 1 : -1;

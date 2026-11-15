@@ -45,6 +45,10 @@ select, input { -webkit-appearance: auto; }
 button:focus-visible, .lever:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 #flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; box-shadow: inset 0 0 140px 30px var(--hit); }
+/* the graphics chip stopped (WebGL context lost, 1.4): the game pauses and says so, and offers a reload if the picture does not come back */
+#glnote { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; display: flex; gap: 12px; align-items: center; width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; padding: 10px 12px 10px 16px; border-radius: 16px; border: 1px solid var(--line); background: rgba(14, 16, 30, 0.94); color: var(--chip-fg); font-size: 14px; line-height: 1.45; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); }
+#glnote.inpanel { position: static; transform: none; width: auto; max-width: none; margin: 0 0 14px; box-shadow: none; background: rgba(255, 84, 104, 0.14); border-color: rgba(255, 84, 104, 0.42); text-align: left; }
+#glnote button { flex: none; min-height: 40px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--grad); color: #fff; font-weight: 700; font-size: 14px; }
 .chip { background: var(--chip); border-radius: 16px; padding: 8px 12px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22); }
 .sub { font-size: 13px; color: var(--chip-sub); }
 .hud .bar, .status .bar { height: 6px; border-radius: 4px; background: var(--track); overflow: hidden; }
@@ -539,6 +543,7 @@ body.paused #qtoast, body.paused #coach, body.paused #qbox, body.paused #caption
 <canvas id="c" aria-label="무장 차량이 도로를 위쪽으로 달리며 적 차량과 드론을 상대하는 3D 전투 장면"></canvas>
 <div id="vignette"></div>
 <div id="flash"></div>
+<div id="glnote" role="status" aria-live="polite" hidden><span id="glnote-text"></span><button type="button" id="glnote-reload" hidden>다시 불러오기</button></div>
 <div id="banner" hidden>공중폭격</div>
 <div id="demo" hidden>
   <div class="bar top"></div><div class="bar bot"></div>
@@ -586,7 +591,7 @@ body.paused #qtoast, body.paused #coach, body.paused #qbox, body.paused #caption
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><button type="button" class="home" id="brand-title" title="타이틀 화면으로" aria-label="타이틀 화면으로">⌂</button><b>폭주 구구단</b><span>정식 버전 1.3</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><button type="button" class="home" id="brand-title" title="타이틀 화면으로" aria-label="타이틀 화면으로">⌂</button><b>폭주 구구단</b><span>정식 버전 1.4</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
     <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false">아이템</button>

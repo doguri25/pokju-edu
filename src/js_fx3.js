@@ -219,10 +219,10 @@
   var SEA_COLS = 72, seaGeo = new T.PlaneGeometry(360, 440, SEA_COLS, STRIP_ROWS), seaRowY = [];
   seaGeo.rotateX(-Math.PI / 2);
   dropStrips.splice(dropStrips.indexOf(seaStrip), 1);
-  seaStrip.geometry.dispose(); seaStrip.geometry = seaGeo; seaStrip.position.x = -196; seaStrip.receiveShadow = true;
+  seaStrip.geometry.dispose(); seaStrip.geometry = seaGeo; seaStrip.position.x = (region.sea || -1) * 196; seaStrip.receiveShadow = true;
   seaTex.repeat.set(26.4, 30);
   seaC.setHex(0x125582);
-  var seaU = { uSunW: { value: new T.Vector3(0, 1, 0) }, uSunCol: { value: new T.Color() }, uSunK: { value: 1 }, uFoamL: { value: 1 } };
+  var seaU = { uSunW: { value: new T.Vector3(0, 1, 0) }, uSunCol: { value: new T.Color() }, uSunK: { value: 1 }, uFoamL: { value: 1 }, uSeaSide: { value: region.sea || -1 } };   /* uSeaSide: -1 sea on the left, 1 on the right (1.4) */
   var SEA_GLSL = [
     'float sHash( vec2 p ) { return fract( sin( dot( p, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 ); }',
     'float sNoise( vec2 p ) { vec2 i = floor( p ), f = fract( p ); f = f * f * ( 3.0 - 2.0 * f ); return mix( mix( sHash( i ), sHash( i + vec2( 1.0, 0.0 ) ), f.x ), mix( sHash( i + vec2( 0.0, 1.0 ) ), sHash( i + vec2( 1.0, 1.0 ) ), f.x ), f.y ); }',
@@ -242,16 +242,18 @@
       hill.call(this, sh);
       sh.uniforms.uWT = waterU.uWT; sh.uniforms.uWD = waterU.uWD;
       for (var k in seaU) sh.uniforms[k] = seaU[k];
-      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uWT;\nuniform float uWD;\nvarying vec3 vWPos;\nvarying float vSeaH;\n' + SEA_GLSL)
-        .replace('#include <begin_vertex>', '#include <begin_vertex>\n\t{\n\t\tvec4 sWp = modelMatrix * vec4( transformed, 1.0 );\n\t\tvec2 sG;\n\t\tfloat sOff = clamp( ( -17.0 - sWp.x ) / 26.0, 0.0, 1.0 );\n\t\tfloat sEnv = 0.15 + 0.85 * sOff, sH = seaSwell( vec2( sWp.x, sWp.z - uWD ), uWT, sG ) * sEnv;\n\t\ttransformed.y += sH + 0.72 * sEnv + 0.06; vSeaH = sH;   /* troughs stay above the field strip under the sea */\n\t}')
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uWT;\nuniform float uWD;\nuniform float uSeaSide;\nvarying vec3 vWPos;\nvarying float vSeaH;\n' + SEA_GLSL)
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\n\t{\n\t\tvec4 sWp = modelMatrix * vec4( transformed, 1.0 );\n\t\tvec2 sG;\n\t\tfloat sOff = clamp( ( uSeaSide * sWp.x - 17.0 ) / 26.0, 0.0, 1.0 );\n\t\tfloat sEnv = 0.15 + 0.85 * sOff, sH = seaSwell( vec2( -uSeaSide * sWp.x, sWp.z - uWD ), uWT, sG ) * sEnv;\n\t\ttransformed.y += sH + 0.72 * sEnv + 0.06; vSeaH = sH;   /* troughs stay above the field strip under the sea */\n\t}')
         .replace('#include <fog_vertex>', 'vWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\n#include <fog_vertex>');
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uWT;\nuniform float uWD;\nuniform vec3 uSunW;\nuniform vec3 uSunCol;\nuniform float uSunK;\nuniform float uFoamL;\nvarying vec3 vWPos;\nvarying float vSeaH;\n' + SEA_GLSL + '\n' + WAVE_GLSL)
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uWT;\nuniform float uWD;\nuniform float uSeaSide;\nuniform vec3 uSunW;\nuniform vec3 uSunCol;\nuniform float uSunK;\nuniform float uFoamL;\nvarying vec3 vWPos;\nvarying float vSeaH;\n' + SEA_GLSL + '\n' + WAVE_GLSL)
         .replace('#include <normal_fragment_maps>', [
           '#include <normal_fragment_maps>',
-          '\tvec2 sP = vec2( vWPos.x, vWPos.z - uWD ), sG;',
-          '\tfloat sOffF = clamp( ( -17.0 - vWPos.x ) / 26.0, 0.0, 1.0 ), sShore = -17.0 - vWPos.x;',
+          /* worked out as if the sea lay on the left (sP mirrored for the right-hand coast), the slope turned back to the real side */
+          '\tvec2 sP = vec2( -uSeaSide * vWPos.x, vWPos.z - uWD ), sG;',
+          '\tfloat sOffF = clamp( ( uSeaSide * vWPos.x - 17.0 ) / 26.0, 0.0, 1.0 ), sShore = uSeaSide * vWPos.x - 17.0;',
           '\tfloat sHF = seaSwellF( sP, uWT, sG ) * ( 0.15 + 0.85 * sOffF );',
           '\tvec2 sGt = sG * ( 0.15 + 0.85 * sOffF ) + waveGrad( sP * 0.55, uWT * 1.3 ) * 0.07;',
+          '\tsGt.x *= -uSeaSide;',
           '\tnormal = normalize( ( viewMatrix * vec4( normalize( vec3( -sGt.x, 1.0, -sGt.y ) ), 0.0 ) ).xyz );',
           '\tfloat sN = sNoise( sP * 0.35 + vec2( uWT * 0.05, 0.0 ) ) * 0.65 + sNoise( sP * 1.3 ) * 0.35;',
           /* crests light up green-blue, the shallows by the shore are paler */
@@ -273,7 +275,7 @@
           '\t\ttotalEmissiveRadiance += uSunCol * ( pow( sDot, 1400.0 ) * 22.0 * sTw + pow( sDot, 90.0 ) * 0.5 ) * uSunK * ( 1.0 - sFoam );',
           '\t}'].join('\n'));
     };
-    seaMat.customProgramCacheKey = function () { return 'sea-v2'; };
+    seaMat.customProgramCacheKey = function () { return 'sea-v3'; };
     seaMat.needsUpdate = true;
   })();
   var splashC = new T.Color(), splashT = 0;
@@ -294,7 +296,7 @@
       splashT = rnd(0.08, 0.3) / fxK;
       var z = rnd(-150, -12), n = 3 + (Math.random() * 4 | 0);
       splashC.setRGB(0.92, 0.95, 0.97).multiplyScalar(1 - 0.75 * cur.night);
-      for (var i = 0; i < n; i++) spawnP('smoke', -17.4 + rnd(-0.8, 0.6), rnd(0.2, 0.8), z + rnd(-1.5, 1.5), rnd(-1.2, 1.2), rnd(3, 6.5), veff, rnd(0.7, 1.2), rnd(0.5, 0.9), rnd(2, 3.4), splashC, rnd(0.45, 0.7), 1);
+      for (var i = 0; i < n; i++) spawnP('smoke', region.sea * (17.4 + rnd(-0.6, 0.8)), rnd(0.2, 0.8), z + rnd(-1.5, 1.5), rnd(-1.2, 1.2), rnd(3, 6.5), veff, rnd(0.7, 1.2), rnd(0.5, 0.9), rnd(2, 3.4), splashC, rnd(0.45, 0.7), 1);
     }
   }
 

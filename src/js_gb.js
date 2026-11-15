@@ -394,6 +394,7 @@
   function setPaused(p) {
     if (mode !== 'play' || briefT > 0) return;
     if (!p && (!$('help').hidden || !$('info').hidden)) return;   /* a dialog is open over the paused game: it is closed first */
+    if (!p && glLost) return;   /* no driving on while there is no picture (js_fx2.js) */
     paused = p; $('pause').hidden = !p; if (p) engineOff();
     document.body.classList.toggle('paused', p);
     if (p) $('pause-text').textContent = mission.name + ' · ' + CARS[player.car].name + ' · 시간 ' + fmtT(tPlay);
@@ -968,7 +969,7 @@
     if (allyE && !allyE.fin) {   /* escort: most of what comes down the road comes at the escorted vehicle */
       if (Math.random() < 0.45) { var al = L4.reduce(function (a, c) { return Math.abs(c - allyE.x) < Math.abs(a - allyE.x) ? c : a; }); if (laneOpen(al, dist - z)) lane = al; }
     }
-    if (r > 0.94 && !mission.rivals && !allyE && mission.goal !== 'boss' && (region.key === 'city' || region.key === 'coast')) { spawnEnemy('civ', lane, z, ews('civ')); return; }   /* now and then a civilian car is still on the road */
+    if (r > 0.94 && !mission.rivals && !allyE && mission.goal !== 'boss' && (region.key === 'city' || region.sea)) { spawnEnemy('civ', lane, z, ews('civ')); return; }   /* now and then a civilian car is still on the road */
     var hasDump = enemies.some(function (e) { return e.type === 'dump'; });
     if (r < 0.42) { for (var i = 0; i < 3; i++) spawnEnemy('bike', clamp(lane + rnd(-1.2, 1.2), -6.8, 6.8), z - i * 4.5, ews('bike')); }
     else if (mission.buggy && r < 0.57) spawnEnemy('buggy', lane, z, ews('buggy'));
@@ -1760,6 +1761,7 @@
     var ck = shotCut ? 1 : 1 - Math.exp(-dt * quick);
     shotCut = false;
     camPos.lerp(wantP, ck); camTgt.lerp(wantT, ck); camFov = lerp(camFov, wantFov, ck); offX = lerp(offX, wantOffX, ck); offY = lerp(offY, wantOffY, ck);
+    if (!isFinite(camPos.x + camPos.y + camPos.z + camTgt.x + camTgt.y + camTgt.z + camFov + offX + offY)) { camPos.copy(wantP); camTgt.copy(wantT); camFov = wantFov; offX = wantOffX; offY = wantOffY; }   /* a value gone wrong once must not stay wrong */
     camera.position.set(camPos.x + rnd(-sh, sh), camPos.y + rnd(-sh, sh), camPos.z + rnd(-sh, sh) * 0.5);
     camera.lookAt(camTgt);
     camera.fov = camFov;
@@ -1788,21 +1790,29 @@
 
   /* start on the selection screen: the chosen car drives up the screen behind the panel */
   loadSave(); applyLink(); setMuted(save.muted); musicOn = save.music; sfxOn = save.sfx; setCam(save.cam);
-  makeThumbs(); resize(); applyGfx(save.gfx === 'auto' ? gfxStart() : save.gfx); gfxApplyPending(); carQ = CAR_ORDER.slice();
+  makeThumbs(); resize(); applyGfx(gfxBoot()); gfxApplyPending(); carQ = CAR_ORDER.slice();
   touchUI = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   $('opt-unlock').checked = save.unlockAll; $('opt-gfx').value = save.gfx; $('opt-calm').checked = save.calm; $('opt-mirror').checked = save.mirror; syncSound();
   showTitle();
   for (var wi = 0; wi < 120; wi++) step(1 / 60);
 
-  var last = performance.now();
+  var last = performance.now(), frameErrN = 0;
+  /* the next frame is asked for first, and an error is caught and reported: one mistake in the simulation or the drawing used to stop
+     the loop for good, leaving the picture frozen or black (1.4). While the graphics chip is away (js_fx2.js) nothing is drawn */
+  function frameErr(err) { if (frameErrN++ < 5 && window.console) console.error(err); }
   function frame(now) {
+    requestAnimationFrame(frame);
     var rdt = Math.min(0.05, (now - last) / 1000); last = now;
     if (slowT > 0) { slowT -= rdt; timeScale = lerp(timeScale, 0.25, 0.25); } else timeScale = lerp(timeScale, 1, 0.1);
+    if (!isFinite(timeScale)) timeScale = 1;
     if (slowCd > 0) slowCd -= rdt;
     if (eventCd > 0) eventCd -= rdt;
-    musicTick(); padStart();
-    if (!document.hidden && rdt > 0) { gfxApplyPending(); if (!paused) step(rdt * timeScale); if (carQ.length && mode === 'menu') carThumbStep(); mirrorPass(); renderFrame(); gfxTick(rdt); }
-    requestAnimationFrame(frame);
+    try { musicTick(); padStart(); } catch (err) { frameErr(err); }
+    if (!document.hidden && rdt > 0) {
+      try { gfxApplyPending(); if (!paused) step(rdt * timeScale); if (carQ.length && mode === 'menu' && !glLost) carThumbStep(); } catch (err) { frameErr(err); }
+      glWatch();
+      if (!glLost) { try { mirrorPass(); renderFrame(); } catch (err) { frameErr(err); } gfxTick(rdt); }
+    }
   }
   /* one-off: merge the static parts of everything that loops or stands by the road */
   loops.forEach(function (lg) { if (lg.userData.drop) rowBake(lg); else bake(lg); });
@@ -1811,6 +1821,21 @@
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
   window.__preview = {
+    diag: function () {
+      var bad = [], fin = function (n, v) { if (typeof v !== 'number' || !isFinite(v)) bad.push(n + '=' + v); };
+      var v3 = function (n, v) { fin(n + '.x', v.x); fin(n + '.y', v.y); fin(n + '.z', v.z); };
+      v3('cam', camera.position); fin('cam.fov', camera.fov); camera.projectionMatrix.elements.forEach(function (e, i) { fin('proj' + i, e); });
+      v3('camPos', camPos); v3('camTgt', camTgt); fin('camFov', camFov); fin('offX', offX); fin('offY', offY); fin('shake', shake);
+      fin('veff', veff); fin('dist', dist); fin('px', player.x); fin('pv', player.v); fin('pvx', player.vx); fin('timeScale', timeScale);
+      fin('exposure', renderer.toneMappingExposure);
+      if (post) { fin('uSpeed', post.grade.uSpeed.value); fin('uRain', post.grade.uRain.value); fin('uFlash', post.grade.uFlash.value); fin('bloom', post.bloom.strength); }
+      flashes.forEach(function (f, i) { v3('flash' + i, f.position); fin('flash' + i + '.I', f.intensity); });
+      v3('sun', sun.position); v3('sunT', sun.target.position);
+      var nanObj = 0, lights = [];
+      scene.traverse(function (o) { var q = o.position; if (!isFinite(q.x) || !isFinite(q.y) || !isFinite(q.z) || !isFinite(o.scale.x)) { nanObj++; if (nanObj < 4) bad.push('obj:' + (o.name || o.type) + ':' + (o.material && o.material.type)); } if (o.isLight && (!isFinite(o.intensity))) lights.push(o.type); });
+      if (lights.length) bad.push('lights:' + lights.join(','));
+      return { bad: bad, nanObj: nanObj, lost: renderer.getContext().isContextLost(), geo: renderer.info.memory.geometries, tex: renderer.info.memory.textures, prog: renderer.info.programs ? renderer.info.programs.length : -1, calls: renderer.info.render.calls, objs: (function () { var n = 0; scene.traverse(function () { n++; }); return n; })() };
+    },
     taps: function () { return { cancelled: tapStat.cancelled, sent: tapStat.sent }; },
     tunnel: function () { var s = null, i; for (i = 0; i < sections.length; i++) if (sections[i].type === 'tunnel' && sections[i].d1 > dist) { s = sections[i]; break; } return s ? { toEntry: Math.round(s.d0 - dist), toExit: Math.round(s.d1 - dist), k: +tunK.toFixed(2), out: +tunOut.toFixed(2), glare: +tunGlare.toFixed(2), bg: '#' + scene.background.getHexString(), exp: +renderer.toneMappingExposure.toFixed(2) } : { out: +tunOut.toFixed(2), glare: +tunGlare.toFixed(2), adapt: +tunAdapt.toFixed(2), k: +tunK.toFixed(2), bg: '#' + scene.background.getHexString(), exp: +renderer.toneMappingExposure.toFixed(2) }; },
     hurt: function (d, kind) { hurt(d, kind); }, items: ITEMS, flying: function () { return missiles.length; },

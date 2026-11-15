@@ -42,9 +42,15 @@
   REGIONS.creek = { key: 'creek', name: '개울길', short: '개울', marks: 'none', rail: false, lamps: false, kerb: false, stops: false, wind: 0, cover: 0, base: 'gravel', verge: 'grass',
     ground: 0x6f9a52, road: 0xa39a86, roadOut: 0xa39a86, shoulder: 0x7aa552, walk: 0x6f9a52, order: ['stream', 'ford', 'rocks', 'stream', 'ford', 'hill'], grade: [0.06, 0.08], edge: ['rock', 'log'], tracks: { hex: 0x8a826f, a: 0.45 },
     feel: '개울을 따라가는 자갈길. 물길이 한두 차로를 길게 덮고 여울이 길을 가로지른다. 물에서는 속도와 접지력을 잃는다. 레인 타이어와 올터레인 타이어가 도움이 된다.' };
-  REGIONS.city.holes = 1; REGIONS.coast.holes = 0.7; REGIONS.country.holes = 1.2;
-  var REGION_ORDER = ['city', 'highway', 'country', 'offroad', 'mountain', 'creek', 'snow', 'coast'];
-  var region = REGIONS.city, regionScenery = { city: scenery, country: [], offroad: [], snow: [], coast: [], highway: [], mountain: [], creek: [] }, sceneryNow = scenery;
+  /* 동해안 도로 (1.4): the same coast road with the sea on the right. sea is the side the water lies on (-1 left, 1 right); the sea wind
+     blows from it, so here it pushes the car to the left */
+  REGIONS.coast.sea = -1;
+  REGIONS.coastE = { key: 'coastE', name: '동해안 도로', short: '동해안', marks: 'city', rail: true, lamps: true, kerb: true, stops: true, wind: 1, cover: 0, sea: 1,
+    ground: 0x8fae6e, road: 0x6b7280, roadOut: 0x6b7280, shoulder: 0x565b66, walk: 0xd8d4c8, order: ['deck', 'work', 'under', 'deck', 'split', 'work'],
+    feel: '바다가 오른쪽에 펼쳐진 해안도로. 평탄한 아스팔트라 빠르지만 바다 쪽에서 부는 옆바람이 차를 왼쪽으로 밀어내고, 키가 큰 차일수록 많이 밀린다. 해상교량과 복합도로가 나온다.' };
+  REGIONS.city.holes = 1; REGIONS.coast.holes = 0.7; REGIONS.coastE.holes = 0.7; REGIONS.country.holes = 1.2;
+  var REGION_ORDER = ['city', 'highway', 'country', 'offroad', 'mountain', 'creek', 'snow', 'coast', 'coastE'];
+  var region = REGIONS.city, regionScenery = { city: scenery, country: [], offroad: [], snow: [], coast: [], coastE: [], highway: [], mountain: [], creek: [] }, sceneryNow = scenery;
   (function () { for (var k in REGIONS) { var r = REGIONS[k]; if (r.ground) { r.groundC = C(r.ground); r.roadC = C(r.road); r.roadOutC = C(r.roadOut); r.shoulderC = C(r.shoulder); r.walkC = C(r.walk); } if (r.tracks) r.tracks.c = C(r.tracks.hex); } })();
 
   var RM = {
@@ -178,38 +184,40 @@
     for (i = 0; i < 9; i++) mount(k, (i % 2 ? 1 : -1) * rnd(120, 250), -700 + i * 100 + rnd(-30, 30), rnd(70, 120), rnd(62, 115), i % 3 ? 0xdfe8f0 : 0xc3d2e0);
   })();
 
-  /* --- 해안도로: the sea on the left behind a line of tetrapods, boats and lighthouses; rocks, pines and cafés on the land side --- */
+  /* --- 해안도로 and 동해안 도로: the sea on one side behind a line of tetrapods, boats and lighthouses; rocks, pines and cafés on the
+     land side. One builder for both: sd is the sea's side (-1 left, 1 right), the land is on the other --- */
   var seaTex = noiseTex(0.9); seaTex.repeat.set(44, 30);
   var seaMat = new T.MeshStandardMaterial({ map: seaTex, color: C(0x2f86b0), roughness: 0.22, metalness: 0.35 }), seaC = C(0x2f86b0);
   var seaStrip = strip(-316, 600, -0.03, seaMat, true); seaStrip.visible = false;
-  (function () {
-    var i, g, k = 'coast', tet = new T.TetrahedronGeometry(1.25, 0), red = std(0xd9362a, 0.6);
-    for (i = 0; i < 30; i++) { var tp = shadowed(new T.Mesh(tet, M.concrete)); tp.rotation.set(rnd(0, 3), rnd(0, 3), rnd(0, 3)); scn(k, tp, -rnd(15.9, 19), zAt(i, 30, 3), 0.35); }
+  var coastTet = new T.TetrahedronGeometry(1.25, 0), coastRed = std(0xd9362a, 0.6);
+  [['coast', -1], ['coastE', 1]].forEach(function (cs) {
+    var i, g, k = cs[0], sd = cs[1], land = -sd, tet = coastTet, red = coastRed;
+    for (i = 0; i < 30; i++) { var tp = shadowed(new T.Mesh(tet, M.concrete)); tp.rotation.set(rnd(0, 3), rnd(0, 3), rnd(0, 3)); scn(k, tp, sd * rnd(15.9, 19), zAt(i, 30, 3), 0.35); }
     for (i = 0; i < 5; i++) {
       g = new T.Group();
       g.add(prof([[-3, 0], [3.4, 0], [4.2, 0.9], [-3.2, 0.9]], 2.2, pick(RM.hull), 0.05)); g.add(bx(1.5, 1.1, 1.6, M.white, 0, 1.45, -1.2)); g.add(bx(0.08, 1.8, 0.08, M.pole, 0, 2.4, 0.6));
-      g.rotation.y = rnd(-0.6, 0.6);
-      scn(k, g, -rnd(32, 110), zAt(i, 5, 20), -0.25, { bob: rnd(0, 6) });
+      g.rotation.y = rnd(-0.6, 0.6) + (sd > 0 ? Math.PI : 0);
+      scn(k, g, sd * rnd(32, 110), zAt(i, 5, 20), -0.25, { bob: rnd(0, 6) });
     }
     for (i = 0; i < 2; i++) {
       g = new T.Group();
-      g.add(bx(26, 0.9, 3.4, M.concrete, -13, 0.3, 0)); g.add(cyl(1.0, 1.4, 9, 10, M.white, -24, 5.2, 0)); g.add(cyl(1.25, 1.3, 1.0, 10, red, -24, 6.2, 0));
-      g.add(cyl(0.8, 0.8, 1.2, 8, M.glass, -24, 10.3, 0)); var cp = new T.Mesh(new T.ConeGeometry(1.1, 0.9, 8), red); cp.position.set(-24, 11.35, 0); g.add(cp);
-      var lg = glowSprite(0xfff0b0, 9, 0); lg.position.set(-24, 10.3, 0); g.add(lg); nightGlows.push(lg);
-      scn(k, g, -16.4, zAt(i, 2, 30), 0);
+      g.add(bx(26, 0.9, 3.4, M.concrete, sd * 13, 0.3, 0)); g.add(cyl(1.0, 1.4, 9, 10, M.white, sd * 24, 5.2, 0)); g.add(cyl(1.25, 1.3, 1.0, 10, red, sd * 24, 6.2, 0));
+      g.add(cyl(0.8, 0.8, 1.2, 8, M.glass, sd * 24, 10.3, 0)); var cp = new T.Mesh(new T.ConeGeometry(1.1, 0.9, 8), red); cp.position.set(sd * 24, 11.35, 0); g.add(cp);
+      var lg = glowSprite(0xfff0b0, 9, 0); lg.position.set(sd * 24, 10.3, 0); g.add(lg); nightGlows.push(lg);
+      scn(k, g, sd * 16.4, zAt(i, 2, 30), 0);
     }
-    for (i = 0; i < 5; i++) mount(k, -rnd(190, 360), -700 + i * 180 + rnd(-40, 40), rnd(28, 60), rnd(14, 30), 0x3f7a56);
-    for (i = 0; i < 12; i++) { var rk = boulder(rnd(2.2, 4.6), i % 2 ? RM.rockB : RM.rock); rk.scale.y *= 1.5; scn(k, rk, rnd(17.5, 30), zAt(i, 12, 8), 1.2); }
-    for (i = 0; i < 16; i++) scn(k, pickTree('coast'), rnd(16.2, 36), zAt(i, 16, 6), 0);   /* 해송: black pines by the sea */
-    for (i = 0; i < 5; i++) {
-      var w = rnd(8, 12), h = rnd(4, 7); g = new T.Group();
-      g.add(bx(w, h, 8, pick(RM.cafe), 0, h / 2, 0)); g.add(bx(0.1, h * 0.45, 6, M.glass, -w / 2 - 0.03, h * 0.5, 0)); g.add(bx(w + 0.6, 0.3, 8.6, M.white, 0, h + 0.15, 0));
-      var col = pick(neonColors), sign = new T.Mesh(new T.BoxGeometry(0.2, 0.9, 3.6), new T.MeshBasicMaterial({ color: C(col) })); sign.position.set(-w / 2 - 0.2, h - 0.8, 0); g.add(sign);
-      var ng = glowSprite(col, 8, 0); ng.position.set(-w / 2 - 0.8, h - 0.8, 0); g.add(ng); nightGlows.push(ng);
-      scn(k, g, 18 + w / 2 + rnd(0, 6), zAt(i, 5, 14), 0);
+    for (i = 0; i < 5; i++) mount(k, sd * rnd(190, 360), -700 + i * 180 + rnd(-40, 40), rnd(28, 60), rnd(14, 30), 0x3f7a56);
+    for (i = 0; i < 12; i++) { var rk = boulder(rnd(2.2, 4.6), i % 2 ? RM.rockB : RM.rock); rk.scale.y *= 1.5; scn(k, rk, land * rnd(17.5, 30), zAt(i, 12, 8), 1.2); }
+    for (i = 0; i < 16; i++) scn(k, pickTree('coast'), land * rnd(16.2, 36), zAt(i, 16, 6), 0);   /* 해송: black pines by the sea */
+    for (i = 0; i < 5; i++) {   /* cafés: the glass front and the neon sign face the road */
+      var w = rnd(8, 12), h = rnd(4, 7), fx = -land * w / 2; g = new T.Group();
+      g.add(bx(w, h, 8, pick(RM.cafe), 0, h / 2, 0)); g.add(bx(0.1, h * 0.45, 6, M.glass, fx - land * 0.03, h * 0.5, 0)); g.add(bx(w + 0.6, 0.3, 8.6, M.white, 0, h + 0.15, 0));
+      var col = pick(neonColors), sign = new T.Mesh(new T.BoxGeometry(0.2, 0.9, 3.6), new T.MeshBasicMaterial({ color: C(col) })); sign.position.set(fx - land * 0.2, h - 0.8, 0); g.add(sign);
+      var ng = glowSprite(col, 8, 0); ng.position.set(fx - land * 0.8, h - 0.8, 0); g.add(ng); nightGlows.push(ng);
+      scn(k, g, land * (18 + w / 2 + rnd(0, 6)), zAt(i, 5, 14), 0);
     }
-    for (i = 0; i < 4; i++) mount(k, rnd(150, 260), -700 + i * 225 + rnd(-40, 40), rnd(70, 110), rnd(36, 64), 0x4f8a5c);
-  })();
+    for (i = 0; i < 4; i++) mount(k, land * rnd(150, 260), -700 + i * 225 + rnd(-40, 40), rnd(70, 110), rnd(36, 64), 0x4f8a5c);
+  });
 
   /* --- 한울 고속도로: median barrier with the opposite carriageway beyond it, a sound wall on the right, gantry signs, toll gates --- */
   var hwParts = [];
@@ -374,7 +382,8 @@
     for (i = 0; i < cEdges.length; i++) cEdges[i].visible = region.marks === 'country';
     for (i = 0; i < sideRails.length; i++) sideRails[i].visible = region.rail;
     for (i = 0; i < sideKerbs.length; i++) sideKerbs[i].visible = region.kerb;
-    posts.visible = region.rail; lamps.visible = region.lamps; seaStrip.visible = region.key === 'coast'; snowStakes.visible = region.key === 'snow';
+    posts.visible = region.rail; lamps.visible = region.lamps; snowStakes.visible = region.key === 'snow';
+    seaStrip.visible = !!region.sea; if (region.sea) { seaStrip.position.x = region.sea * 196; seaU.uSeaSide.value = region.sea; }
     for (i = 0; i < hwParts.length; i++) hwParts[i].visible = region.key === 'highway';
     guardStones.visible = region.key === 'mountain'; streamStrip.visible = region.key === 'creek';
   }
@@ -416,7 +425,7 @@
     flowTex.offset.y = (time * 0.55) % 1; RM.stream.color.copy(skyLin).lerp(streamC, 0.55).multiply(tintC); RM.bank.color.copy(roadMat.color).multiplyScalar(0.6); RM.foam.color.copy(foamC).multiply(tintC);
     /* standing water mirrors the sky, mud and ice take the light of the hour */
     RM.water.color.copy(skyLin).lerp(roadMat.color, 0.45); RM.mud.color.copy(mudC).multiply(tintC); RM.ice.color.copy(iceC).multiply(tintC);
-    if (R.key === 'coast') { seaMat.color.copy(seaC).multiply(tintC); seaTex.offset.y = (dist / 14.667 + time * 0.03) % 1; seaTex.offset.x = (time * 0.012) % 1; }
+    if (R.sea) { seaMat.color.copy(seaC).multiply(tintC); seaTex.offset.y = (dist / 14.667 + time * 0.03) % 1; seaTex.offset.x = (time * 0.012) % 1; }
     for (i = 0; i < list.length; i++) {
       o = list[i];
       if (o.userData.mount) { var dd = Math.sqrt(o.position.x * o.position.x + o.position.z * o.position.z); o.material.color.copy(o.userData.base).multiply(tintC).lerp(skyLin, clamp(dd / (scene.fog.far * 2.5), 0.3, 1)); }

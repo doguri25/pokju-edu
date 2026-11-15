@@ -374,6 +374,7 @@
   /* which species where: weights per kind of place */
   var TREE_MIX = { street: [['ginkgo', 5], ['zelkova', 2], ['maple', 2], ['cherry', 1]], broad: [['maple', 4], ['ginkgo', 2], ['zelkova', 2], ['cherry', 1], ['green', 2], ['birch', 1]],
     conifer: [['pine', 5], ['spruce', 3], ['maple', 1], ['birch', 1]], snow: [['spruceSnow', 4], ['bare', 3], ['birch', 2]], coast: [['pine', 5], ['green', 1]] };
+  TREE_MIX.coastE = TREE_MIX.coast;
   function pickTree(mix, sc) {
     var list = TREE_MIX[mix], sum = 0, i, r;
     for (i = 0; i < list.length; i++) sum += list[i][1];
