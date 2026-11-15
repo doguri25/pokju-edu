@@ -260,8 +260,8 @@
     for (i = 0; i <= N; i++) {
       var u = i / N, f = f0 + (f1 - f0) * (0.5 - 0.5 * Math.cos(Math.PI * u));   /* stations closer together at the ends */
       var yb = at(lo, f), yt = Math.max(yb, at(up, f)), h = yt - yb;
-      var e = Math.min(f - f0, f1 - f), kk = clamp(e / 0.38, 0, 1), hw = half * (0.9 + 0.1 * (1 - (1 - kk) * (1 - kk)));   /* plan corners */
-      var rt = Math.min(0.2, h * 0.5, hw * 0.45), rb = Math.min(0.06, h * 0.25), sec = [];
+      var e = Math.min(f - f0, f1 - f), kk = clamp(e / 0.3, 0, 1), hw = half * (0.97 + 0.03 * (1 - (1 - kk) * (1 - kk)));   /* plan corners, slight: lamps and grilles stay on the face */
+      var rt = Math.min(0.2, h * 0.5, hw * 0.45, 0.03 + 0.5 * e), rb = Math.min(0.06, h * 0.25), sec = [];
       sec.push([0, yb]);
       for (k = 0; k <= CB; k++) { var a1 = -Math.PI / 2 + k / CB * Math.PI / 2; sec.push([hw - rb + Math.cos(a1) * rb, yb + rb + Math.sin(a1) * rb]); }
       for (k = 0; k <= CT; k++) { var a2 = k / CT * Math.PI / 2; sec.push([hw - rt + Math.cos(a2) * rt - 0.025 * Math.sin(a2), yt - rt + Math.sin(a2) * rt]); }
@@ -280,7 +280,7 @@
       var base = s * M2, cx = 0, cy = 0;
       for (k = 0; k < M2; k++) { cx += pos[(base + k) * 3]; cy += pos[(base + k) * 3 + 1]; }
       var ci = pos.length / 3; pos.push(cx / M2, cy / M2, pos[base * 3 + 2]);
-      for (k = 0; k < M2; k++) { var p0 = base + k, p1 = base + (k + 1) % M2; if (si) idx.push(ci, p0, p1); else idx.push(ci, p1, p0); }
+      for (k = 0; k < M2; k++) { var p0 = base + k, p1 = base + (k + 1) % M2; if (si) idx.push(ci, p1, p0); else idx.push(ci, p0, p1); }   /* facing outward */
     });
     var g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
     g.computeVertexNormals();

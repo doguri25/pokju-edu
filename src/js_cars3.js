@@ -246,6 +246,7 @@
         t = Math.min(1, (y - yb) / Math.max(0.2, H - yb)); x = a.getX(i);
         a.setX(i, x * (1 - k * t * t * (3 - 2 * t)));
       }
+      m.children.forEach(function (c) { c.applyMatrix4(m.matrix); });   /* a part's own children (light-bar glows) keep their place */
       m.geometry = geo; m.position.set(0, 0, 0); m.rotation.set(0, 0, 0); m.scale.set(1, 1, 1); m.updateMatrix();
     });
   }
@@ -265,7 +266,8 @@
     if (o.bed) lower.push([o.rearBaseF - 0.03, o.bed.floorY], [rTip + 0.03, o.bed.floorY], [rTip, rb]);
     else lower.push([rTip + o.tailIn, o.tailY], [rTip, rb]);
     /* 1.3: rolled shoulders: the panels curve over into the bonnet, roof and boot instead of meeting them at a box edge */
-    g.add(loftBody(lower, W, B) || prof(lower, W, B, LB, W * 0.11));
+    var lofted = o.bed ? null : loftBody(lower, W, B);   /* pickups keep the flat-sided tub their bed walls stand on */
+    if (lofted) { g.add(lofted); LB = -0.024; } else g.add(prof(lower, W, B, LB, W * 0.11));   /* on the lofted surface trim sits flush, a little into it */
     g.add(prof([[o.rearBaseF, o.deckY - 0.02], [o.cowlF, o.hoodY - 0.02], [o.roofF1, H - GB], [o.roofF2, o.roofY2 - GB]], Wg, R, GB, Wg * 0.09));
     var A0 = [o.cowlF, o.hoodY], A1 = [o.roofF1, H], C0 = [o.rearBaseF, o.deckY], C1 = [o.roofF2, o.roofY2], aT = o.aT || 0.14, cT = o.cT === undefined ? 0.2 : o.cT;
     var y0f = o.hoodY + 0.07, y1f = H - 0.09, y0r = o.deckY + 0.07, y1r = o.roofY2 - 0.09;
@@ -280,17 +282,26 @@
     if (o.ducktail) g.add(bx(W * 0.82, 0.05, 0.2, B, 0, o.tailY + 0.025, rTip + o.tailIn + 0.08));
     if (o.clad) g.add(bx(W + 0.02, 0.15, s.wb - 2 * r - 0.16, M.dark, 0, gc + 0.075, (ff + fr) / 2));
     [ff, fr].forEach(function (f) { both(function (sd) { g.add(archDisc(r + (o.clad ? 0.15 : 0.07), sd * (W / 2 + 0.008), r, f, o.arch === 'trap')); }); });
-    (o.doors || []).forEach(function (f, di) {
+    var doorF = o.doors || [];
+    doorF.forEach(function (f, di) {
       var ht = beltY(f) - gc - 0.16;
       both(function (sd) {
         g.add(bx(0.012, ht, 0.014, M.gloss, sd * (W / 2 + 0.001), gc + 0.13 + ht / 2, f));
-        if (di < 3) g.add(bx(0.022, 0.03, 0.15, M.chrome, sd * (W / 2 + 0.011), beltY(f) - 0.16, f + 0.32));   /* door handles */
+        if (di + 1 < doorF.length) { var hf = doorF[di + 1] + 0.16; g.add(bx(0.024, 0.03, 0.15, M.chrome, sd * (W / 2 + (lofted ? -0.002 : 0.011)), beltY(hf) - 0.2, hf)); }   /* a handle at the rear of each door */
       });
     });
     /* black rocker panels between the wheels, and a thin chrome line under the side windows */
     both(function (sd) { g.add(bx(0.035, 0.1, Math.max(0.4, s.wb - 2 * r - 0.25), M.dark, sd * (W / 2 + 0.004), gc + 0.08, (ff + fr) / 2)); });
-    both(function (sd) { g.add(bx(0.012, 0.012, Math.max(0.5, o.cowlF - o.rearBaseF - 0.5), M.chrome, sd * (Wg / 2 + 0.035), beltY((o.cowlF + o.rearBaseF) / 2) + 0.035, (o.cowlF + o.rearBaseF) / 2)); });
-    both(function (sd) { g.add(bx(0.2, 0.11, 0.14, o.mirrorMat || B, sd * (W / 2 + 0.08), o.hoodY + 0.1, o.cowlF - 0.42)); });
+    (function () {   /* a thin chrome line along the bottom edge of the side glass, following its slope */
+      var fF0 = along(A0, A1, y0f) - aT, fR0 = along(C0, C1, y0r) + cT, yF = y0f - 0.02, yR = y0r - 0.02, len = Math.abs(fF0 - fR0);
+      if (len < 0.4) return;
+      both(function (sd) { var cl = bx(0.014, 0.014, len, M.chrome, sd * (Wg / 2 + 0.03), (yF + yR) / 2, (fF0 + fR0) / 2); cl.rotation.x = Math.atan2(-(yR - yF), fF0 - fR0); g.add(cl); });
+    })();
+    both(function (sd) {   /* door mirrors on a short arm at the top front corner of the door */
+      var my = beltY(o.cowlF - 0.42) - (lofted ? 0.05 : -0.1);
+      g.add(bx(0.2, 0.11, 0.14, o.mirrorMat || B, sd * (W / 2 + (lofted ? 0.07 : 0.08)), my, o.cowlF - 0.42));
+      if (lofted) g.add(bx(0.14, 0.04, 0.07, M.dark, sd * (W / 2 - 0.03), my - 0.02, o.cowlF - 0.38));
+    });
     if (o.bed) {
       var bl = o.rearBaseF - rTip, bm = (o.rearBaseF + rTip) / 2, bh = o.bed.wallY - o.bed.floorY;
       both(function (sd) { g.add(bx(0.09, bh, bl - 0.04, B, sd * (W / 2 - 0.08), o.bed.floorY + bh / 2, bm)); });
