@@ -504,7 +504,7 @@ body.cine #card { bottom: 9%; }
     <label class="opt"><input type="checkbox" id="opt-mirror" checked>룸미러 (화면 위쪽에 뒤쪽 모습 표시)</label>
     <label class="opt"><input type="checkbox" id="opt-calm">화면 흔들림과 번쩍임 줄이기</label>
     <label class="opt sel">그래픽 품질<select id="opt-gfx"><option value="auto">자동 (기기에 맞춰 조절)</option><option value="high">높음</option><option value="mid">보통</option><option value="low">낮음 (그림자 끔)</option></select></label>
-    <label class="opt"><input type="checkbox" id="opt-unlock">잠금 모두 해제 (차량, 미션, 무기 전부 열기)</label>
+    <label class="opt"><input type="checkbox" id="opt-unlock">잠금 모두 해제 (무기, 타이어, 이야기 장 전부 열기. 차량은 처음부터 모두 열려 있음)</label>
     <label class="opt sel">시점<select id="opt-cam"><option value="low">낮은 추격 뷰 (기본, 차량 뒤 낮은 시점)</option><option value="top">탑뷰 (위에서 내려다봄)</option><option value="cockpit">운전석 뷰 (1인칭)</option></select></label>
     <button type="button" class="plain" id="opt-reset">진행 초기화</button>
     <button type="button" class="plain" id="opt-title">타이틀 화면으로</button>
@@ -576,34 +576,3 @@ body.cine #card { bottom: 9%; }
   <div class="btns"><button type="button" class="go" id="title-start">게임 시작</button><button type="button" class="ghost" id="title-tut">이야기와 운전 연습</button><button type="button" class="ghost" id="title-trailer" hidden>예고편 보기</button></div>
 </div>
 <div id="err" hidden><div class="chip">이 기기에서는 3D 그래픽(WebGL)을 켤 수 없어 장면을 표시하지 못했습니다.</div></div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-(function () {
-  'use strict';
-  var T = window.THREE;
-  var $ = function (id) { return document.getElementById(id); };
-  var cv = $('c');
-  var renderer;
-  try {
-    renderer = new T.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' });
-  } catch (e) {
-    $('err').hidden = false; $('menu').hidden = true;
-    return;
-  }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.outputEncoding = T.sRGBEncoding;
-  renderer.toneMapping = T.ACESFilmicToneMapping;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = T.PCFSoftShadowMap;
-
-  var scene = new T.Scene();
-  scene.background = new T.Color(0x9fd3f2);
-  scene.fog = new T.Fog(0x9fd3f2, 70, 210);
-  var camera = new T.PerspectiveCamera(55, 1, 0.5, 700);
-
-  function C(hex) { return new T.Color(hex).convertSRGBToLinear(); }
-  function rnd(a, b) { return a + Math.random() * (b - a); }
-  function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }
-  var lerp = T.MathUtils.lerp, clamp = T.MathUtils.clamp;
-

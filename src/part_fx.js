@@ -35,7 +35,7 @@
   }
   var ringWarm = C(0xffa64a);
   var flashes = [];
-  for (var fi = 0; fi < 2; fi++) { var pl = new T.PointLight(0xffa040, 0, 34, 1.6); scene.add(pl); flashes.push(pl); }
+  for (var fi = 0; fi < 2; fi++) { var pl = legacy(new T.PointLight(0xffa040, 0, 34, 1.6)); scene.add(pl); flashes.push(pl); }
   var flashIdx = 0, shake = 0;
   var scraps = [], spool = [], scrapGeo = new T.TorusGeometry(0.24, 0.1, 5, 6);
   function spawnScrap(x, y, z, vzRel) {

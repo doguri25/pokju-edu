@@ -209,7 +209,7 @@
     save.cars.laser = true; save.tires.allseason = 1; grantStock();
   }
   function storeSave() { try { window.localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
-  function carOpen(k) { return save.unlockAll || !!save.cars[k]; }
+  function carOpen(k) { return true; }   /* learning edition: every car can be driven from the start */
   function missionOpen(i) { return save.unlockAll || i === 0 || save.cleared.indexOf(i - 1) >= 0; }
   function fits(w, slot) { return WEAPONS[w] && WEAPONS[w].slots.indexOf(slotKind(slot)) >= 0; }
   /* weapons are bought once and then fit any car; a car's stock weapons come with the car. Each weapon has three levels */
@@ -217,7 +217,7 @@
   function wMul(w) { return 1 + 0.25 * (Math.max(1, wLevel(w)) - 1); }
   function grantStock() {
     save.weapons.mg = Math.max(1, save.weapons.mg || 0);
-    for (var k in CARS) if (save.cars[k]) for (var s in CARS[k].loadout) { var w = CARS[k].loadout[s]; if (w && !save.weapons[w]) save.weapons[w] = 1; }
+    for (var k in CARS) if (carOpen(k)) for (var s in CARS[k].loadout) {   /* each car's own weapons come with it */ var w = CARS[k].loadout[s]; if (w && !save.weapons[w]) save.weapons[w] = 1; }
   }
   function tireOwned(k) { return save.unlockAll || !!save.tires[k]; }
   function tireOf(carKey) { var k = save.tire[carKey]; return k && TIRES[k] && tireOwned(k) ? k : 'allseason'; }

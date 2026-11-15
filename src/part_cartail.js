@@ -2,7 +2,7 @@
   var shieldGlow = glowSprite(0x4fb8ff, 8, 0); shieldGlow.position.set(0, 1.2, 0); playerRoot.add(shieldGlow);
   var hitGlow = glowSprite(0xffffff, 6, 0); hitGlow.position.set(0, 1.1, 0); playerRoot.add(hitGlow);
   var dashGlow = glowSprite(0xffe08a, 9, 0); dashGlow.position.set(0, 1.0, 0.5); playerRoot.add(dashGlow);
-  var beam = new T.SpotLight(0xfff0d0, 0, 80, 0.55, 0.7, 1);
+  var beam = legacy(new T.SpotLight(0xfff0d0, 0, 80, 0.55, 0.7, 1));
   beam.position.set(0, 1.4, -2.7); beam.target.position.set(0, 0, -30); playerRoot.add(beam); playerRoot.add(beam.target);
   var beamPool = new T.Mesh(new T.PlaneGeometry(13, 26), new T.MeshBasicMaterial({ map: texGlow, color: C(0xfff0d0), blending: T.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0, fog: false }));
   beamPool.rotation.x = -Math.PI / 2; beamPool.position.set(0, 0.06, -15); playerRoot.add(beamPool);

@@ -479,7 +479,7 @@
   var humpMat = (function () {
     var c = document.createElement('canvas'); c.width = 256; c.height = 16; var x = c.getContext('2d');
     for (var i = 0; i < 16; i++) { x.fillStyle = i % 2 ? '#1c1d20' : '#f2c230'; x.fillRect(i * 16, 0, 16, 16); }
-    var tx = new T.CanvasTexture(c); tx.encoding = T.sRGBEncoding; return new T.MeshStandardMaterial({ map: tx, roughness: 0.8 });
+    var tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace; return new T.MeshStandardMaterial({ map: tx, roughness: 0.8 });
   })();
   /* a patch lying on the road; round ones are pinched into an ellipse row by row so they still bend with the hills */
   function flatPatch(w, l, mat, rows, round) {
@@ -551,7 +551,7 @@
     g.fillStyle = '#b8c4cc'; g.fillRect(0, 0, 64, 256);
     for (i = 0; i < 46; i++) { var x = Math.random() * 64, y = Math.random() * 256, l = 20 + Math.random() * 60; g.strokeStyle = 'rgba(255,255,255,' + (0.25 + Math.random() * 0.5) + ')'; g.lineWidth = 1 + Math.random() * 1.6; g.beginPath(); g.moveTo(x, y); g.bezierCurveTo(x + 4, y + l * 0.3, x - 4, y + l * 0.7, x + 1, y + l); g.stroke(); }
     for (i = 0; i < 20; i++) { g.fillStyle = 'rgba(40,60,70,' + (0.1 + Math.random() * 0.2) + ')'; g.beginPath(); g.ellipse(Math.random() * 64, Math.random() * 256, 4 + Math.random() * 8, 10 + Math.random() * 22, 0, 0, 6.3); g.fill(); }
-    var t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.encoding = T.sRGBEncoding; return t;
+    var t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.colorSpace = T.SRGBColorSpace; return t;
   })();
   RM.stream = new T.MeshStandardMaterial({ color: C(0x6fa8c4), map: flowTex, roughness: 0.14, metalness: 0.2, transparent: true, opacity: 0.9, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   RM.bank = new T.MeshStandardMaterial({ color: C(0x5a5346), roughness: 0.5, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });

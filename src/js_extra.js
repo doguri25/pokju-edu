@@ -124,7 +124,7 @@
     function B(w, h, l, mat, x, y, z) { var m = new T.Mesh(new T.BoxGeometry(w, h, l), mat); m.position.set(x, y, z); cockpit.add(m); return m; }
     function screen(w, h, cw, ch) {
       var c = document.createElement('canvas'); c.width = cw; c.height = ch;
-      var tx = new T.CanvasTexture(c); tx.encoding = T.sRGBEncoding;
+      var tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace;
       var m = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ map: tx, fog: false }));
       cockpit.add(m);
       return { c: c, x: c.getContext('2d'), tx: tx, m: m };
@@ -259,8 +259,8 @@
   function makeThumbs() {
     var sc = new T.Scene(), cam = new T.PerspectiveCamera(30, 4 / 3, 0.05, 60), box = new T.Box3(), ctr = new T.Vector3(), size = new T.Vector3(), w;
     sc.background = new T.Color(0xe3ebf5);
-    sc.add(new T.HemisphereLight(0xffffff, 0x9aa3b0, 1.05));
-    var dl = new T.DirectionalLight(0xffffff, 1.3); dl.position.set(4, 6, 2); sc.add(dl);
+    sc.add(legacy(new T.HemisphereLight(0xffffff, 0x9aa3b0, 1.05)));
+    var dl = legacy(new T.DirectionalLight(0xffffff, 1.3)); dl.position.set(4, 6, 2); sc.add(dl);
     var floor = new T.Mesh(new T.CircleGeometry(1, 28), new T.MeshBasicMaterial({ color: 0xcfd8e4 })); floor.rotation.x = -Math.PI / 2; sc.add(floor);
     var pr = renderer.getPixelRatio(), ex = renderer.toneMappingExposure, keepView = viewU.value;
     renderer.setPixelRatio(1); renderer.setSize(320, 240, false); renderer.toneMappingExposure = 1; viewU.value = cam.matrixWorldInverse;

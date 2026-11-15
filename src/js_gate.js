@@ -29,7 +29,7 @@
     g.add(bx(2 * QG_EDGE + 0.4, 0.22, 0.22, barM, 0, 4.62, 0));
     for (i = 0; i < n; i++) {
       var c = document.createElement('canvas'); c.width = 256; c.height = 128;
-      var tx = new T.CanvasTexture(c); tx.encoding = T.sRGBEncoding;
+      var tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace;
       var bw = Math.min(W - 0.5, 4.2), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
       m.position.set(-QG_EDGE + W * (i + 0.5), 3.3, 0.05); g.add(m);
       var lane = new T.Mesh(new T.PlaneGeometry(W - 0.5, 3), new T.MeshBasicMaterial({ color: C(parseInt(QG_COL[i].slice(1), 16)), transparent: true, opacity: 0.32, depthWrite: false }));
@@ -104,7 +104,7 @@
       var ball = new T.Mesh(new T.SphereGeometry(0.85, 16, 12), std(col, 0.35)); ball.scale.y = 1.15; ball.position.y = 3.3; ball.castShadow = true; b.add(ball);
       b.add(cyl(0.02, 0.02, 1.3, 4, M.white, 0, 2.05, 0));
       var c = document.createElement('canvas'); c.width = 256; c.height = 128;
-      var tx = new T.CanvasTexture(c); tx.encoding = T.sRGBEncoding;
+      var tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace;
       var bw = Math.min(W - 0.6, 3.2), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
       m.position.y = 1.35; b.add(m);
       b.position.x = x; g.add(b);

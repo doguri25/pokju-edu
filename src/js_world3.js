@@ -13,7 +13,7 @@
     x.fillStyle = '#4a463e'; for (i = 0; i < 4; i++) x.fillRect(i * 128, 0, 4, 110);
     x.fillStyle = '#ff8a2a'; x.fillRect(0, 100, 512, 4);
     x.fillStyle = '#2f3136'; x.fillRect(0, 110, 512, 18);
-    var tx = new T.CanvasTexture(c); tx.encoding = T.sRGBEncoding; tx.anisotropy = 4;
+    var tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = 4;
     return new T.MeshBasicMaterial({ map: tx });
   })();
   M.tunCeil = new T.MeshBasicMaterial({ color: C(0x35373c) });

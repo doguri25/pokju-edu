@@ -65,10 +65,10 @@
     if (!carQ.length) return;
     var key = carQ.shift(), car = CARS[key], W = 256, H = 160, g = car.g, par = g.parent, vis = g.visible, hid = [], L = car.spec.L, i, j, d;
     if (!thumbRT) {
-      thumbRT = new T.WebGLRenderTarget(W, H); thumbRT.texture.encoding = T.sRGBEncoding;
+      thumbRT = new T.WebGLRenderTarget(W, H); thumbRT.texture.colorSpace = T.SRGBColorSpace;
       thumbScene = new T.Scene(); thumbScene.background = new T.Color(0xdfe8f3);
-      thumbScene.add(new T.HemisphereLight(0xffffff, 0x9aa3b0, 1.0));
-      var dl = new T.DirectionalLight(0xffffff, 1.25); dl.position.set(-5, 8, -6); thumbScene.add(dl);
+      thumbScene.add(legacy(new T.HemisphereLight(0xffffff, 0x9aa3b0, 1.0)));
+      var dl = legacy(new T.DirectionalLight(0xffffff, 1.25)); dl.position.set(-5, 8, -6); thumbScene.add(dl);
       var fl = new T.Mesh(new T.CircleGeometry(40, 32), new T.MeshBasicMaterial({ color: C(0xc9d4e2) })); fl.rotation.x = -Math.PI / 2; fl.position.y = -0.02; thumbScene.add(fl);
       thumbCam = new T.PerspectiveCamera(26, W / H, 0.1, 120);
       thumbCv = document.createElement('canvas'); thumbCv.width = W; thumbCv.height = H; thumbBuf = new Uint8Array(W * H * 4);
@@ -100,7 +100,7 @@
       var y0 = 20 + Math.random() * 88, x0 = 10 + Math.random() * 120, len = 50 + Math.random() * 110;
       g.strokeStyle = i % 3 ? 'rgba(215,215,210,0.85)' : 'rgba(30,28,26,0.9)'; g.lineWidth = 1 + Math.random() * 2.2; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + len, y0 + (Math.random() - 0.5) * 16); g.stroke();
     }
-    var t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; return t;
+    var t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; return t;
   }
   var dmgRoot = new T.Group(), dmgDecals = [], dmgStage = 0, dmgLean = 1, dmgCar = '', dmgRoll = 0, dmgPitch = 0, dmgGeo = new T.PlaneGeometry(1, 1);
   (function () {
@@ -150,7 +150,7 @@
   }
 
   /* ---------- rear-view mirror: the road behind is drawn into a small target every other frame and shown, flipped left to right, on a panel at the top of the screen ---------- */
-  var mirrorRT = new T.WebGLRenderTarget(384, 128); mirrorRT.texture.encoding = T.sRGBEncoding;
+  var mirrorRT = new T.WebGLRenderTarget(384, 128); mirrorRT.texture.colorSpace = T.SRGBColorSpace;
   var mirrorCam = new T.PerspectiveCamera(40, 3, 0.5, 90), mirrorN = 0;
   var mirrorQuad = new T.Mesh(new T.PlaneGeometry(1, 1), new T.ShaderMaterial({ uniforms: { tMap: { value: mirrorRT.texture } }, depthTest: false, depthWrite: false, transparent: true, fog: false,
     vertexShader: 'varying vec2 vUv;\nvoid main() {\n\tvUv = uv;\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}',

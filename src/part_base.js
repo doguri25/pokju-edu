@@ -23,7 +23,7 @@
       g.fillRect(Math.random() * 256, Math.random() * 256, rnd(1, 3), rnd(1, 5));
     }
     var t = new T.CanvasTexture(c);
-    t.wrapS = t.wrapT = T.RepeatWrapping; t.encoding = T.sRGBEncoding; t.anisotropy = 4;
+    t.wrapS = t.wrapT = T.RepeatWrapping; t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4;
     return t;
   }
   function facadeTex(emissive) {
@@ -38,14 +38,14 @@
       g.fillRect(x * 64 + 14, y * 64 + 12, 36, 40);
     }
     var t = new T.CanvasTexture(c);
-    t.wrapS = t.wrapT = T.RepeatWrapping; t.encoding = T.sRGBEncoding;
+    t.wrapS = t.wrapT = T.RepeatWrapping; t.colorSpace = T.SRGBColorSpace;
     return t;
   }
 
   /* ---------- lights and time-of-day presets ---------- */
-  var hemi = new T.HemisphereLight(0xffffff, 0x888888, 1);
+  var hemi = legacy(new T.HemisphereLight(0xffffff, 0x888888, 1));
   scene.add(hemi);
-  var sun = new T.DirectionalLight(0xffffff, 1);
+  var sun = legacy(new T.DirectionalLight(0xffffff, 1));
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   var sc = sun.shadow.camera;
