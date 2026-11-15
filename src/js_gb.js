@@ -1651,6 +1651,9 @@
       p.vz += (veff - p.vz) * dt * 1.6 * p.drift; if (p.kind === 'glow') p.vy -= 9 * dt;
       p.s.position.x += p.vx * dt; p.s.position.y += p.vy * dt; p.s.position.z += p.vz * dt;
       p.s.scale.set(s, s, 1); p.s.material.opacity = p.a0 * (1 - t * t);
+      /* a puff or flash right in front of the lens fades out instead of filling the screen (white flicker, black smoke) */
+      var pcd = p.s.position.distanceTo(camera.position) - s * 0.5;
+      if (pcd < 7) p.s.material.opacity *= clamp((pcd - 1) / 6, 0, 1);
       if (p.rs) p.s.material.rotation += p.rs * dt;
     }
     for (i = debris.length - 1; i >= 0; i--) {
@@ -1687,7 +1690,7 @@
         sp.pull = false; sp.m.visible = false; spool.push(sp); scraps.splice(i, 1);
       }
     }
-    for (i = 0; i < flashes.length; i++) flashes[i].intensity = Math.max(0, flashes[i].intensity - dt * 22);
+    for (i = 0; i < flashes.length; i++) flashes[i].intensity = Math.max(0, flashes[i].intensity - dt * 26);
     fx3Step(dt);
 
     /* mission progress, road hints and captions */
@@ -1779,7 +1782,7 @@
 
   /* start on the selection screen: the chosen car drives up the screen behind the panel */
   loadSave(); applyLink(); setMuted(save.muted); musicOn = save.music; sfxOn = save.sfx; setCam(save.cam);
-  makeThumbs(); resize(); applyGfx(save.gfx === 'auto' ? gfxStart() : save.gfx); carQ = CAR_ORDER.slice();
+  makeThumbs(); resize(); applyGfx(save.gfx === 'auto' ? gfxStart() : save.gfx); gfxApplyPending(); carQ = CAR_ORDER.slice();
   touchUI = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   $('opt-unlock').checked = save.unlockAll; $('opt-gfx').value = save.gfx; $('opt-calm').checked = save.calm; $('opt-mirror').checked = save.mirror; syncSound();
   showTitle();
@@ -1792,7 +1795,7 @@
     if (slowCd > 0) slowCd -= rdt;
     if (eventCd > 0) eventCd -= rdt;
     musicTick(); padStart();
-    if (!document.hidden && rdt > 0) { if (!paused) step(rdt * timeScale); if (carQ.length && mode === 'menu') carThumbStep(); mirrorPass(); renderFrame(); gfxTick(rdt); }
+    if (!document.hidden && rdt > 0) { gfxApplyPending(); if (!paused) step(rdt * timeScale); if (carQ.length && mode === 'menu') carThumbStep(); mirrorPass(); renderFrame(); gfxTick(rdt); }
     requestAnimationFrame(frame);
   }
   /* one-off: merge the static parts of everything that loops or stands by the road */
@@ -1824,7 +1827,7 @@
       if (!(o && o.brief)) briefT = 0.001;
     },
     setCond: function (o) { for (var k in o) cond[k] = o[k]; if (mode === 'menu') { pickCourse(); renderCond(); renderFoot(); } },
-    kind: function (k) { setKind(k); }, mirror: function () { mirrorPass(true); return mirrorQuad.visible; }, gfxFeed: function (dt, n) { for (var i = 0; i < n; i++) gfxTick(dt); return { level: gfxNow, res: resK, pr: +renderer.getPixelRatio().toFixed(2), mw: mirrorRT.width, noUp: gfxNoUp, best: +gfxBest.toFixed(4), shadow: sun.castShadow }; }, gfx: function (k) { save.gfx = k; applyGfx(k === 'auto' ? 'high' : k); return gfxNow; }, thumbs: function () { while (carQ.length) carThumbStep(); return Object.keys(THUMB).length; }, help: openHelp, ally: function () { return allyE ? { hp: Math.round(allyE.hp), ahead: Math.round(allyE.d - dist), x: +allyE.x.toFixed(1), kmh: Math.round(allyE.sp.v * 3.6), fin: allyE.fin } : null; }, mounts: function () { return sceneryNow.filter(function (o) { return o.userData.mount; }).map(function (o) { return [Math.round(o.position.x), Math.round(o.position.z), o.material.color.getHexString(), o.userData.base.getHexString(), o.visible]; }); }, dbg: function () { return { rv: rainMesh.visible, ro: rainMat.opacity, n: rainGeo.drawRange.count, p: [rainPos[0], rainPos[1], rainPos[2], rainPos[3], rainPos[4], rainPos[5]], sv: snowMesh.visible, so: snowMat.opacity, sp: [snowPos[0], snowPos[1], snowPos[2]], rainK: rainK, snowK: snowK, tunK: tunK }; }, regions: REGIONS, weathers: WEATHERS, missions: MISSIONS, addProp: function (t, ahead, x, o) { return addProp(t, dist + ahead, x, o); },
+    kind: function (k) { setKind(k); }, mirror: function () { mirrorPass(true); return mirrorQuad.visible; }, gfxFeed: function (dt, n) { for (var i = 0; i < n; i++) { gfxTick(dt); gfxApplyPending(); } return { level: gfxNow, res: resK, pr: +renderer.getPixelRatio().toFixed(2), mw: mirrorRT.width, noUp: gfxNoUp, best: +gfxBest.toFixed(4), shadow: sun.castShadow }; }, gfx: function (k) { save.gfx = k; applyGfx(k === 'auto' ? 'high' : k); gfxApplyPending(); return gfxNow; }, thumbs: function () { while (carQ.length) carThumbStep(); return Object.keys(THUMB).length; }, help: openHelp, ally: function () { return allyE ? { hp: Math.round(allyE.hp), ahead: Math.round(allyE.d - dist), x: +allyE.x.toFixed(1), kmh: Math.round(allyE.sp.v * 3.6), fin: allyE.fin } : null; }, mounts: function () { return sceneryNow.filter(function (o) { return o.userData.mount; }).map(function (o) { return [Math.round(o.position.x), Math.round(o.position.z), o.material.color.getHexString(), o.userData.base.getHexString(), o.visible]; }); }, dbg: function () { return { rv: rainMesh.visible, ro: rainMat.opacity, n: rainGeo.drawRange.count, p: [rainPos[0], rainPos[1], rainPos[2], rainPos[3], rainPos[4], rainPos[5]], sv: snowMesh.visible, so: snowMat.opacity, sp: [snowPos[0], snowPos[1], snowPos[2]], rainK: rainK, snowK: snowK, tunK: tunK }; }, regions: REGIONS, weathers: WEATHERS, missions: MISSIONS, addProp: function (t, ahead, x, o) { return addProp(t, dist + ahead, x, o); },
     rivals: function () { return rivals.map(function (e) { return { key: e.key, ahead: Math.round(e.d - dist), x: +e.x.toFixed(1), kmh: Math.round(e.sp.v * 3.6), fin: e.fin, stun: +e.stun.toFixed(1), hp: e.hp }; }); },
     auto: function (sec) { autoT = sec; },
     cam: function (m) { setCam(m, true); },

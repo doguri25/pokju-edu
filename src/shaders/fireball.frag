@@ -20,6 +20,8 @@ void main() {
   c = mix(c, vec3(3.2, 2.2, 0.9), smoothstep(0.72, 0.97, heat));
   float a = smoothstep(uT * 1.05 - 0.12, uT * 1.05 + 0.12, nd + 0.12) * (1.0 - smoothstep(0.72, 1.0, uT));
   a *= smoothstep(0.02, 0.4, face) * (0.6 + 0.4 * smoothstep(0.0, 0.25, heat));
+  a *= 0.55 + 0.45 * smoothstep(0.05, 0.3, heat);                       // the sooty shell never turns opaque
+  a *= smoothstep(3.0, 11.0, length(vView));                            // close to the camera it thins away: a blast next to the car must not black out the screen
   if (a < 0.01) discard;
   gl_FragColor = vec4(c, a);
 }

@@ -51,7 +51,7 @@
   }
   var ringWarm = C(0xffa64a);
   var flashes = [];
-  for (var fi = 0; fi < 2; fi++) { var pl = legacy(new T.PointLight(0xffa040, 0, 34, 1.6)); scene.add(pl); flashes.push(pl); }
+  for (var fi = 0; fi < 2; fi++) { var pl = legacy(new T.PointLight(0xffa040, 0, 22, 1.6)); scene.add(pl); flashes.push(pl); }
   var flashIdx = 0, shake = 0;
   var scraps = [], spool = [], scrapGeo = new T.TorusGeometry(0.24, 0.1, 5, 6);
   function spawnScrap(x, y, z, vzRel) {
@@ -73,7 +73,7 @@
     var n = Math.round(8 * Math.min(size, 2));
     for (i = 0; i < n; i++) spawnDebris(x, y, z, i % 3 === 0 ? M.dark : (i % 3 === 1 ? bodyMat : M.metal), vzRel, true);
     spawnRing(x, z, 5 * size, 0.32, vzRel, ringWarm);
-    var fl = flashes[flashIdx++ % flashes.length]; fl.position.set(x, y + 2, z); fl.intensity = 5 * Math.min(size, 2);
+    var fl = flashes[flashIdx++ % flashes.length]; fl.position.set(x, y + 2, z); fl.intensity = Math.max(fl.intensity, (2.2 - 0.8 * cur.night) * Math.min(size, 1.6));   /* a glow on the road around it, not the whole street lighting up (that read as flicker) */
     shake = Math.min(1.2, shake + 0.45 * size);
   }
 

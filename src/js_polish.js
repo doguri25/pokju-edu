@@ -56,9 +56,13 @@
     if (sun.shadow.mapSize.x !== q.map) { sun.shadow.mapSize.set(q.map, q.map); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
     if (typeof mirrorRT !== 'undefined' && mirrorRT.width !== q.mw) mirrorRT.setSize(q.mw, Math.round(q.mw / 3));
     gfxWin.length = 0; gfxHold = 2;
-    renderer.setPixelRatio(gfxRatio()); resize();
+    gfxResizeNext = true;
   }
-  function setRes(k) { resK = k; gfxWin.length = 0; gfxHold = 1.5; gfxFast = 0; renderer.setPixelRatio(gfxRatio()); resize(); }
+  function setRes(k) { resK = k; gfxWin.length = 0; gfxHold = 1.5; gfxFast = 0; gfxResizeNext = true; }
+  /* a new resolution is applied at the start of a frame, just before it is drawn: resizing the canvas clears it, and done after a frame
+     was drawn (gfxTick runs then) the cleared canvas showed for a moment, a black flash in the middle of a fight */
+  var gfxResizeNext = false;
+  function gfxApplyPending() { if (!gfxResizeNext) return; gfxResizeNext = false; renderer.setPixelRatio(gfxRatio()); resize(); }
   /* one step slower: the resolution first; then a level down, at a resolution that keeps the pixel count from going up again */
   function gfxSlower() {
     var i = RES_STEPS.indexOf(resK), pr0 = gfxRatio(), base, j;
