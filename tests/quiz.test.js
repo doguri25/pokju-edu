@@ -144,5 +144,29 @@ test('0의 곱: zero 를 켜면 7×0 같은 문제가 섞이고, 정답은 0, �
   assert.ok(d2.items.every(function (q) { return q.b !== 0; }), 'zero 를 안 켜면 나오지 않는다');
 });
 
+test('맞춤법 은행 전체: 빈칸 하나, 정답은 틀린 보기에 없음, 보기 1~3개, 설명 있음, 같은 문장 없음, ai 수는 문장 수 이하', function () {
+  var seen = {};
+  SPELL.sets.forEach(function (st) {
+    assert.ok(st.key && st.name && st.tip, st.key + ' 묶음 정보');
+    assert.ok(!st.ai || (st.ai > 0 && st.ai <= st.items.length), st.key + ' ai ' + st.ai);
+    st.items.forEach(function (it, i) {
+      var where = st.key + ':' + i + ' ' + it.q;
+      assert.strictEqual(it.q.split('___').length, 2, where + ' 빈칸');
+      assert.ok(it.a && it.w.length >= 1 && it.w.length <= 3 && it.w.indexOf(it.a) < 0, where + ' 보기');
+      assert.ok(it.why && it.why.length >= 8, where + ' 설명');
+      var k = it.q.replace(/\s+/g, '');
+      assert.ok(!seen[k], where + ' 같은 문장이 ' + seen[k] + '에도 있음'); seen[k] = st.key + ':' + i;
+    });
+  });
+});
+test('맞춤법 덱: 새로 더한 묶음도 10문제가 나오고 정답 위치가 맞다', function () {
+  var keys = SPELL.sets.map(function (st) { return st.key; });
+  keys.forEach(function (k, n) {
+    var d = Q.quizDeck({ subject: 'spell', sets: [k], bank: BANK, n: 10 }, seeded(100 + n));
+    assert.strictEqual(d.items.length, 10, k);
+    d.items.forEach(function (q) { assert.strictEqual(q.opts[q.slot], q.ans, k); assert.ok(new RegExp('^sp:' + k + ':\\d+$').test(q.key), q.key); });
+  });
+});
+
 console.log(runs - fails + ' / ' + runs + ' 통과');
 process.exit(fails ? 1 : 0);

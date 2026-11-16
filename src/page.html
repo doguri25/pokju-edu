@@ -309,6 +309,9 @@ body.cine #card { bottom: 9%; }
 #title b { font-family: var(--display); font-weight: 400; font-size: clamp(56px, 11vw, 150px); line-height: 1; }
 #title .more { font-size: clamp(15px, 1.9vw, 22px); font-weight: 700; line-height: 1.5; max-width: 720px; text-wrap: pretty; }
 #title .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+/* 1.5: the spelling sentences made with Upstage Solar say so */
+#title .credit { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; max-width: 100%; box-sizing: border-box; margin-top: 2px; padding: 5px 14px 5px 5px; border-radius: 999px; background: var(--chip); font-family: var(--body); font-size: 13px; font-weight: 500; line-height: 1.35; color: var(--chip-sub); text-shadow: none; }
+#title .credit i { flex: none; font-style: normal; font-weight: 700; font-size: 11px; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 999px; background: var(--grad); color: #fff; }
 #title button { min-height: 54px; padding: 0 30px; border-radius: 27px; border: 0; font-family: var(--display); font-size: 21px; text-shadow: none; }
 #title .go { flex: 0 1 auto; background: var(--accent); color: var(--accent-fg); }
 #title .ghost { background: var(--chip); color: var(--chip-fg); }
@@ -596,7 +599,7 @@ body.paused #qtoast, body.paused #coach, body.paused #qbox, body.paused #caption
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><button type="button" class="home" id="brand-title" title="타이틀 화면으로" aria-label="타이틀 화면으로">⌂</button><b>폭주 구구단</b><span>정식 버전 1.4</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><button type="button" class="home" id="brand-title" title="타이틀 화면으로" aria-label="타이틀 화면으로">⌂</button><b>폭주 구구단</b><span>정식 버전 1.5</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
     <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false">아이템</button>
@@ -753,5 +756,6 @@ body.paused #qtoast, body.paused #coach, body.paused #qbox, body.paused #caption
   <span class="more" id="title-more"></span>
   <div class="kinds" id="title-kinds" role="group" aria-label="모드 골라 시작"></div>
   <div class="btns"><button type="button" class="go" id="title-start">게임 시작</button><button type="button" class="ghost" id="title-tut">이야기와 운전 연습</button><button type="button" class="ghost" id="title-trailer" hidden>예고편 보기</button></div>
+  <span class="credit" id="title-credit"><i>AI</i><span id="title-credit-text">맞춤법 문장은 업스테이지 Solar AI로 만들고 검증했어요</span></span>
 </div>
 <div id="err" hidden><div class="chip">이 기기에서는 3D 그래픽(WebGL)을 켤 수 없어 장면을 표시하지 못했습니다.</div></div>

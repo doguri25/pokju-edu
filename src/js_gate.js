@@ -92,6 +92,9 @@
   }
   var SPELL_SETS = {}; SPELL_DATA.sets.forEach(function (st) { SPELL_SETS[st.key] = st; });
   var SPELL_ORDER = SPELL_DATA.sets.map(function (st) { return st.key; });
+  /* 1.5: how many sentences were made with Upstage Solar (each set counts its own, data/spell.json "ai"); the title and the set details say so */
+  var SPELL_AI = SPELL_DATA.sets.reduce(function (n, st) { return n + (st.ai || 0); }, 0), SPELL_ALL = SPELL_DATA.sets.reduce(function (n, st) { return n + st.items.length; }, 0);
+  (function () { var el = $('title-credit-text'); if (el && SPELL_AI) el.textContent = '맞춤법 문장 ' + SPELL_ALL + '개 가운데 ' + SPELL_AI + '개는 업스테이지 Solar AI로 만들고 검증했어요'; })();
   function spellSel() { var s = save.quiz.sel, k = s.spell || 'dwae'; return { subject: 'spell', sets: k === 'all' ? SPELL_ORDER.slice() : [own(SPELL_SETS, k) ? k : 'dwae'], type: 'spell', pace: s.pace, foe: s.foe !== 'off', style: s.style === 'shoot' ? 'shoot' : 'gate' }; }
   function setLabel(sets) { return sets.length === SPELL_ORDER.length ? '모든 묶음' : sets.map(function (k) { return SPELL_SETS[k].name; }).join('·'); }
   function quizSel() { var s = save.quiz.sel; return { dans: s.dan === 'all' ? [2, 3, 4, 5, 6, 7, 8, 9] : s.dan.split(',').map(Number), type: s.type, pace: s.pace, foe: s.foe !== 'off', style: s.style === 'shoot' ? 'shoot' : 'gate' }; }
@@ -295,7 +298,9 @@
     $('opt-foe').value = s.foe === 'off' ? 'off' : 'on'; $('opt-style').value = o.style;
     if (spell) {
       var st = o.sets.length === 1 ? SPELL_SETS[o.sets[0]] : null;
+      var aiN = st ? (st.ai || 0) : SPELL_AI, allN = st ? st.items.length : SPELL_ALL;
       $('quiz-brief').innerHTML = row('문제 수', '10문제') + row('요령', st ? st.tip : '모든 묶음에서 섞어 나온다. 덜 익힌 문장이 더 자주 나온다.') +
+        row('문장', allN + '개' + (aiN ? ' · ' + (aiN === allN ? '모두' : aiN + '개는') + ' 업스테이지 Solar AI로 만들고 검증' : '')) +
         row('보기', (o.style === 'shoot' ? '풍선 ' : '깃발 문 ') + '2~4개') + row('생각할 시간', '약 ' + (p.t + t.think) + '초 (문장을 읽는 시간 2초 더함)') + row('틀리면', '정답 문장과 까닭을 보여 준다. 그 문제는 끝에 한 번 더 나온다.');
       return;
     }

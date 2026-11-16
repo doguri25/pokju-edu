@@ -3,7 +3,7 @@
 //   node tools/spell-merge.mjs tools/out/spell-decisions.json
 //
 // Reads the candidates (tools/out/spell-candidates.json, from tools/spell-gen.mjs) and the teacher's decisions from the review page,
-// { done: true, decisions: { "<set>-<n>": { ok: true|false, q?, a?, w?, why? } } }. A candidate with no decision keeps the review page's
+// { done: true, decisions: { "<set>-<n>": { ok: true|false, q?, a?, w?, why? } } }. A set records in "ai" how many of its sentences Solar made. A candidate with no decision keeps the review page's
 // default: approved if it passed every check, left out if not. Fields given with a decision replace the generated ones (the teacher's edit).
 //
 // New sentences are only ever added at the END of a set: the game records each sentence by its place in its set (sp:<set>:<n>),
@@ -45,6 +45,7 @@ for (const cs of cand.sets) {
     bank.sets.push(set);
   }
   set.items.push(...take);
+  if (take.length) set.ai = (set.ai || 0) + take.length;   /* how many of its sentences Solar made: the game says so (title, set details) */
   added += take.length;
   report.push(cs.key + ' ' + cs.name + ': +' + take.length + ' → ' + set.items.length);
 }
@@ -52,7 +53,7 @@ for (const cs of cand.sets) {
 const J = v => JSON.stringify(v);
 const item = it => '{ "q": ' + J(it.q) + ', "a": ' + J(it.a) + ', "w": [' + it.w.map(J).join(', ') + '], "why": ' + J(it.why) + ' }';
 const text = '{\n  "about": ' + J(bank.about) + ',\n  "sets": [\n' + bank.sets.map(s =>
-  '    { "key": ' + J(s.key) + ', "name": ' + J(s.name) + ', "tip": ' + J(s.tip) + ',\n      "items": [\n' + s.items.map(i => '        ' + item(i)).join(',\n') + '\n      ] }').join(',\n') + '\n  ]\n}\n';
+  '    { "key": ' + J(s.key) + ', "name": ' + J(s.name) + ', "tip": ' + J(s.tip) + (s.ai ? ', "ai": ' + s.ai : '') + ',\n      "items": [\n' + s.items.map(i => '        ' + item(i)).join(',\n') + '\n      ] }').join(',\n') + '\n  ]\n}\n';
 JSON.parse(text);
 fs.writeFileSync(BANK, text);
 console.log(report.join('\n'));
