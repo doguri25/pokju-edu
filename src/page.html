@@ -1,5 +1,5 @@
 <title>폭주 구구단</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@500;700;900&display=swap">
 <style>
 /* Layout: full-bleed live 3D scene where the car always drives up the screen. A tabbed selection panel sits on the left (bottom sheet on phones) with the view shifted so the car stays visible; the chosen car's detail opens under its own card. In play (top-down, low chase or driver's-seat view, switchable) small HUD chips hug the edges (objective with a run clock, status, speed with a centred gain/loss gauge) and a throttle lever sits at the left hand; no guidance text is drawn over the road. The trailer shows large title cards between letterbox bars. */
 /* Look (graphics upgrade, after the mockup): one dark glass look over the 3D scene. Navy glass panels with a faint top sheen,
@@ -420,9 +420,6 @@ select option:checked { background-color: #2c2f55; }
    「문제 n / 10」 line while it is asked (the HUD chip shows it too), so the card ends above the signs */
 @media (max-width: 720px) and (orientation: portrait) { .qbox.long b { font-size: 28px; } .qbox.long:not(.ok):not(.no) #q-kick { display: none; } }
 .qbox.ok .qopts span, .qbox.no .qopts span { opacity: 0.3; }
-#q-timer { display: block; height: 4px; margin: 6px 4px 0; border-radius: 2px; background: var(--track); overflow: hidden; }
-#q-timer i { display: block; height: 100%; width: 0; background: var(--grad); border-radius: 2px; }
-.qbox.ok #q-timer, .qbox.no #q-timer { visibility: hidden; }
 
 /* top left: the run and its ten questions */
 .obj .head b { font-size: 20px; }
@@ -579,7 +576,7 @@ body.paused #qtoast, body.paused #coach, body.paused #qbox, body.paused #caption
 <div id="fade"></div>
 <div id="caption" class="chip" hidden aria-live="polite"></div>
 
-<div class="qbox" id="qbox" hidden aria-live="polite"><span id="q-kick"></span><b id="q-text"></b><p id="q-why" hidden></p><div class="qopts" id="q-opts"></div><span id="q-timer"><i id="q-timer-bar"></i></span></div>
+<div class="qbox" id="qbox" hidden aria-live="polite"><span id="q-kick"></span><b id="q-text"></b><p id="q-why" hidden></p><div class="qopts" id="q-opts"></div></div>
 <div id="qtoast" aria-live="polite"><b id="qtoast-t"></b><span id="qtoast-s"></span></div>
 <div class="hud" id="hud" hidden>
   <div class="row">

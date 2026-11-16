@@ -1863,6 +1863,9 @@
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
   window.__preview = {
+    audioState: function () { return { ios: IOS, ac: AC ? AC.state : null, hush: hush ? (hush.paused ? 'paused' : 'playing') : null, session: navigator.audioSession ? navigator.audioSession.type : null }; },
+    sign: function (t, body) { var c = document.createElement('canvas'); c.width = 512; c.height = 256; gateTex(c, t, QG_COL[0], false, body); return c.toDataURL(); },
+    fontsOk: function (t) { return { disp: document.fonts.check('400 64px "Black Han Sans"', t), body: document.fonts.check('900 64px "Noto Sans KR"', t) }; },
     diag: function () {
       var bad = [], fin = function (n, v) { if (typeof v !== 'number' || !isFinite(v)) bad.push(n + '=' + v); };
       var v3 = function (n, v) { fin(n + '.x', v.x); fin(n + '.y', v.y); fin(n + '.z', v.z); };

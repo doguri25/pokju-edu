@@ -1,8 +1,30 @@
   /* ---------- sound: everything is synthesised, nothing is loaded; starts after the first click ---------- */
   var AC = null, master = null, noiseBuf = null, engOsc = null, engGain = null, engLP = null, muted = false, lastSfx = {};
   var musGain = null, musicOn = true, musMode = 'off', musStep = 0, musNext = 0, echoGain = null, probing = false;
+  /* iPhone and iPad (1.5): sounds made in the page (Web Audio) were silent there.
+     - With the ring/silent switch on silent, iOS mutes Web Audio but not media playback. Declaring the page a player
+       (navigator.audioSession, iOS 17) and, for older systems, keeping a silent sound file playing puts the page in that category.
+     - After a call, an alarm or a switch to another app iOS leaves the audio "interrupted", not "suspended": any state other than
+       running is resumed at the next touch. */
+  var IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1), hush = null;
+  function silentWav() {
+    var n = 800, b = new ArrayBuffer(44 + n), v = new DataView(b), p = 0, i;
+    function s4(t) { for (var j = 0; j < 4; j++) v.setUint8(p++, t.charCodeAt(j)); }
+    function u32(x) { v.setUint32(p, x, true); p += 4; }
+    function u16(x) { v.setUint16(p, x, true); p += 2; }
+    s4('RIFF'); u32(36 + n); s4('WAVE'); s4('fmt '); u32(16); u16(1); u16(1); u32(8000); u32(8000); u16(1); u16(8); s4('data'); u32(n);
+    for (i = 0; i < n; i++) v.setUint8(p++, 128);
+    return URL.createObjectURL(new Blob([b], { type: 'audio/wav' }));
+  }
+  function iosPlayback() {
+    try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) {}
+    if (!IOS || document.hidden) return;
+    if (!hush) { try { hush = document.createElement('audio'); hush.setAttribute('playsinline', ''); hush.setAttribute('x-webkit-airplay', 'deny'); hush.loop = true; hush.preload = 'auto'; hush.src = silentWav(); } catch (e) { hush = null; return; } }
+    if (hush.paused) { try { var pr = hush.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} }
+  }
   function audioInit() {
-    if (AC) { if (AC.state === 'suspended') { try { AC.resume(); } catch (e) {} } return; }
+    iosPlayback();
+    if (AC) { if (AC.state !== 'running') { try { var r = AC.resume(); if (r && r.catch) r.catch(function () {}); } catch (e) {} } return; }
     try {
       var Ctor = window.AudioContext || window.webkitAudioContext; if (!Ctor) return;
       AC = new Ctor();
@@ -46,6 +68,7 @@
   document.addEventListener('visibilitychange', function () {
     if (!AC) return;
     try { if (document.hidden) AC.suspend(); else AC.resume(); } catch (e) {}
+    if (hush && document.hidden) { try { hush.pause(); } catch (e) {} }   /* played again by the next touch */
   });
   function tone(type, f0, f1, dur, vol) {
     var o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime;

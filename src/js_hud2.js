@@ -52,7 +52,6 @@
     var combo = dk && quiz.combo >= 2 ? quiz.combo + ' 연속' : '';
     if (hudCache.combo !== combo) { hudCache.combo = combo; $('combo').textContent = combo; $('combo').hidden = !combo; }
     /* the bar fills as the gates come up (they are the real deadline), or over the thinking time when shooting */
-    if (dk && quiz.phase === 'ask' && quiz.askLen) setStyle('q-timer-bar', 'width', pct(quiz.g && quiz.d > quiz.askD0 ? (dist - quiz.askD0) / (quiz.d - quiz.askD0) : quiz.askE / quiz.askLen));
   }
   /* the toast: 「정답!」 or 「아쉬워요」 big in the middle of the road */
   function quizToast(ok, q, again) {
