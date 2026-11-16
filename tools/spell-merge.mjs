@@ -10,8 +10,9 @@
 // so a child's record of the old sentences stays where it was. New sets are added after the old ones.
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');   /* a folder with spaces or Korean letters, or on Windows */
 const BANK = path.join(ROOT, 'data', 'spell.json');
 const cand = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools', 'out', 'spell-candidates.json'), 'utf8'));
 const dec = JSON.parse(fs.readFileSync(process.argv[2] || path.join(ROOT, 'tools', 'out', 'spell-decisions.json'), 'utf8'));

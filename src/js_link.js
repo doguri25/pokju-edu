@@ -20,6 +20,10 @@
     if (p.style === 'gate' || p.style === 'shoot') s.style = p.style;
     if (p.set === 'all' || own(SPELL_SETS, p.set)) s.spell = p.set;
     if (m === 'story') { var ch = (parseInt(p.ch, 10) || 1) - 1; if (ch >= 0 && ch < CHAPTERS.length) { selChapter = ch; linkCh = ch; } }
+    /* the road too (1.5): background, time of day and weather, for the modes that let you choose them */
+    if (REGION_ORDER.indexOf(p.region) >= 0) cond.region = p.region;
+    if (own(TIME_LABEL, p.time)) cond.time = p.time;
+    if (WEATHER_ORDER.indexOf(p.weather) >= 0) cond.weather = p.weather;
     selKind = m; classLink = { label: linkLabel(m) };
   }
   function linkLabel(m) {
@@ -35,6 +39,7 @@
     if (selKind === 'spell') q.push('set=' + s.spell);
     if (selKind === 'quiz' || selKind === 'spell') q.push('style=' + s.style, 'foe=' + s.foe);
     if (selKind !== 'free') q.push('pace=' + s.pace);
+    if (selKind === 'quiz' || selKind === 'spell' || selKind === 'free' || selKind === 'surv') q.push('region=' + cond.region, 'time=' + cond.time, 'weather=' + cond.weather);
     return location.href.split(/[?#]/)[0] + '?' + q.join('&');
   }
   function linkShow() {

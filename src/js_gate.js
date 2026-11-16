@@ -27,12 +27,15 @@
     var gl = x.createLinearGradient(0, m, 0, h * 0.5);
     gl.addColorStop(0, 'rgba(255,255,255,0.45)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
     x.fillStyle = gl; x.beginPath(); x.roundRect(m * 2.2, m * 2.2, w - m * 4.4, h * 0.4, r * 0.75); x.fill();
-    var disp = body === undefined ? displayOK(text) : !body, fs = Math.round(h * (disp ? 0.64 : 0.6)), font = function (z) { return disp ? '400 ' + z + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif' : '900 ' + z + 'px "Noto Sans KR", system-ui, sans-serif'; };
+    var disp = body === undefined ? displayOK(text) : !body, fs = Math.round(h * (disp ? 0.64 : 0.54)), font = function (z) { return disp ? '400 ' + z + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif' : '900 ' + z + 'px "Noto Sans KR", system-ui, sans-serif'; };
     x.font = font(fs); var tw = x.measureText(String(text)).width;
     if (tw > w - h * 0.24) { fs = Math.floor(fs * (w - h * 0.24) / tw); x.font = font(fs); }   /* a word like 가르치셨다 shrinks to fit the sign */
-    x.textAlign = 'center'; x.textBaseline = 'middle';
+    /* centred on its own ink (1.5): the body face sat 15 px lower than the display face on the same sign */
+    x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+    var mt = x.measureText(String(text)), ia = mt.actualBoundingBoxAscent, id = mt.actualBoundingBoxDescent, ty = ia + id > 0 ? h * 0.49 + (ia - id) / 2 : h * 0.55;
+    if (!(ia + id > 0)) x.textBaseline = 'middle';
     x.shadowColor = 'rgba(0,0,0,0.45)'; x.shadowBlur = h * 0.07; x.shadowOffsetY = h * 0.03;
-    x.fillStyle = '#ffffff'; x.fillText(String(text), w / 2, h * 0.55);
+    x.fillStyle = '#ffffff'; x.fillText(String(text), w / 2, ty);
     x.shadowColor = 'transparent'; x.shadowBlur = 0; x.shadowOffsetY = 0;
     x.globalAlpha = 1;
   }
@@ -109,6 +112,14 @@
     for (k in balloonSets) balloonSets[k].g.visible = false;
     quiz.phase = 'off'; quiz.g = null; quiz.b = null; quiz.q = null; $('qbox').hidden = true;
   }
+  /* text in the display face that holds a sign the face does not have (□ ＿ · ★): such a sign came out thin, in a fallback weight
+     (1.5). It is now set in the body face at its heaviest */
+  function dispSet(el, text) {
+    text = String(text);
+    if (!/[□＿·★☆…「」]/.test(text)) { el.textContent = text; return; }
+    el.innerHTML = esc(text).replace(/[□＿·★☆…「」]+/g, '<span class="sym">$&</span>');
+  }
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function danLabel(dans) {
     if (dans.length === 8) return '2단~9단';
     return dans.map(function (d) { return d + '단'; }).join('·');
@@ -150,13 +161,26 @@
     quiz.style = o.style === 'shoot' && EDU.arms ? 'shoot' : 'gate'; quiz.pace = own(QUIZ_PACE, o.pace) ? QUIZ_PACE[o.pace] : QUIZ_PACE.mid; quiz.combo = 0; quiz.best = 0; quiz.ok = 0; quiz.hinted = false;
     quiz.phase = 'wait'; quiz.t = 0.8;
   }
+  /* a phone on its side: the long card (640 px) lay over both HUD chips at the top corners, their names, clock and buttons showing through
+     it (1.5). It now fits between them, or, where the gap is too narrow, goes just below them */
+  function qboxFit() {
+    var el = $('qbox'), st = el.style, hud = $('hud'), vw = window.innerWidth, vh = window.innerHeight;
+    st.left = st.right = st.width = st.transform = st.top = '';
+    if (el.hidden || hud.hidden || vh > 520 || vw <= vh || !el.classList.contains('long')) return;
+    var ro = hud.querySelector('.obj').getBoundingClientRect(), rs = hud.querySelector('.status').getBoundingClientRect(), r = el.getBoundingClientRect();
+    if (!ro.width || !rs.width || r.top >= Math.max(ro.bottom, rs.bottom) || (r.left >= ro.right && r.right <= rs.left)) return;
+    if (rs.left - ro.right >= 280) { st.left = (ro.right + 8) + 'px'; st.right = (vw - rs.left + 8) + 'px'; st.width = 'auto'; st.transform = 'none'; }
+    else st.top = (Math.max(ro.bottom, rs.bottom) + 4) + 'px';
+  }
+  window.addEventListener('resize', function () { if (!$('qbox').hidden) qboxFit(); });
   function qboxSet(kick, text, cls, q, why) {
-    $('q-kick').textContent = kick; $('q-text').textContent = text; $('qbox').className = 'qbox' + (cls ? ' ' + cls : '') + (text.length > 12 ? ' long' : '') + (q && q.type === 'spell' ? ' sp' : '');
+    $('q-kick').textContent = kick; dispSet($('q-text'), text); $('qbox').className = 'qbox' + (cls ? ' ' + cls : '') + (text.length > 12 ? ' long' : '');
     $('q-why').textContent = why || ''; $('q-why').hidden = !why;
     var h = '';
     if (q) q.opts.forEach(function (v, i) { h += '<span style="background:' + QG_COL[i] + '">' + v + '</span>'; });
     $('q-opts').innerHTML = h; $('q-opts').hidden = !q;
     $('qbox').hidden = false;
+    qboxFit();
   }
   /* 맞히기: the options come as numbered balloons, one over each part of the road. They drift in, hover ahead for the time to think, then come on;
      shooting one picks it, and if none is shot the one the car drives into is the pick (so a car with only a saw or missiles can still answer) */
@@ -202,7 +226,7 @@
   function quizJudge(picked, px, car) {
     var dk = quiz.deck, q = quiz.q, first = dk.i <= dk.main, ok = quizAnswer(dk, q, picked);
     postFlash(ok);
-    if (first) factRecord(save.quiz.facts, q.key, ok);
+    if (first) { factRecord(save.quiz.facts, q.key, ok); factLog.push([q.key, ok]); }
     if (quiz.g) { gatesDim(q, picked); quiz.g.banners.forEach(function (b) { b.arrows.opacity = 0; }); gatePulse = 1; }
     if (quiz.b) quiz.b.items.forEach(function (it, i) { if (i !== q.slot) { gateTex(it.c, q.opts[i], QG_COL[i], true, qBody(q)); it.tx.needsUpdate = true; } if (i === picked) { it.popped = true; it.g.visible = false; spawnRing(it.x, quiz.b.g.position.z, 5, 0.35, veff, i === q.slot ? COL.cyan : COL.orange); } });
     if (ok) {
@@ -272,7 +296,7 @@
     $('res-story').textContent = !win ? failWhy + ' ' + quiz.deck.main + '문제 가운데 ' + sc.total + '문제까지 풀고 ' + sc.right + '문제를 맞혔다.'
       : sc.total + '문제 가운데 ' + sc.right + '문제를 맞혔다.' + (sc.missed.length ? ' 틀린 문제는 끝에서 ' + sc.fixed + '개를 다시 맞혔다.' : '');
     resRows([['문제', mission.name + (spell ? '' : ' · ' + QUIZ_TYPES[dk.type].name)], ['맞힌 문제', sc.right + ' / ' + sc.total], ['가장 긴 연속 정답', quiz.best + '개'],
-      ['다시 볼 문제', sc.missed.length ? sc.missed.filter(function (k, i) { return sc.missed.indexOf(k) === i; }).map(function (k) { return fullOf[k]; }).join(spell ? ' / ' : ', ') : '없음'], ['점수', N(score)]]);
+      ['다시 볼 문제', !sc.missed.length ? '없음' : (spell ? '<span class="lines">' : '') + sc.missed.filter(function (k, i) { return sc.missed.indexOf(k) === i; }).map(function (k) { return esc(fullOf[k]); }).join(spell ? '<br>' : ', ') + (spell ? '</span>' : '')], ['점수', N(score)]]);   /* sentences one under another, from the left (1.5) */
     $('res-reward').textContent = (win ? '고철 ' + got : '모은 고철의 절반 ' + got) + ' · 보유 ' + N(save.scrap);
     if (runKind === 'story') return storyAfter(sc, win);
     return !win ? 'fail' : all ? 'record' : (sc.right >= sc.total * 0.7 ? 'win' : 'fail');

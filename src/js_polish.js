@@ -63,7 +63,17 @@
     return k;
   }
   /* the graphics picker: the level chosen, or the level really in use when the game had to come down from a chosen level */
-  function gfxSel() { var el = $('opt-gfx'); if (el) el.value = save.gfx !== 'auto' && GFX[save.gfx] && gfxNow !== save.gfx ? gfxNow : save.gfx; }
+  /* the picker keeps the level chosen (so that any other level can still be picked); when the game had to come down from it, that
+     option says which level is really in use */
+  var GFX_NAME = { high: '높음', mid: '보통', low: '낮음' };
+  function gfxSel() {
+    var el = $('opt-gfx'); if (!el) return;
+    el.value = save.gfx;
+    for (var i = 0; i < el.options.length; i++) {
+      var o = el.options[i]; if (!o.dataset.t) o.dataset.t = o.textContent;
+      o.textContent = o.dataset.t + (o.value === save.gfx && GFX[save.gfx] && gfxNow !== save.gfx ? ' · 지금은 ' + GFX_NAME[gfxNow] : '');
+    }
+  }
   function applyGfx(k, keepRes) {
     var q = GFX[k] || GFX.high;
     gfxNow = GFX[k] ? k : 'high'; fxK = q.fx; mirEvery = q.mir;
@@ -247,8 +257,11 @@
     var kv = viewU.value, fn = scene.fog.near, ff = scene.fog.far, ck = cockpit.visible;
     viewU.value = mirrorCam.matrixWorldInverse; skyDome.position.copy(mirrorCam.position); scene.fog.near = Math.min(fn, 14); scene.fog.far = Math.min(ff, 50);
     cockpit.visible = false; mirrorQuad.visible = false; renderer.shadowMap.autoUpdate = false;
-    renderer.setRenderTarget(mirrorRT); renderer.render(scene, mirrorCam); renderer.setRenderTarget(null);
-    renderer.shadowMap.autoUpdate = true; cockpit.visible = ck; mirrorQuad.visible = true;
-    viewU.value = kv; skyDome.position.copy(camera.position); scene.fog.near = fn; scene.fog.far = ff;
+    try { renderer.setRenderTarget(mirrorRT); renderer.render(scene, mirrorCam); }
+    finally {   /* should the mirror's picture fail, the main view must not keep the mirror's camera, fog and target */
+      renderer.setRenderTarget(null);
+      renderer.shadowMap.autoUpdate = true; cockpit.visible = ck; mirrorQuad.visible = true;
+      viewU.value = kv; skyDome.position.copy(camera.position); scene.fog.near = fn; scene.fog.far = ff;
+    }
   }
 

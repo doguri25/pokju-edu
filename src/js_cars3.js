@@ -37,9 +37,12 @@
   })();
   function textMat(text, fg, bg, w, h) {
     var c = document.createElement('canvas'); c.width = w; c.height = h;
-    var x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0, 0, w, h);
-    x.fillStyle = fg; x.font = '900 ' + Math.round(h * 0.74) + 'px "Noto Sans KR", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, w / 2, h * 0.54);
-    var tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace;
+    var x = c.getContext('2d'), tx = new T.CanvasTexture(c);
+    canvasFont('900 64px "Noto Sans KR"', text, function () {   /* drawn again when the font arrives (js_world3.js) */
+      x.fillStyle = bg; x.fillRect(0, 0, w, h);
+      x.fillStyle = fg; x.font = '900 ' + Math.round(h * 0.74) + 'px "Noto Sans KR", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, w / 2, h * 0.54);
+    }, tx);
+    tx.colorSpace = T.SRGBColorSpace;
     return new T.MeshBasicMaterial({ map: tx });
   }
 

@@ -209,9 +209,11 @@
     save.cars.laser = true; save.tires.allseason = 1; grantStock();
   }
   /* a class link's settings last for this visit only: the student's own choices are what is stored */
+  /* factLog: the answers recorded since the last save, so that a save taken up from another tab does not lose them (js_gb.js) */
+  var factLog = [];
   function storeSave() {
     var sel = save.quiz.sel;
-    try { if (linkKeep) save.quiz.sel = linkKeep; window.localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
+    try { if (linkKeep) save.quiz.sel = linkKeep; window.localStorage.setItem(SAVE_KEY, JSON.stringify(save)); factLog = []; } catch (e) {}
     save.quiz.sel = sel;
   }
   function carOpen(k) { return true; }   /* learning edition: every car can be driven from the start */

@@ -97,7 +97,7 @@
     if (st && i <= (save.story.open || 0) && i + 1 > (save.story.open || 0)) save.story.open = Math.min(CHAPTERS.length - 1, i + 1);
     if (st && ch.last) save.story.done = true;
     storeSave();
-    $('res-title').textContent = st ? objJosa(ch.fix) + ' 고쳤다! ' + '★★★'.slice(0, st) : '조금만 더!';
+    dispSet($('res-title'), st ? objJosa(ch.fix) + ' 고쳤다! ' + '★★★'.slice(0, st) : '조금만 더!');
     $('res-story').textContent = st ? ch.done : !win ? '오 사장: “막내야, 차는 내가 금방 고친다. 다시 가 봐.” (' + failWhy + ')' : '새벽: “괜찮아, 틀린 건 다음에 더 자주 나와. 한 번 더 해 보자.” (문제의 70% 이상을 맞히면 다음 장이 열려요)';
     $('res-next').textContent = '다음 장';
     $('res-next').hidden = !(st && !ch.last);
@@ -117,17 +117,24 @@
     }
     $('ending-stats').textContent = (two ? '' : '2부 「글자 칩」이 열렸다 · ') + '모은 별 ' + stars + ' / ' + CHAPTERS.length * 3 + ' · 보유 고철 ' + save.scrap.toLocaleString('ko-KR');
   }
+  /* the last chapter also brings sets no chapter before it used (1.5: it said all its sets had been in the story) */
+  function chapterFresh(i) {
+    var seen = {}, k, fresh = [];
+    for (k = 0; k < i; k++) (CHAPTERS[k].sets || []).forEach(function (st) { seen[st] = true; });
+    CHAPTERS[i].sets.forEach(function (st) { if (!seen[st]) fresh.push(SPELL_SETS[st].name); });
+    return fresh.length ? ' · 처음 나오는 묶음 ' + fresh.join(', ') : '';
+  }
   function renderChapters() {
     var html = '', ch = CHAPTERS[selChapter];
     CHAPTERS.forEach(function (c, i) {
       var s = save.story.stars[i] || 0;
       if (c.part) html += '<div class="part">' + c.part + '</div>';
-      html += '<button type="button" class="mis" id="ch-' + i + '" data-chapter="' + i + '" aria-pressed="' + (i === selChapter) + '"><span class="tag">' + REGIONS[c.region].short + '</span><span class="tag">' + (c.sets ? (c.last ? '이야기 묶음 모두' : SPELL_SETS[c.sets[0]].name) : (c.last ? '모든 단' : c.dans[0] + '단')) + '</span><b>' + (i + 1) + '장 ' + c.name + '</b>' +
+      html += '<button type="button" class="mis" id="ch-' + i + '" data-chapter="' + i + '" aria-pressed="' + (i === selChapter) + '"><span class="tag">' + REGIONS[c.region].short + '</span><span class="tag">' + (c.sets ? (c.last ? '맞춤법 ' + c.sets.length + '묶음' : SPELL_SETS[c.sets[0]].name) : (c.last ? '모든 단' : c.dans[0] + '단')) + '</span><b>' + (i + 1) + '장 ' + c.name + '</b>' +
         (chapterOpen(i) ? (s ? '<span class="sub" aria-label="별 ' + s + '개">' + '★★★'.slice(0, s) + '☆☆☆'.slice(0, 3 - s) + '</span>' : '') : '<span class="lock">잠김</span>') + '</button>';
     });
     $('ch-list').innerHTML = html;
     var cb = $('ch-' + selChapter); if (cb && cb.scrollIntoView && !$('menu').hidden && !$('pane-story').hidden) cb.scrollIntoView({ block: 'nearest' });
     var m = storyMission(selChapter);
     $('ch-brief').innerHTML = (chapterOpen(selChapter) ? '' : row('잠금', (selChapter) + '장 「' + CHAPTERS[selChapter - 1].name + '」' + objJosa(CHAPTERS[selChapter - 1].name).slice(CHAPTERS[selChapter - 1].name.length) + ' 깨면 열립니다')) +
-      row('고칠 것', ch.fix) + row('문제', ch.sets ? '맞춤법 ' + (ch.last ? '이야기에 나온 ' + ch.sets.length + '묶음 섞어서' : SPELL_SETS[ch.sets[0]].name) : (ch.last ? '1단~9단과 0의 곱 섞어서' : ch.dans[0] + '단 ' + QUIZ_TYPES[m.quiz.type].name)) + row('길', m.why) + row('깨기', '10문제 가운데 7문제 이상 (순서대로는 9문제 가운데 7문제). 별은 깨면 1개, 하나만 틀리면 2개, 모두 맞히면 3개');
+      row('고칠 것', ch.fix) + row('문제', ch.sets ? '맞춤법 ' + (ch.last ? ch.sets.length + '묶음 섞어서' + chapterFresh(selChapter) : SPELL_SETS[ch.sets[0]].name) : (ch.last ? '1단~9단과 0의 곱 섞어서' : ch.dans[0] + '단 ' + QUIZ_TYPES[m.quiz.type].name)) + row('길', m.why) + row('깨기', '10문제 가운데 7문제 이상 (순서대로는 9문제 가운데 7문제). 별은 깨면 1개, 하나만 틀리면 2개, 모두 맞히면 3개');
   }

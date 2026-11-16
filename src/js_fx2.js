@@ -60,8 +60,11 @@
      takes the 3D picture away: the screen went black behind the panels and stayed black while the car drove on unseen. Now the run
      pauses and says so. When the browser gives the picture back, everything is redrawn one quality step lower (the same load would
      only stop it again); if it does not come back, a reload starts the game at a lighter setting (gfxBoot, js_polish.js) */
-  var glLost = false, glLostAt = 0, glLossN = 0, glNoteEnd = 0;
+  var glLost = false, glLostAt = 0, glLossN = 0, glNoteEnd = 0, glLostBg = false, glShownAt = -1e9;
   try { glLossN = +sessionStorage.getItem('pokju-gl-lost') || 0; } catch (e) {}
+  /* a phone often takes the picture away from a page sent to the background (1.5): that is no sign of a load too heavy, so such a loss
+     is neither counted for the next start nor answered with a lower quality, and the wait for the picture starts when the page is back */
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { glShownAt = performance.now(); if (glLost) glLostAt = glShownAt; } });
   function glNote(txt, reload) {
     var el = $('glnote'), pz = $('pause'), inPanel = mode === 'play' && !pz.hidden;
     /* in a paused run it sits in the pause panel above its buttons (on a short screen a floating note covered them); elsewhere at the bottom */
@@ -71,13 +74,15 @@
   }
   renderer.domElement.addEventListener('webglcontextlost', function (ev) {
     ev.preventDefault();   /* asks the browser to give the picture back */
-    glLost = true; glLostAt = performance.now(); glLossN++; glNoteEnd = 0;
-    try { sessionStorage.setItem('pokju-gl-lost', String(glLossN)); } catch (e) {}
+    glLost = true; glLostAt = performance.now(); glNoteEnd = 0;
+    glLostBg = document.hidden || glLostAt - glShownAt < 1500;
+    if (!glLostBg) { glLossN++; try { sessionStorage.setItem('pokju-gl-lost', String(glLossN)); } catch (e) {} }
     if (mode === 'play' && !paused) setPaused(true);
     glNote('그래픽 장치가 잠시 멈췄어요. 화면을 다시 그리는 중이에요…', false);
   }, false);
   renderer.domElement.addEventListener('webglcontextrestored', function () {
     glLost = false; envKey = ''; envT = 0;
+    if (glLostBg) { glLostBg = false; gfxResizeNext = true; glNote('화면이 돌아왔어요.', false); glNoteEnd = performance.now() + 2500; return; }
     if (gfxNow !== 'low') applyGfx(gfxNow === 'high' ? 'mid' : 'low', false);
     else setRes(RES_STEPS[RES_STEPS.length - 1]);
     gfxNoUp = true; gfxSel();

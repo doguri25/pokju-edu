@@ -1,5 +1,12 @@
   /* ---------- world: the four lanes stay flat; shoulders and everything beside the road can drop away under an elevated deck ---------- */
   var H_DECK = 10, sections = [], genD = 0, roadIdx = 0, props = [], propPool = {};
+  /* text drawn on a canvas (shop signs, road signs, the bus's destination): a canvas does not wait for a web font, and most of these are
+     drawn while the page starts, before any font file has arrived, so they kept a thin system face for good (1.5). Each is drawn now and
+     drawn again once the parts of the font its text needs are in */
+  function canvasFont(font, text, draw, tx) {
+    draw();
+    try { if (document.fonts && document.fonts.load && !document.fonts.check(font, text)) document.fonts.load(font, text).then(function () { draw(); tx.needsUpdate = true; }, function () {}); } catch (e) {}
+  }
   /* concrete (graphics upgrade 3): pores and grit, softer blotches where it weathered, a few streaks running down */
   var concreteTex = (function () {
     var c = document.createElement('canvas'); c.width = c.height = 128;
@@ -218,13 +225,16 @@
   var NEON_SIGNS = [];
   var signMats = SIGN_TEXT.map(function (t) {
     var c = document.createElement('canvas'); c.width = 512; c.height = 160;
-    var x = c.getContext('2d');
-    x.fillStyle = 'rgba(12,10,22,0.94)'; x.beginPath(); x.roundRect(6, 6, 500, 148, 24); x.fill();
-    x.lineWidth = 6; x.strokeStyle = t[1]; x.shadowColor = t[1]; x.shadowBlur = 22; x.stroke();
-    x.font = '400 88px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-    var tw = x.measureText(t[0]).width; if (tw > 460) x.font = '400 ' + Math.floor(88 * 460 / tw) + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif';
-    for (var i = 0; i < 3; i++) { x.shadowBlur = 28 - i * 10; x.fillStyle = i === 2 ? '#ffffff' : t[1]; x.fillText(t[0], 256, 86); }
-    var tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = 4;
+    var x = c.getContext('2d'), tx = new T.CanvasTexture(c);
+    canvasFont('400 88px "Black Han Sans"', t[0], function () {
+      x.clearRect(0, 0, 512, 160); x.shadowBlur = 0;
+      x.fillStyle = 'rgba(12,10,22,0.94)'; x.beginPath(); x.roundRect(6, 6, 500, 148, 24); x.fill();
+      x.lineWidth = 6; x.strokeStyle = t[1]; x.shadowColor = t[1]; x.shadowBlur = 22; x.stroke();
+      x.font = '400 88px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      var tw = x.measureText(t[0]).width; if (tw > 460) x.font = '400 ' + Math.floor(88 * 460 / tw) + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif';
+      for (var i = 0; i < 3; i++) { x.shadowBlur = 28 - i * 10; x.fillStyle = i === 2 ? '#ffffff' : t[1]; x.fillText(t[0], 256, 86); }
+    }, tx);
+    tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = 4;
     var m = new T.MeshBasicMaterial({ map: tx, transparent: true });
     NEON_SIGNS.push({ m: m, base: new T.Color(1, 1, 1), day: 1, night: 1.7 });
     return m;

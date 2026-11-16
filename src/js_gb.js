@@ -53,7 +53,10 @@
     return save.bestT[runMission] ? '최고 ' + fmtT(save.bestT[runMission]) : '첫 기록 도전';
   }
   /* cont: the run follows straight on from the one before (next mission, retry), so the car keeps its lane and its speed instead of being put back */
+  /* 연습 주행 has no result screen: the scrap picked up on the way goes into the wallet when the drive is left or started again (1.5) */
+  function bankFree() { if (mode === 'play' && runKind === 'free' && scrap > 0) { save.scrap += scrap; scrap = 0; storeSave(); } }
   function beginRun(carKey, misIdx, isDemo, taIdx, kind, cont) {
+    bankFree();
     closeInfo(); if (!$('help').hidden) { $('help').hidden = true; helpThen = null; }
     var keepX = clamp(player.x, -6.6, 6.6), keepV = player.v, keepThr = player.thr, fromRun = !!cont && !isDemo && player.car === carKey && !player.dead;
     runKind = kind || (taIdx === undefined || taIdx === null ? 'mis' : 'ta');
@@ -84,7 +87,9 @@
       $('demo').classList.remove('carded');
     }
     document.body.classList.toggle('cine', isDemo);
-    $('obj-title').textContent = mission.name; $('tag-time').textContent = mission.timeLabel + (mission.weather && mission.weather !== 'clear' ? ' · ' + WEATHERS[mission.weather].name : '');
+    /* the tag beside it already says 구구단 or 맞춤법: on a phone the title had room only for that word and cut the 단 or the set (1.5) */
+    var objT = mission.name, kw = runKind === 'quiz' || runKind === 'spell' ? KINDS[runKind].name + ' ' : '';
+    dispSet($('obj-title'), kw && objT.indexOf(kw) === 0 ? objT.slice(kw.length) : objT); $('tag-time').textContent = mission.timeLabel + (mission.weather && mission.weather !== 'clear' ? ' · ' + WEATHERS[mission.weather].name : '');
     $('tag-dir').textContent = kindText(); $('tag-dir').className = mission.dir > 0 ? 'tag' : 'tag rev';
     $('clock-best').textContent = bestText();
     $('car-name').textContent = car.name; $('skill-name').textContent = car.skillName; $('basic-name').textContent = BASICS[car.basic].name;
@@ -116,7 +121,7 @@
     '기본 기술은 X 키나 고유 기술 버튼 위의 버튼으로 씁니다. 차 종류마다 다르고 쿨타임이 짧습니다.'
   ], hintIdx = 0;
   function showCard(kick, title, sub) {
-    $('card-kick').textContent = kick; $('card-title').textContent = title; $('card-sub').textContent = sub;
+    $('card-kick').textContent = kick; dispSet($('card-title'), title); $('card-sub').textContent = sub;
     $('card').classList.toggle('long', title.length > 7);
     $('card').hidden = false; $('caption').hidden = true; capHold = 0; $('demo').classList.add('carded');
   }
@@ -376,6 +381,7 @@
     if (name === 'mode') scrollSel();
   }
   function toMenu() {
+    bankFree();
     closeInfo(); if (!$('help').hidden) $('help').hidden = true; helpThen = null; autoPauseLater = false; mode = 'menu'; tr.on = false; tr.phase = ''; tr.fade = 0; $('card').hidden = true; $('demo').classList.remove('carded'); paused = false; briefT = 0; titleOn = false; document.body.classList.remove('paused');
     $('pause').hidden = true; $('ending').hidden = true; $('title').hidden = true; $('coach').hidden = true; $('story').hidden = true; setMusic('menu');
     if (runKind === 'tut') runKind = 'mis';
@@ -652,11 +658,11 @@
     $('btn-cam').textContent = CAM_SHORT[m]; $('btn-cam').setAttribute('aria-label', '시점 바꾸기. 지금은 ' + CAM_LABEL[m]); $('opt-cam').value = m;
   }
   function cycleCam() { setCam(CAM_ORDER[(CAM_ORDER.indexOf(save.cam) + 1) % CAM_ORDER.length], true); sfx('click'); }
-  function toggleMute(m) { save.muted = m; setMuted(m); storeSave(); syncSound(); }
+  function toggleMute(m) { save.muted = m; setMuted(m); storeSave(); syncSound(); iosPlayback(); }
   function syncSound() { var on = save.sfx && !save.muted, mu = save.music && !save.muted; $('opt-sound').checked = on; $('pz-sound').checked = on; $('opt-music').checked = mu; $('pz-music').checked = mu; }
-  function setSfx(on) { if (on && save.muted) { save.muted = false; setMuted(false); } save.sfx = on; sfxOn = on; storeSave(); syncSound(); }
-  function setMus(on) { if (on && save.muted) { save.muted = false; setMuted(false); } save.music = on; musicOn = on; storeSave(); syncSound(); }
-  function openHelp(then) { helpThen = then || null; $('help').hidden = false; $('help-close').focus(); }
+  function setSfx(on) { if (on && save.muted) { save.muted = false; setMuted(false); } save.sfx = on; sfxOn = on; storeSave(); syncSound(); iosPlayback(); }
+  function setMus(on) { if (on && save.muted) { save.muted = false; setMuted(false); } save.music = on; musicOn = on; storeSave(); syncSound(); iosPlayback(); }
+  function openHelp(then) { helpThen = then || null; $('help').hidden = false; $('help-close').focus({ preventScroll: true }); $('help').scrollTop = 0; }   /* from its top: focusing the button at the end scrolled it down (1.5) */
   function closeHelp() { $('help').hidden = true; var f = helpThen; helpThen = null; if (f) f(); }
   /* in-play buttons act on press, not on click: a tap made while another finger is already holding the lever never becomes a click */
   function tap(el, fn) {
@@ -694,32 +700,42 @@
   function driving() { return mode === 'play' && !paused; }
   /* which a drag is for is decided by its first 8 px (1.5): sideways it steers wherever it started; up or down on the left part of the
      view it sets the throttle. The left part used to be throttle only, so a sideways drag begun there did nothing */
-  function ptrNew(e) { return (ptrs[e.pointerId] = { zone: 'auto', left: e.clientX < window.innerWidth * 0.38, touch: e.pointerType !== 'mouse', x0: e.clientX, y0: e.clientY, base: 0, baseT: 0, live: false, big: false }); }
+  function ptrNew(e) { return (ptrs[e.pointerId] = { zone: 'auto', left: e.clientX < window.innerWidth * 0.38, touch: e.pointerType !== 'mouse', x0: e.clientX, y0: e.clientY, rx: e.clientX, lx: e.clientX, base: 0, baseT: 0, live: false, big: false }); }
+  /* where a finger's drag is measured from: here, with the car where it is now */
+  function ptrAnchor(p, e) { p.live = true; p.big = false; p.x0 = p.rx = p.lx = e.clientX; p.y0 = e.clientY; p.base = player.x; p.baseT = player.thr; }
   cv.addEventListener('pointerdown', function (e) {
     if (e.pointerType === 'mouse' && e.button > 0) return;
-    ptrNew(e);
+    var p = ptrNew(e);
+    if (driving()) ptrAnchor(p, e);   /* from the touch-down itself: the way to the first move reported counts too */
     try { cv.setPointerCapture(e.pointerId); } catch (err) {}
   });
-  /* one finger steers at a time: the one that really drags (more than 8 px). A finger or a palm merely resting on the right side neither
-     takes the wheel (its jitter) nor stops the steering when lifted */
+  /* one finger steers at a time: the one that really drags (more than 8 px from where it rests). A finger or a palm merely resting on
+     the view neither takes the wheel (its jitter) nor stops the steering when lifted. Whenever a finger takes the wheel, it steers from
+     where the car is then, so the car never jumps back to where that finger once left it; the finger that loses the wheel rests where it is */
   var steerBy = null;
   cv.addEventListener('pointermove', function (e) {
     var p = ptrs[e.pointerId];
     if (!(e.buttons & 1)) { if (p) ptrEnd(e); return; }   /* nothing pressed: a pen hovering, or a mouse whose button was let go off the view */
     if (!p) p = ptrNew(e);   /* its touch-down was lost (another app took it): follow it from here */
     if (!driving()) { p.live = false; return; }
-    if (!p.live) { p.live = true; p.big = false; p.x0 = e.clientX; p.y0 = e.clientY; p.base = player.x; p.baseT = player.thr; }
-    var ddx = e.clientX - p.x0, ddy = e.clientY - p.y0;
+    if (!p.live) ptrAnchor(p, e);
+    var ddx = e.clientX - p.x0, ddy = e.clientY - p.y0, rdx = e.clientX - p.rx;
+    p.lx = e.clientX;
     if (p.zone === 'auto') {
       if (Math.abs(ddx) <= 8 && Math.abs(ddy) <= 8) return;   /* too little yet to tell which way it goes */
       p.zone = Math.abs(ddx) >= Math.abs(ddy) || !p.left ? 'steer' : 'thr';
+      if (p.zone === 'thr') p.baseT = player.thr;   /* the lever may have moved it while this finger rested */
     }
     if (p.zone === 'thr') { player.thr = clamp(p.baseT - ddy / 220, 0, 1); return; }
-    if (Math.abs(ddx) > 8) p.big = true;
+    if (Math.abs(rdx) > 8) p.big = true;
     if (steerBy !== e.pointerId) {
       var owner = steerBy !== null && ptrs[steerBy];
       if (owner && !p.big) return;   /* resting or jittering beside the steering finger */
-      if (!owner || p.big) { steerBy = e.pointerId; if (owner) { var dx = e.clientX - p.x0; p.base = player.x; p.x0 = e.clientX - (dx > 0 ? dx - 8 : dx + 8); } }   /* a real drag takes over from where the car is, keeping what it moved past the 8 px */
+      if (owner) { owner.big = false; owner.rx = owner.lx; }   /* the finger losing the wheel must drag again to take it back */
+      steerBy = e.pointerId; p.base = player.x;
+      /* a drag taking over keeps what it moved past the 8 px; with nobody steering, a drag counts all it moved since it rested and
+         a finger still resting (the steering one was lifted) holds the car where it is */
+      p.x0 = owner ? e.clientX - (rdx > 0 ? rdx - 8 : rdx + 8) : p.big ? p.rx : e.clientX;
     }
     steerWant = clamp(p.base + (e.clientX - p.x0) * (20 / window.innerWidth) * 1.6, -9.9, 9.9);
   });
@@ -786,8 +802,11 @@
   var tapLast = { t: -1e9, x: 0, y: 0, el: null }, tapRec = {}, tapStat = { cancelled: 0, sent: 0 };
   function nativeCtl(t) { return !!(t && t.closest && t.closest('select, input, textarea, label')); }
   document.addEventListener('touchstart', function (e) {
-    var t = e.target, p = e.changedTouches[0], now = e.timeStamp, id;   /* the time of the touch itself: on a busy frame the handler runs late */
-    var press = t === cv || !!(t.closest && t.closest('.hud, #coach, #caption, #card')), game = press || !!(t.closest && t.closest('#demo'));   /* press: parts that act on pointer-down and never need a click */
+    var t = e.target, p = e.changedTouches[0], now = e.timeStamp, id, k;   /* the time of the touch itself: on a busy frame the handler runs late */
+    function pressEl(el) { return el === cv || !!(el && el.closest && el.closest('.hud, #coach, #caption, #card')); }   /* parts that act on pointer-down and never need a click */
+    var press = pressEl(t), game = press || !!(t.closest && t.closest('#demo'));
+    /* every finger that lands, even two in the same moment (each on its own target) */
+    for (k = 1; k < e.changedTouches.length; k++) { var q = e.changedTouches[k], qt = q.target || t; tapRec[q.identifier] = { x: q.clientX, y: q.clientY, t: now, el: qt, own: false, plain: !pressEl(qt) && !nativeCtl(qt) }; }
     var rec = tapRec[p.identifier] = { x: p.clientX, y: p.clientY, t: now, el: t, own: false, plain: !press && !nativeCtl(t) };
     if (e.touches.length > 1) for (id in tapRec) if (+id !== p.identifier && tapRec[id].plain) tapRec[id].own = true;   /* a tap already under way: its click is now ours to send */
     var again = now - tapLast.t < 400 && Math.abs(p.clientX - tapLast.x) < 44 && Math.abs(p.clientY - tapLast.y) < 44;
@@ -846,7 +865,7 @@
   $('pz-help').addEventListener('click', function () { sfx('click'); openHelp(); });
   $('opt-help').addEventListener('click', function () { sfx('click'); openHelp(); });
   $('help-close').addEventListener('click', function () { sfx('click'); closeHelp(); });
-  $('opt-gfx').addEventListener('change', function () { save.gfx = $('opt-gfx').value; storeSave(); applyGfx(save.gfx === 'auto' ? gfxStart() : save.gfx); sfx('click'); });
+  $('opt-gfx').addEventListener('change', function () { save.gfx = $('opt-gfx').value; storeSave(); applyGfx(save.gfx === 'auto' ? gfxBoot() : save.gfx); gfxSel(); sfx('click'); });   /* 자동 keeps the lighter start after the graphics chip gave up */
   $('opt-calm').addEventListener('change', function () { save.calm = $('opt-calm').checked; storeSave(); sfx('click'); });
   $('opt-mirror').addEventListener('change', function () { save.mirror = $('opt-mirror').checked; storeSave(); sfx('click'); });
   $('opt-cam').addEventListener('change', function () { setCam($('opt-cam').value, true); sfx('click'); });
@@ -1842,6 +1861,20 @@
   makeThumbs(); resize(); applyGfx(gfxBoot()); gfxApplyPending(); carQ = CAR_ORDER.slice();
   touchUI = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   $('opt-unlock').checked = save.unlockAll; gfxSel(); $('opt-calm').checked = save.calm; $('opt-mirror').checked = save.mirror; syncSound();
+  /* the game open in two tabs (a class link opened beside an old tab): each tab used to write back the whole save as it had read it at
+     its start, so a tab left open wiped what was won in the other one. Now a tab takes up what another tab saved (1.5). Its own
+     settings stay as they are here (sound, camera, quality, the choices in its menu), and the answers of a run under way are kept */
+  window.addEventListener('storage', function (e) {
+    if (e.key !== SAVE_KEY || e.storageArea !== window.localStorage) return;
+    var keep = { muted: save.muted, music: save.music, sfx: save.sfx, cam: save.cam, camV: save.camV, gfx: save.gfx, calm: save.calm, mirror: save.mirror },
+      sel = JSON.parse(JSON.stringify(save.quiz.sel)), log = factLog.slice(), k;
+    loadSave();
+    for (k in keep) save[k] = keep[k];
+    save.quiz.sel = sel;
+    log.forEach(function (r) { factRecord(save.quiz.facts, r[0], r[1]); }); factLog = log;   /* still to be saved by this tab */
+    $('opt-unlock').checked = save.unlockAll;
+    if (mode === 'menu') renderMenu();
+  });
   showTitle();
   for (var wi = 0; wi < 120; wi++) step(1 / 60);
 

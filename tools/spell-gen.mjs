@@ -13,8 +13,9 @@
 //      is the explanation right, is it fit for a child in grades 1-4
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');   /* a folder with spaces or Korean letters, or on Windows */
 const OUT = path.join(ROOT, 'tools', 'out', 'spell-candidates.json');
 const KEY = process.env.UPSTAGE_API_KEY || '';
 const MODEL = process.env.UPSTAGE_MODEL || 'solar-pro4';
@@ -153,6 +154,10 @@ async function check() {
   const all = doc.sets.flatMap(s => s.items.filter(it => !it.form.length && !it.review).map(it => ({ s, it })));   /* already checked ones are kept */
   let done = 0;
   await pool(all, 8, async ({ s, it }) => {
+   /* one sentence the service keeps refusing must not stop the others: it is noted, left unchecked (so the next run tries it again)
+      and the review page shows it as not passed */
+   try {
+    delete it.checkError;
     /* 2. blind pick */
     const opts = shuffle([it.a].concat(it.w));
     const blind = await chat([
@@ -169,7 +174,12 @@ async function check() {
     it.blind = { pick: String(blind.pick || ''), reason: String(blind.reason || '').slice(0, 200), ok: String(blind.pick || '').replace(/[「」]/g, '').trim() === it.a };
     it.review = { answer_ok: !!rev.answer_ok, wrong_ok: !!rev.wrong_ok, why_ok: !!rev.why_ok, kid_ok: !!rev.kid_ok, note: String(rev.note || '').slice(0, 200) };
     it.pass = it.blind.ok && it.review.answer_ok && it.review.wrong_ok && it.review.why_ok && it.review.kid_ok;
+   } catch (err) {
+    delete it.blind; delete it.review; it.pass = false; it.checkError = String((err && err.message) || err).slice(0, 200);
+    console.error('check failed', s.key, it.q, it.checkError);
+   } finally {
     if (++done % 10 === 0) { fs.writeFileSync(OUT, JSON.stringify(doc, null, 1)); console.log('checked', done, '/', all.length, new Date().toISOString().slice(11, 19)); }
+   }
   });
   doc.checked = new Date().toISOString();
   fs.writeFileSync(OUT, JSON.stringify(doc, null, 1));

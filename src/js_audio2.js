@@ -17,6 +17,8 @@
     return URL.createObjectURL(new Blob([b], { type: 'audio/wav' }));
   }
   function iosPlayback() {
+    /* with every sound off the game takes nothing (1.5): a silent loop still playing would stop the child's own music and show as playing */
+    if (muted || !(sfxOn || musicOn)) { if (hush && !hush.paused) { try { hush.pause(); } catch (e) {} } return; }
     try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) {}
     if (!IOS || document.hidden) return;
     if (!hush) { try { hush = document.createElement('audio'); hush.setAttribute('playsinline', ''); hush.setAttribute('x-webkit-airplay', 'deny'); hush.loop = true; hush.preload = 'auto'; hush.src = silentWav(); } catch (e) { hush = null; return; } }
