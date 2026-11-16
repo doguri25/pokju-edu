@@ -663,7 +663,7 @@
     el.addEventListener('pointerdown', function (e) { if (e.button > 0) return; if (e.pointerType === 'touch') touchUI = true; e.preventDefault(); fn(); });
     el.addEventListener('click', function (e) { if (e.detail === 0) fn(); });
   }
-  function thrHeld() { if (leverDown && leverTouch) return true; for (var id in ptrs) if (ptrs[id].zone === 'thr' && ptrs[id].touch) return true; return false; }
+  function thrHeld() { if (leverDown && leverTouch) return true; for (var id in ptrs) { var q = ptrs[id]; if (q.touch && (q.zone === 'thr' || (q.zone === 'auto' && q.left))) return true; } return false; }   /* a thumb held on the left part fires, as before, until it moves sideways */
   window.addEventListener('pointerdown', audioInit, true);
   window.addEventListener('touchend', audioInit, true); window.addEventListener('click', audioInit, true);   /* iOS only lets sound start from the end of a touch or a click */
   window.addEventListener('keydown', audioInit, true);
@@ -692,7 +692,9 @@
      again, so the car did not answer the drag at the start and after coming back from another app. Now every finger on the view is
      followed; it only acts while the car is being driven, and the first move that counts takes the finger's place as its starting point */
   function driving() { return mode === 'play' && !paused; }
-  function ptrNew(e) { var zone = e.clientX < window.innerWidth * 0.38 ? 'thr' : 'steer'; return (ptrs[e.pointerId] = { zone: zone, touch: e.pointerType !== 'mouse', x0: e.clientX, y0: e.clientY, base: 0, live: false }); }
+  /* which a drag is for is decided by its first 8 px (1.5): sideways it steers wherever it started; up or down on the left part of the
+     view it sets the throttle. The left part used to be throttle only, so a sideways drag begun there did nothing */
+  function ptrNew(e) { return (ptrs[e.pointerId] = { zone: 'auto', left: e.clientX < window.innerWidth * 0.38, touch: e.pointerType !== 'mouse', x0: e.clientX, y0: e.clientY, base: 0, baseT: 0, live: false, big: false }); }
   cv.addEventListener('pointerdown', function (e) {
     if (e.pointerType === 'mouse' && e.button > 0) return;
     ptrNew(e);
@@ -706,9 +708,14 @@
     if (!(e.buttons & 1)) { if (p) ptrEnd(e); return; }   /* nothing pressed: a pen hovering, or a mouse whose button was let go off the view */
     if (!p) p = ptrNew(e);   /* its touch-down was lost (another app took it): follow it from here */
     if (!driving()) { p.live = false; return; }
-    if (!p.live) { p.live = true; p.big = false; p.x0 = e.clientX; p.y0 = e.clientY; p.base = p.zone === 'thr' ? player.thr : player.x; }
-    if (p.zone === 'thr') { player.thr = clamp(p.base - (e.clientY - p.y0) / 220, 0, 1); return; }
-    if (Math.abs(e.clientX - p.x0) > 8) p.big = true;
+    if (!p.live) { p.live = true; p.big = false; p.x0 = e.clientX; p.y0 = e.clientY; p.base = player.x; p.baseT = player.thr; }
+    var ddx = e.clientX - p.x0, ddy = e.clientY - p.y0;
+    if (p.zone === 'auto') {
+      if (Math.abs(ddx) <= 8 && Math.abs(ddy) <= 8) return;   /* too little yet to tell which way it goes */
+      p.zone = Math.abs(ddx) >= Math.abs(ddy) || !p.left ? 'steer' : 'thr';
+    }
+    if (p.zone === 'thr') { player.thr = clamp(p.baseT - ddy / 220, 0, 1); return; }
+    if (Math.abs(ddx) > 8) p.big = true;
     if (steerBy !== e.pointerId) {
       var owner = steerBy !== null && ptrs[steerBy];
       if (owner && !p.big) return;   /* resting or jittering beside the steering finger */

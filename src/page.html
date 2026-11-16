@@ -83,7 +83,9 @@ button, select, label, [role="tab"] { touch-action: manipulation; }
 @media (max-width: 720px) { .qbox.long b { font-size: 24px; } .qbox #q-why { font-size: 14px; } }
 @media (max-width: 720px) { .qbox { top: max(150px, 22vh); padding: 6px 14px 10px; } .qbox b { font-size: 36px; } .qopts span { font-size: 22px; min-width: 52px; } }
 #vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 46%, transparent 52%, rgba(0, 0, 0, 0.5) 100%); opacity: 0.45; }
-.hud .chip { pointer-events: auto; }
+.hud .chip { pointer-events: none; }
+/* 1.5: only the controls take a touch; a drag that starts on the speedometer or a chip reaches the road and steers */
+.hud button.chip, .hud .chip button, .hud .chip.lever { pointer-events: auto; }
 .obj { display: flex; flex-direction: column; gap: 3px; min-width: 200px; max-width: 340px; }
 .obj .head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .obj .head b { font-family: var(--display); font-weight: 400; font-size: 18px; margin-left: 2px; }
