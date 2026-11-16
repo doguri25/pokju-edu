@@ -236,7 +236,10 @@
     if (!on) { if (mirLay !== -99) { mirLay = -99; document.documentElement.style.removeProperty('--mb'); } return; }
     if (mirLay === -99) mirLay = 0;
     /* the panel sits at the top centre; where the HUD chips would overlap it (a narrow screen, or a notch pushing them down) it goes below them */
-    var hh = Math.tan(camera.fov * Math.PI / 360), hw = hh * camera.aspect, h = Math.min(0.24 * hh, 0.6 * hw * 2 / 3), w = h * 3;
+    /* 1.5: on a portrait phone the mirror is a little over half its size. It sits under the HUD chips there and the question card hangs
+       below it: a big mirror pushed the card down over the place where the answer gates come into view (their signs were hidden for most
+       of the time to think). In landscape the mirror sits between the chips and the card stays clear of the road, so it keeps its size */
+    var small = vw <= 720 && vh > vw, hh = Math.tan(camera.fov * Math.PI / 360), hw = hh * camera.aspect, h = Math.min(0.24 * hh, 0.6 * hw * 2 / 3) * (small ? 0.55 : 1), w = h * 3;
     if (force || mirLay-- <= 0) { mirLay = 20; mirrorLayout(w / (2 * hw) * vw, h / (2 * hh) * vh); }
     var top = mirTop / vh * 2 * hh;
     mirrorQuad.scale.set(w, h, 1); mirrorQuad.position.set(0, hh - top - h / 2, -1);

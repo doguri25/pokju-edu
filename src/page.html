@@ -415,9 +415,10 @@ select option:checked { background-color: #2c2f55; }
 .qbox.no b, .qbox.no #q-kick { color: #ff7a8a; }
 /* the answers are on the gates (or balloons) themselves, so the card shows only the question: more of the road stays in view */
 .qbox .qopts { display: none !important; }
-/* 1.5: on a portrait phone the card sits where the gate signs come into view, so a spelling card (and any card on two lines) shows the
-   answers in the gates' colours: the child can pick by colour while the signs are still behind it */
-@media (max-width: 720px) and (orientation: portrait) { .qbox.sp .qopts, .qbox.long .qopts { display: flex !important; flex-wrap: wrap; margin-top: 4px; } .qbox.sp .qopts span, .qbox.long .qopts span { font-size: 20px; } }
+/* 1.5: on a portrait phone the card hung over the place where the gate signs come into view, hiding them for most of the time to think.
+   With a smaller mirror there (js_polish.js) the card starts higher, and a question on two lines is set smaller and drops the
+   「문제 n / 10」 line while it is asked (the HUD chip shows it too), so the card ends above the signs */
+@media (max-width: 720px) and (orientation: portrait) { .qbox.long b { font-size: 28px; } .qbox.long:not(.ok):not(.no) #q-kick { display: none; } }
 .qbox.ok .qopts span, .qbox.no .qopts span { opacity: 0.3; }
 #q-timer { display: block; height: 4px; margin: 6px 4px 0; border-radius: 2px; background: var(--track); overflow: hidden; }
 #q-timer i { display: block; height: 100%; width: 0; background: var(--grad); border-radius: 2px; }
