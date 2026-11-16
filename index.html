@@ -321,6 +321,9 @@ body.cine #card { bottom: 9%; }
 #title .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
 /* 1.5: the spelling sentences made with Upstage Solar say so */
 #title .credit { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; max-width: 100%; box-sizing: border-box; margin-top: 2px; padding: 5px 14px 5px 5px; border-radius: 999px; background: var(--chip); font-family: var(--body); font-size: 13px; font-weight: 500; line-height: 1.35; color: var(--chip-sub); text-shadow: none; }
+#title .maker { font-family: var(--body); font-size: 13px; font-weight: 500; line-height: 1.4; color: var(--chip-sub); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55); overflow-wrap: anywhere; }
+/* the address can be selected and copied (everything else on the page cannot) */
+#title .maker a, .keys a { color: inherit; text-decoration: underline; text-underline-offset: 2px; -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
 #title .credit i { flex: none; font-style: normal; font-weight: 700; font-size: 11px; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 999px; background: var(--grad); color: #fff; }
 #title button { min-height: 54px; padding: 0 30px; border-radius: 27px; border: 0; font-family: var(--display); font-size: 21px; text-shadow: none; }
 #title .go { flex: 0 1 auto; background: var(--accent); color: var(--accent-fg); }
@@ -704,6 +707,7 @@ body.paused #qtoast, body.paused #coach, body.paused #qbox, body.paused #caption
     <button type="button" class="plain" id="opt-story">이야기와 운전 연습 다시 보기</button>
     <p class="keys">키보드는 방향키로 움직입니다. ↑ ↓ 는 가속과 감속, ← → 는 좌우 이동입니다. 공격은 Z(누르는 동안 발사), 기본 기술은 X, 고유 기술은 Space, 시점 바꾸기는 C, 일시정지는 Esc, 소리 끄기는 M입니다. 터치는 왼쪽 아래 레버로 속도를 정하고 화면 오른쪽을 좌우로 끌어 이동하며, 레버를 잡고 있는 동안 무기가 나갑니다. 게임패드는 왼쪽 스틱으로 움직이고 RT로 쏩니다.</p>
     <p class="keys">모은 고철, 이야기 진행, 구구단·맞춤법 기록은 이 브라우저에만 저장됩니다. 이름 같은 개인정보는 저장하지 않습니다.</p>
+    <p class="keys">만든 사람 도구리 · 연락처 <a href="mailto:raccoon@ai.cne.go.kr">raccoon@ai.cne.go.kr</a>. 맞춤법 문장 가운데 상당수는 업스테이지(Upstage) Solar AI로 만들고 검증했습니다.</p>
   </div>
   </div>
   <div class="foot"><p class="what" id="go-what"></p><p class="sub" id="go-why" hidden></p><div><button type="button" id="demo-go" class="ghost" hidden>예고편 보기</button><button type="button" id="go" class="go">출발</button></div></div>
@@ -767,6 +771,7 @@ body.paused #qtoast, body.paused #coach, body.paused #qbox, body.paused #caption
   <div class="kinds" id="title-kinds" role="group" aria-label="모드 골라 시작"></div>
   <div class="btns"><button type="button" class="go" id="title-start">게임 시작</button><button type="button" class="ghost" id="title-tut">이야기와 운전 연습</button><button type="button" class="ghost" id="title-trailer" hidden>예고편 보기</button></div>
   <span class="credit" id="title-credit"><i>AI</i><span id="title-credit-text">맞춤법 문장은 업스테이지 Solar AI로 만들고 검증했어요</span></span>
+  <span class="maker">만든 사람 도구리 · <a href="mailto:raccoon@ai.cne.go.kr">raccoon@ai.cne.go.kr</a></span>
 </div>
 <div id="err" hidden><div class="chip">이 기기에서는 3D 그래픽(WebGL)을 켤 수 없어 장면을 표시하지 못했습니다.</div></div>
 <script type="module">
