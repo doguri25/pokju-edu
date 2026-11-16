@@ -96,6 +96,12 @@
   var SPELL_AI = SPELL_DATA.sets.reduce(function (n, st) { return n + (st.ai || 0); }, 0), SPELL_ALL = SPELL_DATA.sets.reduce(function (n, st) { return n + st.items.length; }, 0);
   (function () { var el = $('title-credit-text'); if (el && SPELL_AI) el.textContent = '맞춤법 문장 ' + SPELL_ALL + '개 가운데 ' + SPELL_AI + '개는 업스테이지 Solar AI로 만들고 검증했어요'; })();
   function spellSel() { var s = save.quiz.sel, k = s.spell || 'dwae'; return { subject: 'spell', sets: k === 'all' ? SPELL_ORDER.slice() : [own(SPELL_SETS, k) ? k : 'dwae'], type: 'spell', pace: s.pace, foe: s.foe !== 'off', style: s.style === 'shoot' ? 'shoot' : 'gate' }; }
+  /* how many answers stand on the road for these sets: 2, or 2~3 (1.5: it said 2~4, which no set has) */
+  function spellChoices(sets) {
+    var lo = 9, hi = 0;
+    sets.forEach(function (k) { (SPELL_SETS[k] ? SPELL_SETS[k].items : []).forEach(function (it) { var n = 1 + it.w.length; if (n < lo) lo = n; if (n > hi) hi = n; }); });
+    return hi ? (lo === hi ? hi + '개' : lo + '~' + hi + '개') : '2개';
+  }
   function setLabel(sets) { return sets.length === SPELL_ORDER.length ? '모든 묶음' : sets.map(function (k) { return SPELL_SETS[k].name; }).join('·'); }
   function quizSel() { var s = save.quiz.sel; return { dans: s.dan === 'all' ? [2, 3, 4, 5, 6, 7, 8, 9] : s.dan.split(',').map(Number), type: s.type, pace: s.pace, foe: s.foe !== 'off', style: s.style === 'shoot' ? 'shoot' : 'gate' }; }
   /* enemies on a quiz road, as in the original missions: f = { drones, kami, strike, buggy, traffic }. null: only the gates */
@@ -122,7 +128,7 @@
     quiz.phase = 'wait'; quiz.t = 0.8;
   }
   function qboxSet(kick, text, cls, q, why) {
-    $('q-kick').textContent = kick; $('q-text').textContent = text; $('qbox').className = 'qbox' + (cls ? ' ' + cls : '') + (text.length > 12 ? ' long' : '');
+    $('q-kick').textContent = kick; $('q-text').textContent = text; $('qbox').className = 'qbox' + (cls ? ' ' + cls : '') + (text.length > 12 ? ' long' : '') + (q && q.type === 'spell' ? ' sp' : '');
     $('q-why').textContent = why || ''; $('q-why').hidden = !why;
     var h = '';
     if (q) q.opts.forEach(function (v, i) { h += '<span style="background:' + QG_COL[i] + '">' + v + '</span>'; });
@@ -301,7 +307,7 @@
       var aiN = st ? (st.ai || 0) : SPELL_AI, allN = st ? st.items.length : SPELL_ALL;
       $('quiz-brief').innerHTML = row('문제 수', '10문제') + row('요령', st ? st.tip : '모든 묶음에서 섞어 나온다. 덜 익힌 문장이 더 자주 나온다.') +
         row('문장', allN + '개' + (aiN ? ' · ' + (aiN === allN ? '모두' : aiN + '개는') + ' 업스테이지 Solar AI로 만들고 검증' : '')) +
-        row('보기', (o.style === 'shoot' ? '풍선 ' : '깃발 문 ') + '2~4개') + row('생각할 시간', '약 ' + (p.t + t.think) + '초 (문장을 읽는 시간 2초 더함)') + row('틀리면', '정답 문장과 까닭을 보여 준다. 그 문제는 끝에 한 번 더 나온다.');
+        row('보기', (o.style === 'shoot' ? '풍선 ' : '깃발 문 ') + spellChoices(o.sets)) + row('생각할 시간', '약 ' + (p.t + t.think) + '초 (문장을 읽는 시간 2초 더함)') + row('틀리면', '정답 문장과 까닭을 보여 준다. 그 문제는 끝에 한 번 더 나온다.');
       return;
     }
     $('quiz-brief').innerHTML = row('문제 수', o.type === 'seq' ? o.dans.length * 9 + '문제 (단마다 1부터 9까지)' : '10문제') + row('보기', (o.style === 'shoot' ? '숫자 풍선 ' : '깃발 문 ') + t.opts + '개') + row('푸는 법', o.style === 'shoot' ? '정답 풍선을 쏘아 맞힌다. 못 쏘면 차가 들이받는 풍선이 답이 된다' : '정답이 적힌 문으로 지나간다') +

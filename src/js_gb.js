@@ -811,14 +811,16 @@
   document.addEventListener('touchcancel', function (e) { for (var k = 0; k < e.changedTouches.length; k++) delete tapRec[e.changedTouches[k].identifier]; tapLast.t = -1e9; }, true);
   ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (n) { document.addEventListener(n, function (e) { e.preventDefault(); }, { passive: false }); });
   document.addEventListener('dblclick', function (e) { if (!nativeCtl(e.target)) e.preventDefault(); });
-  document.addEventListener('selectstart', function (e) { var t = e.target; if (!(t && t.closest && t.closest('select, input, textarea'))) e.preventDefault(); });
+  /* text that may be selected: form fields, and the creator's address (title screen, settings) so it can be copied (1.5) */
+  function selOK(t) { if (t && t.nodeType === 3) t = t.parentNode; return !!(t && t.closest && t.closest('select, input, textarea, #title .maker a, .keys a')); }
+  document.addEventListener('selectstart', function (e) { if (!selOK(e.target)) e.preventDefault(); });
   /* should a selection slip through anyway, drop it at once: the copy bubble goes with it */
   document.addEventListener('selectionchange', function () {
     var s = window.getSelection ? window.getSelection() : null, a = document.activeElement;
-    if (s && !s.isCollapsed && !(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA'))) { try { s.removeAllRanges(); } catch (err) {} }
+    if (s && !s.isCollapsed && !(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) && !(selOK(s.anchorNode) && selOK(s.focusNode))) { try { s.removeAllRanges(); } catch (err) {} }
   });
   document.addEventListener('dragstart', function (e) { e.preventDefault(); });
-  document.addEventListener('contextmenu', function (e) { if (!nativeCtl(e.target)) e.preventDefault(); });
+  document.addEventListener('contextmenu', function (e) { if (!nativeCtl(e.target) && !selOK(e.target)) e.preventDefault(); });   /* the address keeps its copy menu */
   function hit(el, sel) { while (el && el !== document.body) { if (el.hasAttribute && el.hasAttribute(sel)) return el; el = el.parentNode; } return null; }
   tap($('btn-skill'), useSkill); tap($('btn-basic'), useBasic);
   (function () {
