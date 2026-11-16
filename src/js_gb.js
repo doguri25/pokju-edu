@@ -396,6 +396,7 @@
     if (!p && (!$('help').hidden || !$('info').hidden)) return;   /* a dialog is open over the paused game: it is closed first */
     if (!p && glLost) return;   /* no driving on while there is no picture (js_fx2.js) */
     paused = p; $('pause').hidden = !p; if (p) engineOff();
+    dragsLetGo();
     document.body.classList.toggle('paused', p);
     if (p) $('pause-text').textContent = mission.name + ' · ' + CARS[player.car].name + ' · 시간 ' + fmtT(tPlay);
     for (var k in keys) keys[k] = false;
@@ -684,27 +685,41 @@
   var autoPauseLater = false;
   function autoPause() { if (mode === 'play' && briefT > 0) { autoPauseLater = true; return; } if (mode === 'play' && !paused && !player.dead) setPaused(true); }
   window.addEventListener('focus', function () { autoPauseLater = false; });   /* nobody is driving: stop rather than crash unattended */
-  window.addEventListener('blur', function () { keys.l = keys.r = keys.u = keys.d = keys.f = false; fireBtn = false; autoPause(); });
-  document.addEventListener('visibilitychange', function () { if (document.hidden) autoPause(); });   /* a key released while another window has the focus would otherwise stay down */
+  window.addEventListener('blur', function () { keys.l = keys.r = keys.u = keys.d = keys.f = false; fireBtn = false; dragsLetGo(); autoPause(); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) { dragsLetGo(); ptrs = {}; autoPause(); } });   /* a hidden page gets no lifts: every finger is forgotten */   /* a key released while another window has the focus would otherwise stay down */
+  /* dragging on the 3D view: the left part sets the throttle, the rest steers (1.5: a finger is followed whatever the game is doing).
+     A thumb already resting on the screen when the run starts or the pause ends used to be ignored until it was lifted and put down
+     again, so the car did not answer the drag at the start and after coming back from another app. Now every finger on the view is
+     followed; it only acts while the car is being driven, and the first move that counts takes the finger's place as its starting point */
+  function driving() { return mode === 'play' && !paused; }
+  function ptrNew(e) { var zone = e.clientX < window.innerWidth * 0.38 ? 'thr' : 'steer'; return (ptrs[e.pointerId] = { zone: zone, touch: e.pointerType !== 'mouse', x0: e.clientX, y0: e.clientY, base: 0, live: false }); }
   cv.addEventListener('pointerdown', function (e) {
-    if (mode !== 'play' || paused) return;
-    var zone = e.clientX < window.innerWidth * 0.38 ? 'thr' : 'steer';
-    ptrs[e.pointerId] = { zone: zone, touch: e.pointerType !== 'mouse', x0: e.clientX, y0: e.clientY, base: zone === 'thr' ? player.thr : player.x };
+    if (e.pointerType === 'mouse' && e.button > 0) return;
+    ptrNew(e);
     try { cv.setPointerCapture(e.pointerId); } catch (err) {}
   });
   cv.addEventListener('pointermove', function (e) {
-    var p = ptrs[e.pointerId]; if (!p) return;
+    var p = ptrs[e.pointerId];
+    if (!p) { if (e.pointerType === 'mouse' && !(e.buttons & 1)) return; p = ptrNew(e); }   /* its touch-down was lost (another app took it): follow it from here */
+    if (!driving()) { p.live = false; return; }
+    if (!p.live) { p.live = true; p.x0 = e.clientX; p.y0 = e.clientY; p.base = p.zone === 'thr' ? player.thr : player.x; }
     if (p.zone === 'thr') player.thr = clamp(p.base - (e.clientY - p.y0) / 220, 0, 1);
     else steerWant = clamp(p.base + (e.clientX - p.x0) * (20 / window.innerWidth) * 1.6, -9.9, 9.9);
   });
   function ptrEnd(e) { var p = ptrs[e.pointerId]; if (p && p.zone === 'steer') steerWant = null; delete ptrs[e.pointerId]; }
-  cv.addEventListener('pointerup', ptrEnd); cv.addEventListener('pointercancel', ptrEnd);
+  cv.addEventListener('pointerup', ptrEnd); cv.addEventListener('pointercancel', ptrEnd); cv.addEventListener('lostpointercapture', ptrEnd);
+  /* leaving the game (another app, another window, the pause): the drag in progress lets go, so a lift that never arrives cannot leave
+     the car steering to an old place or the lever held down; a finger still on the screen takes over again with its next move */
+  function dragsLetGo() { steerWant = null; for (var id in ptrs) ptrs[id].live = false; leverDown = false; }
   (function () {
     var lever = $('lever'), track = $('lever-track');
     function setFrom(e) { var r = track.getBoundingClientRect(); player.thr = clamp(1 - (e.clientY - r.top) / r.height, 0, 1); }
-    lever.addEventListener('pointerdown', function (e) { if (paused) return; leverDown = true; leverTouch = e.pointerType !== 'mouse'; setFrom(e); try { lever.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); });
-    lever.addEventListener('pointermove', function (e) { if (leverDown) setFrom(e); });
-    ['pointerup', 'pointercancel'].forEach(function (ev) { lever.addEventListener(ev, function () { leverDown = false; }); });
+    lever.addEventListener('pointerdown', function (e) { leverDown = true; leverTouch = e.pointerType !== 'mouse'; if (!paused) setFrom(e); try { lever.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); });
+    lever.addEventListener('pointermove', function (e) {
+      if (!leverDown && (e.pointerType !== 'mouse' || (e.buttons & 1))) { leverDown = true; leverTouch = e.pointerType !== 'mouse'; }   /* held through a pause or a switch to another app */
+      if (leverDown && !paused) setFrom(e);
+    });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (ev) { lever.addEventListener(ev, function () { leverDown = false; }); });
     lever.addEventListener('keydown', function (e) {
       if (e.key === 'ArrowUp') { player.thr = clamp(player.thr + 0.1, 0, 1); e.preventDefault(); e.stopPropagation(); }
       if (e.key === 'ArrowDown') { player.thr = clamp(player.thr - 0.1, 0, 1); e.preventDefault(); e.stopPropagation(); }
@@ -756,7 +771,7 @@
     if (nativeCtl(t) && !other) return;
     if (!(game || again || e.touches.length > 1)) return;
     if (e.cancelable) { e.preventDefault(); tapStat.cancelled++; }
-    if (!press && !other && e.touches.length === 1) tapOwn = tapDown;
+    if (!press && !other) tapOwn = tapDown;   /* 1.5: also while another finger rests on the screen (a phone held in both hands): that touch was cancelled, so its click is sent by hand */
   }, { passive: false, capture: true });
   document.addEventListener('touchend', function (e) {
     var p = e.changedTouches[0], d = tapDown, now = e.timeStamp;
