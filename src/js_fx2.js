@@ -80,12 +80,14 @@
     glLost = false; envKey = ''; envT = 0;
     if (gfxNow !== 'low') applyGfx(gfxNow === 'high' ? 'mid' : 'low', false);
     else setRes(RES_STEPS[RES_STEPS.length - 1]);
-    gfxNoUp = true;
+    gfxNoUp = true; gfxSel();
     glNote('화면이 돌아왔어요. 화질을 한 단계 낮췄어요.', false); glNoteEnd = performance.now() + 4000;
   }, false);
   $('glnote-reload').addEventListener('click', function () { location.reload(); });
   /* from the main loop, every frame: after five seconds without a picture, a reload is offered */
   function glWatch() {
+    var ge = $('glnote');
+    if (!ge.hidden && (ge.parentNode === $('pause')) !== (mode === 'play' && !$('pause').hidden)) glNote($('glnote-text').textContent, !$('glnote-reload').hidden);   /* the run was left (menu, title) or paused again */
     if (glLost) {
       if (mode === 'play' && !paused && briefT <= 0) { setPaused(true); glNote($('glnote-text').textContent, !$('glnote-reload').hidden); }   /* lost during the start card: stopped as soon as the run begins, the note moved into the panel */
       if (performance.now() - glLostAt > 5000 && $('glnote-reload').hidden) glNote('화면이 돌아오지 않아요. 다시 불러오면 화질을 낮춰서 시작해요. 지금 판은 처음부터 다시 해요.', true); return; }

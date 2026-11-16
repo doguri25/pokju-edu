@@ -59,9 +59,11 @@
     var k = save.gfx === 'auto' ? gfxStart() : save.gfx, n = 0;
     try { n = +sessionStorage.getItem('pokju-gl-lost') || 0; } catch (e) {}
     if (n >= 2) return 'low';
-    if (n >= 1 && k !== 'low') return 'mid';
+    if (n >= 1) return k === 'high' ? 'mid' : 'low';   /* 1.5: a phone or tablet starts at 보통 already, so one loss has to bring it lower */
     return k;
   }
+  /* the graphics picker: the level chosen, or the level really in use when the game had to come down from a chosen level */
+  function gfxSel() { var el = $('opt-gfx'); if (el) el.value = save.gfx !== 'auto' && GFX[save.gfx] && gfxNow !== save.gfx ? gfxNow : save.gfx; }
   function applyGfx(k, keepRes) {
     var q = GFX[k] || GFX.high;
     gfxNow = GFX[k] ? k : 'high'; fxK = q.fx; mirEvery = q.mir;
@@ -79,9 +81,16 @@
   var gfxResizeNext = false;
   function gfxApplyPending() { if (!gfxResizeNext) return; gfxResizeNext = false; renderer.setPixelRatio(gfxRatio()); resize(); }
   /* one step slower: the resolution first; then a level down, at a resolution that keeps the pixel count from going up again */
+  /* the first resolution step past index i (going down when dir is 1, up when -1) that really changes the pixel ratio: on a big or sharp
+     screen the pixel ceiling already holds it down, and a step that changes nothing only cost seconds of stutter (1.5) */
+  function resStep(i, dir) {
+    var pr0 = gfxRatio(), keep = resK, j, r = null;
+    for (j = i + dir; i >= 0 && j >= 0 && j < RES_STEPS.length; j += dir) { resK = RES_STEPS[j]; if (dir > 0 ? gfxRatio() < pr0 - 1e-3 : gfxRatio() > pr0 + 1e-3) { r = RES_STEPS[j]; break; } }
+    resK = keep; return r;
+  }
   function gfxSlower() {
-    var i = RES_STEPS.indexOf(resK), pr0 = gfxRatio(), base, j;
-    if (i >= 0 && i < RES_STEPS.length - 1) { setRes(RES_STEPS[i + 1]); return; }
+    var i = RES_STEPS.indexOf(resK), pr0 = gfxRatio(), base, j, down = resStep(i, 1);
+    if (down !== null) { setRes(down); return; }
     if (gfxNow === 'low') return;
     applyGfx(gfxNow === 'high' ? 'mid' : 'low', true);
     base = Math.min(window.devicePixelRatio || 1, GFX[gfxNow].pr);
@@ -108,7 +117,7 @@
       gfxRaised = false; gfxFast = 0; gfxSlower();
     } else if (m < fast && i > 0 && !gfxNoUp) {
       gfxRaised = false;
-      if (++gfxFast >= 4) { setRes(RES_STEPS[i - 1]); gfxRaised = true; }
+      if (++gfxFast >= 4) { var up = resStep(i, -1); if (up !== null) { setRes(up); gfxRaised = true; } else gfxFast = 0; }
     } else { gfxRaised = false; gfxFast = 0; }
   }
 

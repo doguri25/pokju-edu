@@ -698,25 +698,40 @@
     ptrNew(e);
     try { cv.setPointerCapture(e.pointerId); } catch (err) {}
   });
+  /* one finger steers at a time: the one that really drags (more than 8 px). A finger or a palm merely resting on the right side neither
+     takes the wheel (its jitter) nor stops the steering when lifted */
+  var steerBy = null;
   cv.addEventListener('pointermove', function (e) {
     var p = ptrs[e.pointerId];
-    if (!p) { if (e.pointerType === 'mouse' && !(e.buttons & 1)) return; p = ptrNew(e); }   /* its touch-down was lost (another app took it): follow it from here */
+    if (!(e.buttons & 1)) { if (p) ptrEnd(e); return; }   /* nothing pressed: a pen hovering, or a mouse whose button was let go off the view */
+    if (!p) p = ptrNew(e);   /* its touch-down was lost (another app took it): follow it from here */
     if (!driving()) { p.live = false; return; }
-    if (!p.live) { p.live = true; p.x0 = e.clientX; p.y0 = e.clientY; p.base = p.zone === 'thr' ? player.thr : player.x; }
-    if (p.zone === 'thr') player.thr = clamp(p.base - (e.clientY - p.y0) / 220, 0, 1);
-    else steerWant = clamp(p.base + (e.clientX - p.x0) * (20 / window.innerWidth) * 1.6, -9.9, 9.9);
+    if (!p.live) { p.live = true; p.big = false; p.x0 = e.clientX; p.y0 = e.clientY; p.base = p.zone === 'thr' ? player.thr : player.x; }
+    if (p.zone === 'thr') { player.thr = clamp(p.base - (e.clientY - p.y0) / 220, 0, 1); return; }
+    if (Math.abs(e.clientX - p.x0) > 8) p.big = true;
+    if (steerBy !== e.pointerId) {
+      var owner = steerBy !== null && ptrs[steerBy];
+      if (owner && !p.big) return;   /* resting or jittering beside the steering finger */
+      if (!owner || p.big) { steerBy = e.pointerId; if (owner) { var dx = e.clientX - p.x0; p.base = player.x; p.x0 = e.clientX - (dx > 0 ? dx - 8 : dx + 8); } }   /* a real drag takes over from where the car is, keeping what it moved past the 8 px */
+    }
+    steerWant = clamp(p.base + (e.clientX - p.x0) * (20 / window.innerWidth) * 1.6, -9.9, 9.9);
   });
-  function ptrEnd(e) { var p = ptrs[e.pointerId]; if (p && p.zone === 'steer') steerWant = null; delete ptrs[e.pointerId]; }
+  function ptrEnd(e) {
+    var p = ptrs[e.pointerId];
+    if (p && p.zone === 'steer' && (steerBy === null || steerBy === e.pointerId)) { steerWant = null; steerBy = null; }
+    delete ptrs[e.pointerId];
+  }
   cv.addEventListener('pointerup', ptrEnd); cv.addEventListener('pointercancel', ptrEnd); cv.addEventListener('lostpointercapture', ptrEnd);
   /* leaving the game (another app, another window, the pause): the drag in progress lets go, so a lift that never arrives cannot leave
      the car steering to an old place or the lever held down; a finger still on the screen takes over again with its next move */
-  function dragsLetGo() { steerWant = null; for (var id in ptrs) ptrs[id].live = false; leverDown = false; }
+  function dragsLetGo() { steerWant = null; steerBy = null; for (var id in ptrs) ptrs[id].live = false; leverDown = false; }
   (function () {
     var lever = $('lever'), track = $('lever-track');
     function setFrom(e) { var r = track.getBoundingClientRect(); player.thr = clamp(1 - (e.clientY - r.top) / r.height, 0, 1); }
     lever.addEventListener('pointerdown', function (e) { leverDown = true; leverTouch = e.pointerType !== 'mouse'; if (!paused) setFrom(e); try { lever.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); });
     lever.addEventListener('pointermove', function (e) {
-      if (!leverDown && (e.pointerType !== 'mouse' || (e.buttons & 1))) { leverDown = true; leverTouch = e.pointerType !== 'mouse'; }   /* held through a pause or a switch to another app */
+      if (!(e.buttons & 1)) { leverDown = false; return; }   /* a pen hovering over the lever is not holding it */
+      if (!leverDown) { leverDown = true; leverTouch = e.pointerType !== 'mouse'; }   /* held through a pause or a switch to another app */
       if (leverDown && !paused) setFrom(e);
     });
     ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (ev) { lever.addEventListener(ev, function () { leverDown = false; }); });
@@ -759,32 +774,41 @@
   /* iOS starts its own word-selection gesture on a second tap at the same spot: a see-through oval lens and a copy bubble appear over the game even where text cannot be selected. Only cancelling the touch at its start stops that, so
      - on the 3D view and the in-play HUD every touch is cancelled (both are driven by pointer events, which still arrive);
      - elsewhere only a second tap next to the first one is cancelled, and the click it would have made is sent by hand so that quick repeated presses on a button still count. Scrolling a list is never a tap, so it is left alone. */
-  var tapLast = { t: -1e9, x: 0, y: 0, el: null }, tapDown = null, tapOwn = null, tapStat = { cancelled: 0, sent: 0 };
+  /* one record per finger (1.5): a tap on a button still counts when another finger lands or rests on the screen during it. The browser
+     drops the click of a touch made while two fingers are down, so such a tap's own end is cancelled and its click sent by hand, once */
+  var tapLast = { t: -1e9, x: 0, y: 0, el: null }, tapRec = {}, tapStat = { cancelled: 0, sent: 0 };
   function nativeCtl(t) { return !!(t && t.closest && t.closest('select, input, textarea, label')); }
   document.addEventListener('touchstart', function (e) {
-    var t = e.target, p = e.changedTouches[0], now = e.timeStamp;   /* the time of the touch itself: on a busy frame the handler runs late */
-    tapDown = { id: p.identifier, x: p.clientX, y: p.clientY, t: now, el: t }; tapOwn = null;
+    var t = e.target, p = e.changedTouches[0], now = e.timeStamp, id;   /* the time of the touch itself: on a busy frame the handler runs late */
     var press = t === cv || !!(t.closest && t.closest('.hud, #coach, #caption, #card')), game = press || !!(t.closest && t.closest('#demo'));   /* press: parts that act on pointer-down and never need a click */
+    var rec = tapRec[p.identifier] = { x: p.clientX, y: p.clientY, t: now, el: t, own: false, plain: !press && !nativeCtl(t) };
+    if (e.touches.length > 1) for (id in tapRec) if (+id !== p.identifier && tapRec[id].plain) tapRec[id].own = true;   /* a tap already under way: its click is now ours to send */
     var again = now - tapLast.t < 400 && Math.abs(p.clientX - tapLast.x) < 44 && Math.abs(p.clientY - tapLast.y) < 44;
     /* the first tap changed the screen and something else now lies under the finger: the second tap must not press it */
     var other = again && !!tapLast.el && t !== tapLast.el && !tapLast.el.contains(t) && !t.contains(tapLast.el);
+    if (other) rec.plain = false;
     if (nativeCtl(t) && !other) return;
     if (!(game || again || e.touches.length > 1)) return;
     if (e.cancelable) { e.preventDefault(); tapStat.cancelled++; }
-    if (!press && !other) tapOwn = tapDown;   /* 1.5: also while another finger rests on the screen (a phone held in both hands): that touch was cancelled, so its click is sent by hand */
+    if (rec.plain) rec.own = true;   /* this touch was cancelled, so its click is sent by hand */
   }, { passive: false, capture: true });
   document.addEventListener('touchend', function (e) {
-    var p = e.changedTouches[0], d = tapDown, now = e.timeStamp;
-    if (!d || d.id !== p.identifier) return;
-    var still = Math.abs(p.clientX - d.x) < 12 && Math.abs(p.clientY - d.y) < 12 && now - d.t < 600;
-    if (still) tapLast = { t: now, x: p.clientX, y: p.clientY, el: d.el }; else tapLast.t = -1e9;
-    if (tapOwn === d && still && d.el && document.body.contains(d.el) && !(d.el.closest && d.el.closest('button:disabled'))) {
-      tapStat.sent++;
-      d.el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window, detail: 1 }));
+    for (var k = 0; k < e.changedTouches.length; k++) {
+      var p = e.changedTouches[k], d = tapRec[p.identifier], now = e.timeStamp;
+      if (!d) continue;
+      delete tapRec[p.identifier];
+      var still = Math.abs(p.clientX - d.x) < 12 && Math.abs(p.clientY - d.y) < 12 && now - d.t < 600;
+      if (e.touches.length === 0) { if (still) tapLast = { t: now, x: p.clientX, y: p.clientY, el: d.el }; else tapLast.t = -1e9; }
+      if (d.own) {
+        if (e.cancelable) e.preventDefault();   /* no click of the browser's own on top of ours */
+        if (still && d.el && document.body.contains(d.el) && !(d.el.closest && d.el.closest('button:disabled'))) {
+          tapStat.sent++;
+          d.el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window, detail: 1 }));
+        }
+      }
     }
-    tapDown = null; tapOwn = null;
   }, { passive: false, capture: true });
-  document.addEventListener('touchcancel', function () { tapDown = null; tapOwn = null; tapLast.t = -1e9; }, true);
+  document.addEventListener('touchcancel', function (e) { for (var k = 0; k < e.changedTouches.length; k++) delete tapRec[e.changedTouches[k].identifier]; tapLast.t = -1e9; }, true);
   ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (n) { document.addEventListener(n, function (e) { e.preventDefault(); }, { passive: false }); });
   document.addEventListener('dblclick', function (e) { if (!nativeCtl(e.target)) e.preventDefault(); });
   document.addEventListener('selectstart', function (e) { var t = e.target; if (!(t && t.closest && t.closest('select, input, textarea'))) e.preventDefault(); });
@@ -942,6 +966,7 @@
   var camFov = 55, baseFov = 55, offX = 0, offY = 0, vw = 1, vh = 1;
   function resize() {
     vw = window.innerWidth; vh = window.innerHeight;
+    renderer.setPixelRatio(gfxRatio());   /* the ceiling on the pixels drawn depends on the window size (1.5: a window made bigger kept the old ratio) */
     renderer.setSize(vw, vh, false); postResize(vw, vh);
     camera.aspect = vw / vh;
     var need = 2 * Math.atan(Math.tan(T.MathUtils.degToRad(31)) / camera.aspect) * 180 / Math.PI;
@@ -1807,7 +1832,7 @@
   loadSave(); applyLink(); setMuted(save.muted); musicOn = save.music; sfxOn = save.sfx; setCam(save.cam);
   makeThumbs(); resize(); applyGfx(gfxBoot()); gfxApplyPending(); carQ = CAR_ORDER.slice();
   touchUI = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
-  $('opt-unlock').checked = save.unlockAll; $('opt-gfx').value = save.gfx; $('opt-calm').checked = save.calm; $('opt-mirror').checked = save.mirror; syncSound();
+  $('opt-unlock').checked = save.unlockAll; gfxSel(); $('opt-calm').checked = save.calm; $('opt-mirror').checked = save.mirror; syncSound();
   showTitle();
   for (var wi = 0; wi < 120; wi++) step(1 / 60);
 
