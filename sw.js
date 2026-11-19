@@ -2,7 +2,7 @@
    The game page is network-first: online it is always the newest build, offline (or a network that hangs for 4 s) it is the last copy kept.
    Google Fonts are kept as they are used (font files never change; their stylesheet is refreshed behind the cached copy).
    The other pages in the repository (dist/, mockup/) are left to the network. */
-var VERSION = '04816207bdfd', PAGE = 'pokju-page-' + VERSION, FONTS = 'pokju-fonts';
+var VERSION = 'd186656379f6', PAGE = 'pokju-page-' + VERSION, FONTS = 'pokju-fonts';
 var BASE = new URL('./', self.location).href, HOME = new URL('./', self.location).pathname;
 var SHELL = ['./', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
 

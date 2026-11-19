@@ -240,7 +240,7 @@
     if (runKind === 'surv') return Math.min(1.5, 0.7 + 0.1 * survLevel);
     return 1;
   }
-  function quiet() { return sirenT > 0 || smokeT > 0; }
+  function quiet() { return sirenT > 0 || smokeT > 0 || runKind === 'free'; }   /* the enemy holds its fire: siren, smoke, and 연습 주행 (targets only) */
   function fmtT(t) { t = Math.round(t * 10) / 10; var m = Math.floor(t / 60), s = t - m * 60; return m + ':' + (s < 10 ? '0' : '') + s.toFixed(1); }
   function taRec(i) { return save.ta[i] || (save.ta[i] = { best: 0, car: '', cars: {} }); }
   function medalOf(tk, carKey, t) { if (!t) return ''; var q = tk.n / t / CARS[carKey].vmax; return q >= tk.medal[0] ? '금' : (q >= tk.medal[1] ? '은' : (q >= tk.medal[2] ? '동' : '')); }
@@ -278,7 +278,7 @@
     if (!e.cfg.air && !e.cfg.boss && e.type !== 'bike') spawnHulk(e, rel);
     if (!e.cfg.civ) {
       var n = e.type === 'boss' ? 12 : (e.type === 'dump' ? 7 : (e.type === 'bike' ? 1 : 3));
-      for (var k = 0; k < n; k++) spawnScrap(p.x, e.cfg.y + 0.5, p.z, e.cfg.air || e.cfg.boss ? 0 : rel);
+      if (runKind !== 'free') for (var k = 0; k < n; k++) spawnScrap(p.x, e.cfg.y + 0.5, p.z, e.cfg.air || e.cfg.boss ? 0 : rel);   /* 연습 주행: a hit counts, nothing is collected */
       if (!silent) { kills++; addScore(e.cfg.score); if (mission.goal === 'hunt' && e.type === mission.target) { hunts++; huntT = 2.5; } }
     }
     if (mode === 'demo' && tr.phase === 'play' && size >= 1.1 && slowCd <= 0 && p.z < -6 && p.z > -60) {
