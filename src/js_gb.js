@@ -71,7 +71,7 @@
     var car = CARS[carKey];
     player.x = fromRun ? keepX : 2; player.vx = 0; holdX = null; failWhy = ''; tPlay = 0; kills = 0; civHits = 0; score = 0; scrap = 0; hitFlash = 0; distStart = dist; steerWant = null; apWant = player.x; apT = 0; survLevel = 1;
     if (fromRun && !rolling) { player.v = clamp(keepV, car.vmin, car.vmax); player.thr = keepThr; }
-    crateT = isDemo ? 5 : 9; paused = false; titleOn = false; document.body.classList.remove('paused');
+    crateT = isDemo ? 5 : 9; paused = false; titleOn = false; document.body.classList.remove('paused'); $('hud').inert = false; fireBtn = false;
     if (mission.goal === 'boss') { boss = spawnEnemy('boss', 0, -130, 0); boss.hpMax = mission.bossHp || boss.cfg.hp; boss.hp = boss.hpMax; }
     if (mission.rivals) setupRivals(mission.rivals, carKey);
     if (mission.goal === 'escort') setupAlly(carKey);
@@ -381,7 +381,7 @@
     if (name === 'mode') scrollSel();
   }
   function toMenu() {
-    bankFree();
+    bankFree(); $('hud').inert = false; fireBtn = false;
     closeInfo(); if (!$('help').hidden) $('help').hidden = true; helpThen = null; autoPauseLater = false; mode = 'menu'; tr.on = false; tr.phase = ''; tr.fade = 0; $('card').hidden = true; $('demo').classList.remove('carded'); paused = false; briefT = 0; titleOn = false; document.body.classList.remove('paused');
     $('pause').hidden = true; $('ending').hidden = true; $('title').hidden = true; $('coach').hidden = true; $('story').hidden = true; setMusic('menu');
     if (runKind === 'tut') runKind = 'mis';
@@ -402,7 +402,11 @@
     if (!p && (!$('help').hidden || !$('info').hidden)) return;   /* a dialog is open over the paused game: it is closed first */
     if (!p && glLost) return;   /* no driving on while there is no picture (js_fx2.js) */
     paused = p; $('pause').hidden = !p; if (p) engineOff();
-    dragsLetGo();
+    dragsLetGo(); fireBtn = false;
+    /* a real dialog (1.5): the keyboard lands on 「계속 하기」, and the HUD behind it is out of the way of Tab */
+    $('hud').inert = p;
+    if (p) { try { $('pause-resume').focus({ preventScroll: true }); } catch (e) {} }
+    else if (document.activeElement && $('pause').contains(document.activeElement)) document.activeElement.blur();
     document.body.classList.toggle('paused', p);
     if (p) $('pause-text').textContent = mission.name + ' · ' + CARS[player.car].name + ' · 시간 ' + fmtT(tPlay);
     for (var k in keys) keys[k] = false;
@@ -662,8 +666,18 @@
   function syncSound() { var on = save.sfx && !save.muted, mu = save.music && !save.muted; $('opt-sound').checked = on; $('pz-sound').checked = on; $('opt-music').checked = mu; $('pz-music').checked = mu; }
   function setSfx(on) { if (on && save.muted) { save.muted = false; setMuted(false); } save.sfx = on; sfxOn = on; storeSave(); syncSound(); iosPlayback(); }
   function setMus(on) { if (on && save.muted) { save.muted = false; setMuted(false); } save.music = on; musicOn = on; storeSave(); syncSound(); iosPlayback(); }
-  function openHelp(then) { helpThen = then || null; $('help').hidden = false; $('help-close').focus({ preventScroll: true }); $('help').scrollTop = 0; }   /* from its top: focusing the button at the end scrolled it down (1.5) */
-  function closeHelp() { $('help').hidden = true; var f = helpThen; helpThen = null; if (f) f(); }
+  var helpFrom = null;
+  function openHelp(then) { helpThen = then || null; helpFrom = document.activeElement; $('help').hidden = false; $('help-close').focus({ preventScroll: true }); $('help').scrollTop = 0; }   /* from its top: focusing the button at the end scrolled it down (1.5) */
+  function closeHelp() {
+    $('help').hidden = true; var f = helpThen, from = helpFrom; helpThen = null; helpFrom = null;
+    if (from && from !== document.body && document.body.contains(from) && from.offsetParent !== null) { try { from.focus({ preventScroll: true }); } catch (e) {} }   /* back where it was opened from */
+    if (f) f();
+  }
+  /* the result: the keyboard lands on the main way on (다음 장, 엔딩 보기, or 다시 하기) */
+  function resFocus() {
+    var ids = ['res-next', 'res-ending', 'res-retry'];
+    for (var i = 0; i < ids.length; i++) { var b = $(ids[i]); if (b && !b.hidden) { try { b.focus({ preventScroll: true }); } catch (e) {} return; } }
+  }
   /* in-play buttons act on press, not on click: a tap made while another finger is already holding the lever never becomes a click */
   function tap(el, fn) {
     el.addEventListener('pointerdown', function (e) { if (e.button > 0) return; if (e.pointerType === 'touch') touchUI = true; e.preventDefault(); fn(); });
@@ -673,7 +687,14 @@
   window.addEventListener('pointerdown', audioInit, true);
   window.addEventListener('touchend', audioInit, true); window.addEventListener('click', audioInit, true);   /* iOS only lets sound start from the end of a touch or a click */
   window.addEventListener('keydown', audioInit, true);
+  var shiftSkill = false;
+  /* a key held down from the run into a panel (Enter on 사격) must not press the button that now has the focus */
+  document.addEventListener('keydown', function (e) { if (e.repeat && (e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('#result, #pause')) e.preventDefault(); }, true);
   window.addEventListener('keydown', function (e) {
+    /* with Ctrl, Alt or ⌘ the key is the browser's or the computer's, and typing in a field is typing (1.5: M in the class-link box muted the game) */
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key !== 'Escape' && nativeCtl(e.target)) return;
+    if (e.key !== 'Shift') shiftSkill = false;
     if (e.repeat && (isKey(e, 'KeyM', 'm') || e.key === 'Escape' || isKey(e, 'KeyP', 'p') || isKey(e, 'KeyC', 'c') || isKey(e, 'KeyV', 'v'))) return;   /* a held key toggles once */
     if (isKey(e, 'KeyM', 'm')) { toggleMute(!save.muted); return; }
     if (e.key === 'Escape' && !$('help').hidden) { closeHelp(); return; }
@@ -684,10 +705,15 @@
     if (isKey(e, 'KeyC', 'c') || isKey(e, 'KeyV', 'v')) { cycleCam(); return; }
     if (paused) return;
     if (keySet(e, true)) e.preventDefault();
-    else if (e.key === ' ' || e.code === 'Space' || e.key === 'Shift') { if (!e.repeat) useSkill(); e.preventDefault(); }
+    else if (e.key === ' ' || e.code === 'Space') { if (!e.repeat) useSkill(); e.preventDefault(); }
+    else if (e.key === 'Shift') { if (!e.repeat) shiftSkill = true; }   /* Shift alone uses the skill when let go: Shift+Tab is not a skill */
     else if (isKey(e, 'KeyX', 'x') || isKey(e, 'KeyE', 'e') || isKey(e, 'KeyF', 'f')) { if (!e.repeat) useBasic(); e.preventDefault(); }
   });
-  window.addEventListener('keyup', function (e) { keySet(e, false); });
+  window.addEventListener('keyup', function (e) {
+    keySet(e, false);
+    if (e.key === 'Shift' && shiftSkill) { shiftSkill = false; if (mode === 'play' && !paused) useSkill(); }
+    if (e.key === 'Enter') fireBtn = false;   /* let go anywhere: the 사격 button may have lost the focus meanwhile */
+  });
   var autoPauseLater = false;
   function autoPause() { if (mode === 'play' && briefT > 0) { autoPauseLater = true; return; } if (mode === 'play' && !paused && !player.dead) setPaused(true); }
   window.addEventListener('focus', function () { autoPauseLater = false; });   /* nobody is driving: stop rather than crash unattended */
@@ -770,7 +796,10 @@
     if (!pads) return 0;
     for (var i = 0; i < pads.length; i++) {
       var g = pads[i]; if (!g || !g.axes || g.axes.length < 2) continue;
-      var ax = Math.abs(g.axes[0]) > 0.15 ? g.axes[0] : 0, ay = Math.abs(g.axes[1]) > 0.15 ? g.axes[1] : 0;
+      var ax = Math.abs(g.axes[0]) > 0.15 ? g.axes[0] : 0, ay = Math.abs(g.axes[1]) > 0.15 ? g.axes[1] : 0, bt = g.buttons || [];
+      /* the D-pad too (buttons 12~15 of the standard layout) */
+      if (bt[14] && bt[14].pressed) ax = -1; else if (bt[15] && bt[15].pressed) ax = 1;
+      if (bt[12] && bt[12].pressed) ay = -1; else if (bt[13] && bt[13].pressed) ay = 1;
       player.thr = clamp(player.thr - ay * 0.7 * dt, 0, 1); padThr = ay !== 0;
       padFire = !!(g.buttons && ((g.buttons[5] && g.buttons[5].pressed) || (g.buttons[7] && (g.buttons[7].pressed || g.buttons[7].value > 0.3))));   /* RB or RT: attack */
       var pressed = !!(g.buttons && ((g.buttons[0] && g.buttons[0].pressed) || (g.buttons[1] && g.buttons[1].pressed)));
@@ -793,7 +822,17 @@
     if (pads) for (var i = 0; i < pads.length; i++) { var g = pads[i]; if (g && g.buttons && g.buttons[9] && g.buttons[9].pressed) down = true; }
     if (down && !padStartHeld && mode === 'play') setPaused(!paused);
     padStartHeld = down;
+    /* A and B on the panels (1.5: a gamepad could not leave the result or the pause): A goes on, B goes back to the menu */
+    var a = false, bk = false;
+    if (pads) for (i = 0; i < pads.length; i++) { var p2 = pads[i]; if (p2 && p2.buttons) { a = a || !!(p2.buttons[0] && p2.buttons[0].pressed); bk = bk || !!(p2.buttons[1] && p2.buttons[1].pressed); } }
+    var resOn = !$('result').hidden, pzOn = mode === 'play' && paused && $('help').hidden;
+    if (a && !padPanelA && (pzOn || resOn)) padSkill = true;   /* the same press must not also use the skill once driving again */
+    if (a && !padPanelA) { if (pzOn) $('pause-resume').click(); else if (resOn) { var nb = ['res-next', 'res-ending', 'res-retry'].map($).filter(function (b) { return b && !b.hidden; })[0]; if (nb) nb.click(); } }
+    if (bk && !padPanelB) { if (pzOn) $('pause-menu').click(); else if (resOn) $('res-menu').click(); }
+    padPanelA = a; padPanelB = bk;
   }
+  var padPanelA = false, padPanelB = false;
+  window.addEventListener('gamepaddisconnected', function () { autoPause(); });   /* the pad unplugged or out of battery: stop rather than drive on alone */
   /* iOS starts its own word-selection gesture on a second tap at the same spot: a see-through oval lens and a copy bubble appear over the game even where text cannot be selected. Only cancelling the touch at its start stops that, so
      - on the 3D view and the in-play HUD every touch is cancelled (both are driven by pointer events, which still arrive);
      - elsewhere only a second tap next to the first one is cancelled, and the click it would have made is sent by hand so that quick repeated presses on a button still count. Scrolling a list is never a tap, so it is left alone. */
@@ -853,8 +892,10 @@
     var b = $('btn-fire');
     b.addEventListener('pointerdown', function (e) { if (e.button > 0) return; fireBtn = true; try { b.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); });
     ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (n) { b.addEventListener(n, function () { fireBtn = false; }); });
-    b.addEventListener('keydown', function (e) { if (e.key === 'Enter') fireBtn = true; });
-    b.addEventListener('keyup', function (e) { if (e.key === 'Enter') fireBtn = false; });
+    /* Enter or Space held on the focused button shoots (Space used to be the skill key there) */
+    b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { fireBtn = true; e.preventDefault(); e.stopPropagation(); } });
+    b.addEventListener('keyup', function (e) { if (e.key === 'Enter' || e.key === ' ') { fireBtn = false; e.preventDefault(); } });
+    b.addEventListener('blur', function () { fireBtn = false; });
   })();
   tap($('btn-exit'), function () { setPaused(true); });
   tap($('btn-cam'), cycleCam);
@@ -1246,11 +1287,11 @@
     setStyle('lever-knob', 'bottom', pct(player.thr));
     setStyle('lever-fill', 'height', pct((player.v - car.vmin) / (car.vmax - car.vmin)));
     $('lever').setAttribute('aria-valuenow', String(Math.round(player.thr * 100)));
-    setText('skill-cd', player.cd > 0 ? Math.ceil(player.cd) + '초 뒤' : (touchUI || vw <= 720 ? '준비됨' : '준비됨 · Space'));
+    setText('skill-cd', player.cd > 0 ? Math.ceil(player.cd) + '초 뒤' : (touchUI ? '준비됨' : vw <= 720 ? 'Space' : '준비됨 · Space'));
     if (hudCache.cool !== (player.cd > 0)) { hudCache.cool = player.cd > 0; $('btn-skill').classList.toggle('cool', hudCache.cool); $('btn-skill').setAttribute('aria-disabled', hudCache.cool ? 'true' : 'false'); }   /* not the disabled attribute: iOS draws disabled buttons half transparent */
     setStyle('skill-bar', 'transform', 'scaleX(' + (1 - player.cd / car.cd).toFixed(2) + ')');
     var bcd = player.bcd || 0;
-    setText('basic-cd', bcd > 0 ? Math.ceil(bcd) + '초 뒤' : (touchUI || vw <= 720 ? '준비됨' : '준비됨 · X'));
+    setText('basic-cd', bcd > 0 ? Math.ceil(bcd) + '초 뒤' : (touchUI ? '준비됨' : vw <= 720 ? 'X' : '준비됨 · X'));
     var pcFire = EDU.arms && finePtr && !touchUI;
     if (hudCache.pcFire !== pcFire) { hudCache.pcFire = pcFire; $('btn-fire').hidden = !pcFire; }
     if (pcFire) { setText('fire-cd', fireIn ? '발사 중' : (vw <= 720 ? 'Z' : '길게 · Z')); if (hudCache.firing !== fireIn) { hudCache.firing = fireIn; $('btn-fire').classList.toggle('on', fireIn); } }
@@ -1780,7 +1821,7 @@
       hud();
     } else if (mode === 'result' && resultT > 0) {
       resultT -= dt;
-      if (resultT <= 0) { $('hud').hidden = true; $('result').hidden = false; }
+      if (resultT <= 0) { $('hud').hidden = true; $('result').hidden = false; fireBtn = false; resFocus(); }
     }
     var talk = mode === 'demo' && tr.phase === 'play';
     if (capHold > 0) {
@@ -1864,6 +1905,42 @@
   /* the game open in two tabs (a class link opened beside an old tab): each tab used to write back the whole save as it had read it at
      its start, so a tab left open wiped what was won in the other one. Now a tab takes up what another tab saved (1.5). Its own
      settings stay as they are here (sound, camera, quality, the choices in its menu), and the answers of a run under way are kept */
+  /* choosing in the menu redraws its list, and the button that had the keyboard focus was thrown away with it: the focus went to the page
+     and a second Enter, Space or arrow did nothing (1.5). After each redraw the focus goes back to the same control */
+  function focusKey(el) {
+    if (!el || el === document.body || !el.closest || !el.closest('#menu')) return null;
+    if (el.id) return '#' + CSS.escape(el.id);
+    var at = [].filter.call(el.attributes, function (x) { return /^data-/.test(x.name); });
+    return at.length ? el.tagName.toLowerCase() + at.map(function (x) { return '[' + x.name + '="' + CSS.escape(x.value) + '"]'; }).join('') : null;
+  }
+  function keepFocus(fn) {
+    return function () {
+      var k = focusKey(document.activeElement), r = fn.apply(this, arguments);
+      if (k && (!document.activeElement || document.activeElement === document.body)) { var n = document.querySelector(k); if (n && n.offsetParent !== null) { try { n.focus({ preventScroll: true }); } catch (err) {} } }
+      return r;
+    };
+  }
+  renderMenu = keepFocus(renderMenu); renderGrid = keepFocus(renderGrid); renderGear = keepFocus(renderGear); renderKinds = keepFocus(renderKinds);
+  renderMissions = keepFocus(renderMissions); renderChapters = keepFocus(renderChapters);
+  /* Tab stays inside an open panel (help, pause, result) instead of walking on to the page behind it */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab' || e.ctrlKey || e.altKey || e.metaKey) return;
+    var d = ['help', 'info', 'pause', 'result'].map($).filter(function (x) { return x && !x.hidden; })[0]; if (!d) return;
+    var f = [].filter.call(d.querySelectorAll('button, select, input, a[href], [tabindex]:not([tabindex="-1"])'), function (x) { return !x.disabled && x.offsetParent !== null; });
+    if (!f.length) return;
+    var i = f.indexOf(document.activeElement), n = e.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i < 0 || i >= f.length - 1 ? 0 : i + 1);
+    e.preventDefault(); try { f[n].focus(); } catch (err) {}
+  });
+  /* arrow keys move along the mode chips and the tabs, as in any radio group or tab list */
+  document.addEventListener('keydown', function (e) {
+    if (!/^Arrow(Left|Right|Up|Down)$/.test(e.key) || e.ctrlKey || e.altKey || e.metaKey) return;
+    var g = e.target.closest && e.target.closest('[role=radiogroup], [role=tablist]'); if (!g) return;
+    var items = [].filter.call(g.querySelectorAll('[role=radio], [role=tab]'), function (b) { return b.offsetParent !== null && !b.disabled; }), i = items.indexOf(e.target);
+    if (i < 0) return;
+    var nx = items[(i + (e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 1) + items.length) % items.length], id = nx.id;
+    e.preventDefault(); nx.click();
+    var m = id ? $(id) : nx; if (m) { try { m.focus({ preventScroll: true }); } catch (err) {} }
+  });
   window.addEventListener('storage', function (e) {
     if (e.key !== SAVE_KEY || e.storageArea !== window.localStorage || e.newValue === null) return;
     var keep = { muted: save.muted, music: save.music, sfx: save.sfx, cam: save.cam, camV: save.camV, gfx: save.gfx, calm: save.calm, mirror: save.mirror },

@@ -739,7 +739,7 @@ body { word-break: keep-all; overflow-wrap: break-word; }
   <dl class="detail" id="info-body"></dl>
   <div class="btns"><button type="button" class="primary" id="info-act" hidden></button><button type="button" id="info-close">닫기</button></div>
 </div>
-<div class="panel result" id="result" hidden>
+<div class="panel result" id="result" role="dialog" aria-modal="true" aria-labelledby="res-title" hidden>
   <b id="res-title">미션 완료</b>
   <p class="story" id="res-story"></p>
   <dl class="detail stats" id="res-text"></dl>
@@ -747,8 +747,8 @@ body { word-break: keep-all; overflow-wrap: break-word; }
   <p class="reward" id="res-reward"></p>
   <div class="btns"><button type="button" id="res-menu">선택 화면으로</button><button type="button" id="res-home">타이틀 화면</button><button type="button" id="res-retry">다시 하기</button><button type="button" id="res-big" aria-pressed="false">크게 보기</button><button type="button" class="primary" id="res-next" hidden>다음 미션</button><button type="button" class="primary" id="res-ending" hidden>엔딩 보기</button></div>
 </div>
-<div class="panel result" id="pause" hidden>
-  <b>일시정지</b>
+<div class="panel result" id="pause" role="dialog" aria-modal="true" aria-labelledby="pause-title" hidden>
+  <b id="pause-title">일시정지</b>
   <p id="pause-text"></p>
   <div class="quick"><label class="opt"><input type="checkbox" id="pz-sound" checked>효과음</label><label class="opt"><input type="checkbox" id="pz-music" checked>배경음악</label><button type="button" class="plain" id="pz-cam">시점 바꾸기</button><button type="button" class="plain" id="pz-help">조작 방법</button></div>
   <div class="btns"><button type="button" class="primary" id="pause-resume">계속 하기</button><button type="button" id="pause-retry">다시 시작</button><button type="button" id="pause-menu">선택 화면으로</button><button type="button" id="pause-home">타이틀 화면</button></div>
@@ -765,7 +765,7 @@ body { word-break: keep-all; overflow-wrap: break-word; }
   <p id="coach-do"></p>
   <button type="button" id="coach-skip">연습 건너뛰기</button>
 </div>
-<div class="panel result help" id="help" role="dialog" aria-labelledby="help-title" hidden>
+<div class="panel result help" id="help" aria-modal="true" role="dialog" aria-labelledby="help-title" hidden>
   <b id="help-title">조작 방법</b>
   <p class="story">키보드와 게임패드는 이동과 공격이 따로입니다. 터치 화면에서는 왼손 레버를 잡고 있는 동안 무기가 나갑니다.</p>
   <div class="helpgrid">

@@ -30,7 +30,7 @@
     return { kind: 'tut', name: '운전 연습', region: 'city', weather: 'clear', time: 'day', timeLabel: '낮', dir: 1, goal: 'tut', n: TUT.length, civ: 0, civLimit: 0, drones: 0, strike: 0, kami: 0, buggy: false, traffic: 1, chasers: 0, farm: 0,
       road: { order: ['hill'], gap: [420, 560] }, label: '운전 연습', why: '전설 카센터 앞 도로. 아직 갈림길도, 날뛰는 차도 없는 조용한 길이다.', aim: '오 사장과 새벽의 말을 따라 운전, 무기, 기술을 차례로 익힌다. 연습 중에는 차가 부서지지 않는다.', win: '', lose: '', done: '' };
   }
-  function tutTouch() { return touchUI || vw <= 720; }
+  function tutTouch() { return touchUI; }   /* by the input, not the width (1.5): a narrow window on a computer (split screen, zoom) got the touch steps, and the lever held with a mouse does not fire */
   var TUT = [
     { who: '오 사장', line: '막내야, 시동 걸었으면 속도부터 올려 봐. 이 차들은 밟는다고 바로 튀어나가지 않는다.', key: '↑를 누르고 있기', touch: '왼쪽 아래 레버를 위로 올리기', goal: function (car) { return '시속 ' + Math.round(Math.min(100, car.vmax * 3.6 * 0.8)) + ' km 넘기기'; },
       check: function (car) { return veff * 3.6 >= Math.min(100, car.vmax * 3.6 * 0.8); } },

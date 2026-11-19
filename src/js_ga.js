@@ -202,12 +202,15 @@
           if (Array.isArray(s.quiz.runs)) save.quiz.runs = s.quiz.runs.slice(-30);
         }
         if (s.camV === 2 && (s.cam === 'top' || s.cam === 'low' || s.cam === 'cockpit')) { save.cam = s.cam; save.camV = 2; }
-        save.unlockAll = !!s.unlockAll; save.muted = !!s.muted; save.music = s.music === true; save.sfx = s.sfx !== false; save.calm = !!s.calm; save.help = !!s.help; save.tut = !!s.tut; save.mirror = s.mirror !== false;
+        save.unlockAll = !!s.unlockAll; save.muted = !!s.muted; save.music = s.music === true; save.sfx = s.sfx !== false; save.calm = s.calm === undefined ? reducedMotion() : !!s.calm; save.help = !!s.help; save.tut = !!s.tut; save.mirror = s.mirror !== false;
         if (s.gfx === 'auto' || s.gfx === 'high' || s.gfx === 'mid' || s.gfx === 'low') save.gfx = s.gfx;
       }
     } catch (e) {}
+    try { if (!window.localStorage.getItem(SAVE_KEY)) save.calm = reducedMotion(); } catch (e) {}
     save.cars.laser = true; save.tires.allseason = 1; grantStock();
   }
+  /* the computer's own 「동작 줄이기」 setting starts 차분한 화면 on, until the player chooses (1.5) */
+  function reducedMotion() { try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } }
   /* a class link's settings last for this visit only: the student's own choices are what is stored */
   /* factLog: the answers recorded since the last save, so that a save taken up from another tab does not lose them (js_gb.js) */
   var factLog = [];
