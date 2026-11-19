@@ -168,7 +168,19 @@
     ckp.hood = new T.Mesh(new T.BoxGeometry(1.74, 0.04, 1), ckp.hoodMat); cockpit.add(ckp.hood);
     cockpit.traverse(function (o) { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; o.frustumCulled = false; } });
     cockpit.visible = false; camera.add(cockpit); scene.add(camera);
+    ckpFlat(cockpit);
   })();
+  /* the cockpit rides with the eyes, so it must not be lifted by the hills like the world is (js_hill.js): on a slope the dash and the
+     wheel floated into the sky or covered the road, by the slope times the distance from the car's centre to the seat (1.5) */
+  function ckpFlat(root) {
+    root.traverse(function (o) {
+      if (!o.material) return;
+      (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) {
+        if (m.userData.flat) return;
+        m.userData.flat = true; m.onBeforeCompile = function () {}; m.customProgramCacheKey = function () { return 'cockpit-flat'; }; m.needsUpdate = true;
+      });
+    });
+  }
   /* where the cockpit sits under the eyes. A tall cab: the windscreen reaches higher above them, and a bus's corner pillars are far out to
      the sides. A portrait screen sees much more above and below than a windscreen does: the dash sits a little lower there (the road was a
      thin band over it) and the top of the frame goes up out of the picture */
@@ -176,12 +188,12 @@
     var H = car.spec.H, key = H + (port ? 'p' : 'l');
     if (ckp.lay === key) return;
     ckp.lay = key;
-    var dy = 0, up = (H > 2.4 ? 0.3 : H > 1.9 ? 0.08 : 0) + (port ? 0.12 : 0);
+    var dy = 0, up = (H > 2.4 ? 0.3 : H > 1.9 ? 0.08 : 0) + (port ? 0.26 : 0);
     cockpit.position.y = dy;
     ckp.upper.forEach(function (m) { m.position.y = m.userData.y0 + up - dy; });
     ckp.pillars.forEach(function (m) { m.visible = H <= 2.4; });
   }
-  function cockpitEye(car) { var H = car.spec.H; return H > 2.4 ? Math.min(2.6, 1 + 0.45 * H) : Math.max(0.95, H - 0.3); }
+  function cockpitEye(car) { var H = car.spec.H; if (car.eyeH) return car.eyeH; return H > 2.4 ? Math.min(2.6, 1 + 0.45 * H) : Math.max(0.95, H - 0.3); }
   function cockpitFor(car) {
     var len = car.hoodLen || 0, H = car.spec.H;
     ckp.lay = '';

@@ -3,7 +3,7 @@
 // and a warm one at dusk, a light vignette, a green or red flash on right and wrong answers, and fine grain.
 // In the rain, drops gather on the lens, bend the picture behind them and dry away again (graphics upgrade 2).
 uniform sampler2D tDiffuse;
-uniform float uTime, uSpeed, uFlash, uNight, uDusk, uRain, uAspect;
+uniform float uTime, uSpeed, uFlash, uNight, uDusk, uRain, uAspect, uRainY;
 uniform vec3 uFlashColor;
 varying vec2 vUv;
 float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -25,6 +25,8 @@ void main() {
   vec3 da = vec3(0.0), db = vec3(0.0);
   if (uRain > 0.01) {
     da = drops(vUv, 7.0, uTime, 0.3 * uRain); db = drops(vUv + 0.37, 13.0, uTime * 1.3, 0.34 * uRain);
+    float wsc = smoothstep(uRainY - 0.015, uRainY + 0.015, vUv.y);   // in the driver's seat the drops are on the windscreen, not on the dash
+    da *= wsc; db *= wsc;
     uv -= (da.xy * 0.022 + db.xy * 0.012) * (1.0 - 0.6 * uSpeed);
   }
   vec2 c = uv - 0.5;

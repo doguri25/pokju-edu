@@ -1100,6 +1100,7 @@
     CARS.bus.anchors = { front: [0, 0.6, 5.56], roof: [0, 3.4, 3.3], side: [1.3, 1.1, 1.0], rear: [0, 3.08, -4.9] };
     finishCar('bus', g, w, { head: [[-0.9, 0.82, 5.52], [0.9, 0.82, 5.52]], tail: [[-1.0, 1.0, -5.52], [1.0, 1.0, -5.52]] });
   })();
+  if (CARS.ambul) CARS.ambul.eyeH = 1.64;   /* its spec height is the box body behind the cab: the eyes go 30 cm under the cab roof (1.94 m) */
   CARS.cyber.seatF = 0.55; CARS.cyber.hoodLen = 1.6; CARS.cyber.paint = M.steel;
   CARS.porter.seatF = CARS.porter.hl - 1.25; CARS.tow.seatF = CARS.tow.hl - 1.4; CARS.fire.seatF = CARS.fire.hl - 1.5; CARS.bus.seatF = CARS.bus.hl - 1.5;
   ['porter', 'tow', 'fire', 'bus'].forEach(function (k) { CARS[k].hoodLen = 0; CARS[k].paint = M.dark; });

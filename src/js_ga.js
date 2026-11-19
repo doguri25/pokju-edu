@@ -352,9 +352,11 @@
     ITEMS.forEach(function (it) {
       var c = document.createElement('canvas'); c.width = 256; c.height = 72;
       var x = c.getContext('2d');
-      x.fillStyle = 'rgba(20,22,26,0.88)'; x.fillRect(0, 0, 256, 72);
-      x.fillStyle = '#ffffff'; x.font = '700 40px "Noto Sans KR", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(it.name, 128, 38);
       it.tex = new T.CanvasTexture(c); it.col = C(it.color);
+      canvasFont('700 40px "Noto Sans KR"', it.name, function () {   /* drawn again once the font is in (js_world3.js) */
+        x.clearRect(0, 0, 256, 72); x.fillStyle = 'rgba(20,22,26,0.88)'; x.fillRect(0, 0, 256, 72);
+        x.fillStyle = '#ffffff'; x.font = '700 40px "Noto Sans KR", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(it.name, 128, 38);
+      }, it.tex);
     });
     crate.label = new T.Sprite(new T.SpriteMaterial({ map: ITEMS[0].tex, depthWrite: false, transparent: true, fog: false }));
     crate.label.scale.set(4.2, 1.18, 1); crate.label.position.y = 2.2; g.add(crate.label);

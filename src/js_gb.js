@@ -383,7 +383,7 @@
     if (name === 'mode') scrollSel();
   }
   function toMenu() {
-    bankFree(); $('hud').inert = false; fireBtn = false;
+    bankFree(); shotCut = true;   /* from the driver's seat: not a blend out of the car's inside */ $('hud').inert = false; fireBtn = false;
     closeInfo(); if (!$('help').hidden) $('help').hidden = true; helpThen = null; autoPauseLater = false; mode = 'menu'; tr.on = false; tr.phase = ''; tr.fade = 0; $('card').hidden = true; $('demo').classList.remove('carded'); paused = false; briefT = 0; titleOn = false; document.body.classList.remove('paused');
     $('pause').hidden = true; $('ending').hidden = true; $('title').hidden = true; $('coach').hidden = true; $('story').hidden = true; setMusic('menu');
     if (runKind === 'tut') runKind = 'mis';
@@ -1079,7 +1079,10 @@
          a few centimetres low in a car and a whole metre low in a bus */
       var ey = cockpitEye(car), sx = px - car.W * 0.19, sz = -(car.seatF || 0), port = vw < vh;
       ckpLayout(car, port);   /* js_extra.js; on a portrait screen the eyes also look a little further down, so the road fills more of it */
-      wantP.set(sx, ey, sz); wantT.set(sx + player.vx * 0.3, ey - (port ? 2.3 : 1.5), sz - 30);
+      /* the seat is ahead of the car's centre: on a slope it is higher or lower by as much as the road under it, and the eyes look
+         along the slope, as the car itself is tilted (the cockpit around them is not lifted, see ckpFlat) */
+      var h0 = heightAt(dist), hs = heightAt(dist - sz) - h0, ha = heightAt(dist - sz + 30) - h0;
+      wantP.set(sx, ey + hs, sz); wantT.set(sx + player.vx * 0.3, ey + ha - (port ? 2.3 : 1.5), sz - 30);
       return clamp(baseFov * 1.15, 64, 98);
     }
     if (name === 'low') { wantP.set(px + shotSide * 2.6, 2.1, 8.5 + car.hl - t * 0.15); wantT.set(px, 1.0, -16); return Math.min(92, 60 * tall); }
@@ -1096,7 +1099,10 @@
     R = Math.max(0, car.hl - 2.6);
     if ((tunCam || lowCam) && name !== 'select') {
       var sv = splitVal(dist), away = liftU.value > 0.5 ? (sv > 0 ? 1 : -1) * Math.min(1.6, liftU.value * 0.4) : 0;   /* beside a deck, keep the camera clear of its edge */
-      wantP.set(px * 0.85 + away, 4.3 + R * 0.5, 10.5 + car.hl * 1.5 + R); wantT.set(px * 0.9 + away * 0.3, 1.2, -18); return clamp(baseFov * 0.92, 50, 92);
+      /* under a roof: never higher than 5 m (a bus's camera went through the jet fans), and as high as the road where the camera is (on a
+         tunnel's ramp it went above the ceiling) */
+      var tz = 10.5 + car.hl * 1.5 + R;
+      wantP.set(px * 0.85 + away, Math.min(5, 4.3 + R * 0.5) + heightAt(dist - tz) - heightAt(dist), tz); wantT.set(px * 0.9 + away * 0.3, 1.2, -18); return clamp(baseFov * 0.92, 50, 92);
     }
     wantP.set(camBase.x + px * 0.38, camBase.y + pull * 0.4 + R * 0.9, camBase.z + pull + R * 1.3); wantT.set(px * 0.5, 0, -10 + R * 0.4); return baseFov;
   }
@@ -1882,7 +1888,7 @@
     if (save.calm) shake = Math.min(shake, 0.45);
     var sh = shake * shake * 0.5 + (on && !player.dead ? bmp * 0.035 : 0), wantFov, wantOffX = 0, wantOffY = 0, pull = (veff - 38) * 0.05 + (boss && boss.entered ? 2.6 : 0), cine = mode === 'demo', quick = 3.5;
     lowCam = save.cam === 'low' && (mode === 'play' || mode === 'result');
-    var cock = !player.dead && (cine ? shotName === 'cockpit' && tr.phase === 'play' : save.cam === 'cockpit' && (mode === 'play' || (mode === 'result' && won)));
+    var cock = !player.dead && (cine ? shotName === 'cockpit' && (tr.phase === 'play' || tr.phase === 'out') : save.cam === 'cockpit' && (mode === 'play' || (mode === 'result' && won)));
     if (mode === 'menu') {
       wantFov = shotPose('select', 0, px, car, pull);
       if (titleOn) { if (vw > 720) wantOffX = -vw * 0.2; else wantOffY = vh * 0.3; } else if (vw > 720) wantOffX = -Math.min(206, vw * 0.16); else wantOffY = vh * 0.4;

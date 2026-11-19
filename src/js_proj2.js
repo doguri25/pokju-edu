@@ -35,7 +35,7 @@
     if (!vx && kind !== 'shell' && !droneInLine(x)) vx = aimVx(x, z, K.speed);   /* a drone overhead in the lane comes first: the shot climbs to it */
     if (!b) { b = { m: new T.Mesh(bulletGeo, K.mat), hits: [] }; b.g = glowSprite(0xffb53d, 1.5, 0.9); b.g.scale.set(1.1, 2.6, 1); b.m.add(b.g); scene.add(b.m); }
     b.m.material = K.mat; b.g.material.color.copy(K.glowCol);
-    b.m.visible = true; b.m.position.set(x, y, z); b.hits.length = 0;
+    b.m.visible = !cockpit.visible || z < camera.position.z - 5; b.m.position.set(x, y, z); b.hits.length = 0;
     b.K = K; b.dmg = K.dmg * (mul || 1); b.vx = vx || 0;
     b.m.scale.set(K.sx, K.sx, K.sz);
     b.m.rotation.y = b.vx ? -Math.atan2(b.vx, K.speed) : 0;
@@ -49,6 +49,7 @@
       b = bullets[i]; p = b.m.position;
       var z0 = p.z;
       p.z -= b.K.speed * dt; p.x += b.vx * dt;
+      b.m.visible = !cockpit.visible || p.z < camera.position.z - 5;   /* from the driver's seat a roof gun's tracer passed as a slab over the bonnet */
       if (b.vy > 0) p.y = Math.min(4.7, p.y + b.vy * dt); else if (p.y > 1.15) p.y -= 7 * dt;
       var gone = p.z < b.K.minZ || Math.abs(p.x) > 11; b.z0 = z0;
       if (!gone && crate.active && b.hits.indexOf(crate) < 0 && Math.abs(p.x - crate.g.position.x) < 1.0 && p.z < crate.g.position.z + 1.6 && z0 > crate.g.position.z - 1.6 && p.y < 3) {

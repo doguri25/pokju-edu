@@ -27,7 +27,7 @@
     var hp = bloom.materialHighPassFilter, hpFrom = 'vec4 texel = texture2D( tDiffuse, vUv );';
     if (hp.fragmentShader.indexOf(hpFrom) >= 0) { hp.fragmentShader = hp.fragmentShader.replace(hpFrom, hpFrom + '\n\t\t\tif ( any( isnan( texel ) ) || any( isinf( texel ) ) ) texel = vec4( 0.0 );'); hp.needsUpdate = true; }
     var grade = new ShaderPass({
-      uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uSpeed: { value: 0 }, uFlash: { value: 0 }, uFlashColor: { value: new T.Color(0.2, 0.9, 0.55) }, uNight: { value: 0 }, uDusk: { value: 0 }, uRain: { value: 0 }, uAspect: { value: 1 } },
+      uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uSpeed: { value: 0 }, uFlash: { value: 0 }, uFlashColor: { value: new T.Color(0.2, 0.9, 0.55) }, uNight: { value: 0 }, uDusk: { value: 0 }, uRain: { value: 0 }, uRainY: { value: -1 }, uAspect: { value: 1 } },
       vertexShader: 'varying vec2 vUv;\nvoid main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
       fragmentShader: GLSL_GRADE_FRAG
     });
@@ -138,5 +138,7 @@
     u.uSpeed.value = lerp(u.uSpeed.value, Math.max(fast, buff.nitro > 0 ? 0.55 : 0) * fxK, 1 - Math.exp(-dt * 5));
     if (!isFinite(u.uSpeed.value)) u.uSpeed.value = 0;   /* a value that once went wrong would otherwise stay wrong: each frame starts from the last */
     if (!isFinite(u.uRain.value)) u.uRain.value = 0;
+    /* where the dash's top edge is on the screen in the driver's seat: the lens drops stop there */
+    u.uRainY.value = cockpit.visible ? 0.5 + 0.5 * ((-0.31 + cockpit.position.y) / 1.19) / Math.tan(camera.fov * Math.PI / 360) : -1;
     post.composer.render(dt);
   }

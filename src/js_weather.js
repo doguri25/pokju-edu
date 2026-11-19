@@ -53,6 +53,7 @@
       var arm = new T.Mesh(new T.BoxGeometry(0.009, 0.5, 0.009), mat); arm.position.y = 0.25; arm.frustumCulled = false; pv.add(arm);
       pv.visible = false; cockpit.add(pv); wipers.push(pv);
     });
+    ckpFlat(cockpit);   /* the wipers ride with the cockpit (js_extra.js) */
   })();
   function updPrecip(dt, px) {
     var i, j, x, y, z, vx, vy, vz, L, n, open = 1 - tunK, a = 1 - Math.exp(-dt * 1.5), dim = 1 - 0.3 * cur.night;
