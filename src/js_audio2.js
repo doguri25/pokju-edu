@@ -1,5 +1,5 @@
   /* ---------- sound: everything is synthesised, nothing is loaded; starts after the first click ---------- */
-  var AC = null, master = null, noiseBuf = null, engOsc = null, engGain = null, engLP = null, muted = false, lastSfx = {};
+  var lastSfxK = {}, AC = null, master = null, noiseBuf = null, engOsc = null, engGain = null, engLP = null, muted = false, lastSfx = {};
   var musGain = null, musicOn = true, musMode = 'off', musStep = 0, musNext = 0, echoGain = null, probing = false;
   /* iPhone and iPad (1.5): sounds made in the page (Web Audio) were silent there.
      - With the ring/silent switch on silent, iOS mutes Web Audio but not media playback. Declaring the page a player
@@ -17,13 +17,15 @@
     return URL.createObjectURL(new Blob([b], { type: 'audio/wav' }));
   }
   function soundOff() { return muted || !(sfxOn || musicOn); }
+  /* the second and third notes of a jingle come by timer: they follow the switches and a paused sound context like the first (1.5) */
+  function fxOK() { return !!AC && !muted && sfxOn && AC.state === 'running'; }
   function iosPlayback() {
     /* with every sound off the game takes nothing (1.5): a silent loop still playing, the page kept in the 「playback」 category or a
        running sound context would stop the child's own music and show as playing. All three are let go, and taken up again when a sound is switched on */
     if (soundOff()) {
       if (hush && !hush.paused) { try { hush.pause(); } catch (e) {} }
       try { if (navigator.audioSession && navigator.audioSession.type === 'playback') navigator.audioSession.type = 'auto'; } catch (e) {}
-      if (AC && AC.state === 'running') { try { var sp = AC.suspend(); if (sp && sp.catch) sp.catch(function () {}); } catch (e) {} }
+      if (AC && AC.state !== 'closed') { try { var sp = AC.suspend(); if (sp && sp.catch) sp.catch(function () {}); } catch (e) {} }   /* also one still starting up */
       return;
     }
     if (AC && AC.state !== 'running') { try { var rs = AC.resume(); if (rs && rs.catch) rs.catch(function () {}); } catch (e) {} }
@@ -97,8 +99,9 @@
   function sfx(name, k) {
     if (!AC || muted || (!sfxOn && !probing) || (AC.state !== 'running' && !probing)) return;
     var now = AC.currentTime, gap = SFX_GAP[name] || 0;
-    if (gap && lastSfx[name] !== undefined && now - lastSfx[name] < gap) return;
-    lastSfx[name] = now;
+    /* a bigger blast gets through the gap (1.5): the small impact pop of a missile used to swallow the explosion of the kill it caused */
+    if (gap && lastSfx[name] !== undefined && now - lastSfx[name] < gap && !(name === 'boom' && (k || 1) > (lastSfxK.boom || 1))) return;
+    lastSfx[name] = now; lastSfxK[name] = k || 1;
     try {
       if (name === 'shot') burst(0.07, 0.16, 1800, 0.8);
       else if (name === 'shell') { burst(0.18, 0.3, 500, 0.7); tone('sine', 150, 50, 0.16, 0.25); }
@@ -113,27 +116,27 @@
       else if (name === 'pickup') tone('triangle', 880, 1760, 0.12, 0.12);
       else if (name === 'item') { tone('triangle', 660, 990, 0.12, 0.14); tone('triangle', 990, 1480, 0.2, 0.1); }
       else if (name === 'cycle') tone('square', 520, 780, 0.06, 0.08);
-      else if (name === 'warn') { tone('square', 880, 880, 0.14, 0.1); setTimeout(function () { if (AC && !muted) tone('square', 880, 880, 0.14, 0.1); }, 220); }
+      else if (name === 'warn') { tone('square', 880, 880, 0.14, 0.1); setTimeout(function () { if (fxOK()) tone('square', 880, 880, 0.14, 0.1); }, 220); }
       else if (name === 'hurt') { burst(0.2, 0.25, 300, 0.7, 'lowpass'); tone('sawtooth', 200, 70, 0.2, 0.14); }
       else if (name === 'click') tone('triangle', 620, 760, 0.05, 0.08);
-      else if (name === 'win') { tone('triangle', 523, 523, 0.14, 0.14); setTimeout(function () { if (AC && !muted) tone('triangle', 784, 784, 0.3, 0.14); }, 150); }
+      else if (name === 'win') { tone('triangle', 523, 523, 0.14, 0.14); setTimeout(function () { if (fxOK()) tone('triangle', 784, 784, 0.3, 0.14); }, 150); }
       else if (name === 'fail') tone('sawtooth', 300, 60, 0.6, 0.16);
       else if (name === 'crash') { burst(0.28, 0.4, 320, 0.6, 'lowpass'); tone('square', 110, 40, 0.22, 0.2); burst(0.08, 0.2, 3200, 1.2); }
       else if (name === 'egun') burst(0.06, 0.2, 950, 1);
       else if (name === 'drop') tone('sine', 1500, 520, 0.55, 0.07);
       else if (name === 'rocket') { burst(0.4, 0.13, 700, 0.5); tone('sawtooth', 320, 110, 0.35, 0.07); }
       else if (name === 'dive') tone('sawtooth', 420, 1500, 0.7, 0.09);
-      else if (name === 'go') { tone('triangle', 660, 660, 0.1, 0.14); setTimeout(function () { if (AC && !muted) tone('triangle', 990, 990, 0.22, 0.14); }, 120); }
+      else if (name === 'go') { tone('triangle', 660, 660, 0.1, 0.14); setTimeout(function () { if (fxOK()) tone('triangle', 990, 990, 0.22, 0.14); }, 120); }
       else if (name === 'alarm') tone('square', 520, 520, 0.09, 0.07);
       else if (name === 'gravel') burst(0.22, 0.12, 2400, 0.7, 'highpass');
-      else if (name === 'chime') { tone('sine', 880, 880, 0.3, 0.09); setTimeout(function () { if (AC && !muted) tone('sine', 660, 660, 0.45, 0.09); }, 260); }
-      else if (name === 'heal') { tone('triangle', 520, 780, 0.16, 0.13); setTimeout(function () { if (AC && !muted) tone('triangle', 780, 1170, 0.24, 0.12); }, 140); }
+      else if (name === 'chime') { tone('sine', 880, 880, 0.3, 0.09); setTimeout(function () { if (fxOK()) tone('sine', 660, 660, 0.45, 0.09); }, 260); }
+      else if (name === 'heal') { tone('triangle', 520, 780, 0.16, 0.13); setTimeout(function () { if (fxOK()) tone('triangle', 780, 1170, 0.24, 0.12); }, 140); }
       else if (name === 'nitro') { burst(0.5, 0.16, 1800, 0.5); tone('sawtooth', 180, 720, 0.45, 0.09); }
-      else if (name === 'record') { tone('triangle', 784, 784, 0.12, 0.14); setTimeout(function () { if (AC && !muted) tone('triangle', 988, 988, 0.12, 0.14); }, 120); setTimeout(function () { if (AC && !muted) tone('triangle', 1319, 1319, 0.4, 0.14); }, 240); }
-      else if (name === 'siren') { tone('square', 660, 660, 0.22, 0.09); setTimeout(function () { if (AC && !muted) tone('square', 880, 880, 0.22, 0.09); }, 230); setTimeout(function () { if (AC && !muted) tone('square', 660, 660, 0.22, 0.09); }, 460); }
+      else if (name === 'record') { tone('triangle', 784, 784, 0.12, 0.14); setTimeout(function () { if (fxOK()) tone('triangle', 988, 988, 0.12, 0.14); }, 120); setTimeout(function () { if (fxOK()) tone('triangle', 1319, 1319, 0.4, 0.14); }, 240); }
+      else if (name === 'siren') { tone('square', 660, 660, 0.22, 0.09); setTimeout(function () { if (fxOK()) tone('square', 880, 880, 0.22, 0.09); }, 230); setTimeout(function () { if (fxOK()) tone('square', 660, 660, 0.22, 0.09); }, 460); }
       else if (name === 'splash') { burst(0.32, 0.34, 1500, 0.4); burst(0.18, 0.2, 500, 0.6, 'lowpass'); }
       else if (name === 'thud') { tone('sine', 95, 42, 0.14, 0.34); burst(0.07, 0.14, 380, 0.7, 'lowpass'); }
-      else if (name === 'honk') { tone('square', 415, 415, 0.16, 0.12); setTimeout(function () { if (AC && !muted && sfxOn) tone('square', 415, 415, 0.26, 0.12); }, 210); }
+      else if (name === 'honk') { tone('square', 415, 415, 0.16, 0.12); setTimeout(function () { if (fxOK()) tone('square', 415, 415, 0.26, 0.12); }, 210); }
       else if (name === 'screech') { burst(0.4, 0.22, 2600, 6); burst(0.3, 0.12, 1700, 4); }
       else if (name === 'horn') { tone('sawtooth', 155, 150, 0.7, 0.2); tone('sawtooth', 196, 190, 0.7, 0.16); burst(0.5, 0.1, 300, 0.6, 'lowpass'); }
       else if (name === 'thunder') { burst(1.5, 0.5, 110, 0.5, 'lowpass'); tone('sine', 70, 30, 1.1, 0.32); burst(0.22, 0.22, 900, 0.5); }
@@ -170,12 +173,16 @@
     g2.gain.setValueAtTime(kind === 'snare' ? 0.22 : 0.07, t); g2.gain.exponentialRampToValueAtTime(0.001, t + d);
     s.connect(f); f.connect(g2); g2.connect(musGain); s.start(t, Math.random() * 0.5); s.stop(t + d + 0.02);
   }
+  var musLvl = -1;
   function musicTick() {
     if (!AC || !musGain || AC.state !== 'running') return;
-    if (muted || !musicOn || musMode === 'off') { musNext = 0; return; }
+    /* switched off: the notes already queued fade out at once instead of ringing on for a second and more (1.5) */
+    var lvl = muted || !musicOn || musMode === 'off' ? 0 : 0.42;
+    if (lvl !== musLvl) { musLvl = lvl; musGain.gain.setTargetAtTime(lvl, AC.currentTime, lvl ? 0.05 : 0.03); }
+    if (!lvl) { musNext = 0; return; }
     var drive = musMode === 'drive', sd = 60 / (drive ? 132 : 92) / 4, now = AC.currentTime;
     if (musNext < now) musNext = now + 0.06;
-    while (musNext < now + 0.22) {
+    while (musNext < now + 0.4) {   /* 0.4 s ahead, and a timer ticks it too (below): a slow frame no longer drops notes */
       var st = musStep % 16, bar = (musStep >> 4) % 4, root = MUS_ROOT[bar], ch = MUS_CHORD[bar], t = musNext;
       if (drive) {
         if (st % 2 === 0) mNote('sawtooth', root * (st % 8 === 6 ? 2 : 1), t, sd * 1.7, 0.16);
@@ -191,6 +198,7 @@
     }
   }
   function setMusic(mode) { if (musMode !== mode) { musMode = mode; musStep = 0; } }
+  setInterval(function () { try { musicTick(); } catch (e) {} }, 100);
 
   /* test hook: render one effect in an offline context and report how loud and how long it is */
   function probeSfx(name, k) {

@@ -104,7 +104,7 @@
     updGust(dt, px); updPrecip(dt, px);
     if (weather.bolt && tunK < 0.5) { boltT -= dt; if (boltT <= 0) { boltT = rnd(5, 11); boltF = 1; thunderT = rnd(0.35, 1.1); } }
     if (boltF > 0) boltF = Math.max(0, boltF - dt * 4.5);
-    if (thunderT > 0) { thunderT -= dt; if (thunderT <= 0) sfx('thunder'); }
+    if (thunderT > 0) { thunderT -= dt; if (thunderT <= 0 && mode === 'play' && !paused) sfx('thunder'); }   /* not over the title, the menu or a result: the loudest sound of all */
     k = cockpit.visible && (rainK > 0.1 || snowK > 0.1) && tunK < 0.6;
     if (k) { wipeT += dt / (rainK > 1.3 ? 0.75 : (rainK > 0.1 ? 1.25 : 1.7)); var ph = wipeT % 1, tri = ph < 0.5 ? ph * 2 : 2 - ph * 2; tri = tri * tri * (3 - 2 * tri); }
     for (i = 0; i < wipers.length; i++) { wipers[i].visible = !!k; if (k) wipers[i].rotation.z = 1.38 - 1.15 * tri; }
