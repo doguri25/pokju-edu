@@ -16,6 +16,9 @@
   function displayOK(s) { s = String(s); for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i); if (c >= 0xAC00 && c <= 0xD7A3 && KSX.indexOf(s.charAt(i)) < 0) return false; } return true; }
   /* one face for all the answers of a question: a wrong spelling in another face would give itself away */
   function qBody(q) { if (q.body === undefined) q.body = !q.opts.every(displayOK); return q.body; }
+  /* a 1024×512 sign costs four times the memory and redraw time of 512×256: only where the graphics are set high (a weak device runs
+     at 보통 or 낮음, where the sign stays as it was) */
+  function signCanvas() { var c = document.createElement('canvas'), hi = gfxNow === 'high'; c.width = hi ? 1024 : 512; c.height = hi ? 512 : 256; return c; }
   function signTex(c) { var tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = Math.min(16, renderer.capabilities.getMaxAnisotropy() || 1); return tx; }
   function gateTex(c, text, col, dim, body) {
     var x = c.getContext('2d'), w = c.width, h = c.height, r = h * 0.16, m = h * 0.045;
@@ -66,8 +69,8 @@
       [cx - hw, cx + hw].forEach(function (px) { var p = new T.Mesh(tube, nm); p.scale.set(0.2, 5.0, 0.2); p.position.set(px, 2.5, 0); g.add(p); });
       var bar = new T.Mesh(tube, nm); bar.scale.set(2 * hw + 0.2, 0.2, 0.2); bar.position.set(cx, 5.0, 0); g.add(bar);
       var halo = glowSprite(parseInt(QG_COL[i].slice(1), 16), Math.min(W * 1.4, 10), 0.35); halo.material.fog = false; halo.position.set(cx, 3.3, -0.4); g.add(halo);
-      /* the answer sign (1.5: sharper, same size): twice the pixels and the finest filtering the chip has */
-      var c = document.createElement('canvas'); c.width = 1024; c.height = 512;
+      /* the answer sign (1.5: sharper, same size): twice the pixels at the high setting, and the finest filtering the chip has */
+      var c = signCanvas();
       var tx = signTex(c);
       var bw = Math.min(W - 0.7, 4.4), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
       m.position.set(cx, 3.3, 0.05); g.add(m);
@@ -199,7 +202,7 @@
       var col = parseInt(QG_COL[i].slice(1), 16), b = new T.Group(), x = -QG_EDGE + W * (i + 0.5);
       var ball = new T.Mesh(new T.SphereGeometry(0.85, 16, 12), std(col, 0.35)); ball.scale.y = 1.15; ball.position.y = 3.3; ball.castShadow = true; b.add(ball);
       b.add(cyl(0.02, 0.02, 1.3, 4, M.white, 0, 2.05, 0));
-      var c = document.createElement('canvas'); c.width = 1024; c.height = 512;
+      var c = signCanvas();
       var tx = signTex(c);
       var bw = Math.min(W - 0.6, 3.2), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
       m.position.y = 1.35; b.add(m);

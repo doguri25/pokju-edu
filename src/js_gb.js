@@ -705,7 +705,7 @@
     /* with Ctrl, Alt or ⌘ the key is the browser's or the computer's, and typing in a field is typing (1.5: M in the class-link box muted the game) */
     if (e.ctrlKey || e.metaKey || e.altKey) { shiftSkill = false; return; }
     if (e.key !== 'Escape' && typingIn(e.target)) return;
-    if (e.key === 'Tab') shiftSkill = false;   /* only Shift+Tab: a held arrow or ↑ goes on repeating while Shift is tapped */
+    if (e.key !== 'Shift' && !e.repeat) shiftSkill = false;   /* Shift with another key (Shift+Tab, Shift+X…) is not the skill; a key held from before only repeats */
     if (e.repeat && (isKey(e, 'KeyM', 'm') || e.key === 'Escape' || isKey(e, 'KeyP', 'p') || isKey(e, 'KeyC', 'c') || isKey(e, 'KeyV', 'v'))) return;   /* a held key toggles once */
     if (isKey(e, 'KeyM', 'm')) { toggleMute(!save.muted); return; }
     if (e.key === 'Escape' && !$('help').hidden) { closeHelp(); return; }
@@ -844,6 +844,10 @@
       else if (resOn) { if (a && !padPanelA) { var nb = ['res-next', 'res-ending', 'res-retry'].map($).filter(function (b) { return b && !b.hidden; })[0]; if (nb) { padSkill = true; nb.click(); } } else $('res-menu').click(); }
     }
     if (sel && !padPanelS) { if (pzOn) $('pause-menu').click(); else if (resOn) $('res-menu').click(); }
+    if (!$('ending').hidden) {   /* the ending after the last chapter: A to the title, B or Back to the menu */
+      if (a && !padPanelA) $('ending-title').click();
+      else if ((bk && !padPanelB) || (sel && !padPanelS)) $('ending-menu').click();
+    }
     padPanelA = a; padPanelB = bk; padPanelS = sel;
   }
   var padPanelA = false, padPanelB = false, padPanelS = false;
@@ -1053,7 +1057,7 @@
     if (window.confirm && !window.confirm('이야기 진행, 별, 구구단·맞춤법 기록과 모은 고철, 산 무기·타이어를 모두 지우고 처음부터 시작할까요?')) return;
     save.story = { open: 0, stars: {}, tries: {}, done: false }; save.quiz.facts = {}; save.quiz.runs = []; save.tut = false; save.help = false;   /* the prologue, practice and controls come back too */
     save.scrap = 500; save.cars = { laser: true }; save.cleared = []; save.loadouts = {}; save.best = {}; save.bestT = {}; save.ta = {}; save.race = {}; save.surv = {}; save.tires = { allseason: 1 }; save.tire = {}; save.weapons = { mg: 1 }; save.unlockAll = false; grantStock(); storeSave();
-    $('opt-unlock').checked = false; selCar = 'laser'; selMission = 0; selTrack = 0; selKind = 'story'; selChapter = 0; showTitle();   /* from the title, so the next child gets the prologue and the practice (1.5: the menu skipped them) */
+    $('opt-unlock').checked = false; selCar = 'laser'; selMission = 0; selTrack = 0; selKind = 'story'; selChapter = 0; setTab('car'); showTitle();   /* from the title, so the next child gets the prologue and the practice (1.5: the menu skipped them) */
   });
 
   /* ---------- camera and resize ---------- */
@@ -1102,7 +1106,7 @@
       /* under a roof: never higher than 5 m (a bus's camera went through the jet fans), and as high as the road where the camera is (on a
          tunnel's ramp it went above the ceiling) */
       var tz = 10.5 + car.hl * 1.5 + R;
-      wantP.set(px * 0.85 + away, Math.min(5, 4.3 + R * 0.5) + heightAt(dist - tz) - heightAt(dist), tz); wantT.set(px * 0.9 + away * 0.3, 1.2, -18); return clamp(baseFov * 0.92, 50, 92);
+      wantP.set(px * 0.85 + away, Math.min(tunCam ? 4.4 : 99, 4.3 + R * 0.5) + heightAt(dist - tz) - heightAt(dist), tz); wantT.set(px * 0.9 + away * 0.3, 1.2, -18); return clamp(baseFov * 0.92, 50, 92);
     }
     wantP.set(camBase.x + px * 0.38, camBase.y + pull * 0.4 + R * 0.9, camBase.z + pull + R * 1.3); wantT.set(px * 0.5, 0, -10 + R * 0.4); return baseFov;
   }
@@ -1902,7 +1906,7 @@
       else if (tr.phase === 'play' && shotT > SHOT_DUR[shotName]) { shotIdx++; cutTo(SHOT_ORDER[shotIdx % SHOT_ORDER.length]); }
       wantFov = shotPose(shotName, shotT, px, car, pull);
     } else wantFov = shotPose(save.cam === 'cockpit' && !player.dead && (mode === 'play' || (mode === 'result' && won)) ? 'cockpit' : 'chase', 0, px, car, pull);
-    if (shotName !== 'missile' && shotName !== 'bomber' || !cine) wantT.y += slope * (cock ? 30 : 16);
+    if (shotName !== 'missile' && shotName !== 'bomber' || !cine) wantT.y += slope * (cock ? 0 : 16);   /* the driver's seat already looks along the road ahead (shotPose) */
     if (cock) { quick = 20; sh *= 0.25; wantP.y += playerRoot.position.y; wantT.y += bodyP * 30; }
     var ck = shotCut ? 1 : 1 - Math.exp(-dt * quick);
     shotCut = false;
