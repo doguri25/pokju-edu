@@ -953,6 +953,17 @@
   $('ending-menu').addEventListener('click', toMenu);
   $('title-start').addEventListener('click', function () { sfx('click'); if (classLink) { toMenu(); setTab('mode'); } else if (save.tut) toMenu(); else openStory(); });   /* the first start tells the story and runs the driving practice */
   $('title-tut').addEventListener('click', function () { sfx('click'); openStory(); });
+  /* 앱으로 설치: shown only where the browser offers to install the page (Chrome, Edge, Samsung Internet on the published site); the browser's own install banner is held back for this button */
+  (function () {
+    var ask = null, btn = $('title-install');
+    window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); ask = e; btn.hidden = false; });
+    window.addEventListener('appinstalled', function () { ask = null; btn.hidden = true; });
+    btn.addEventListener('click', function () {
+      sfx('click'); if (!ask) return;
+      var a = ask; ask = null; btn.hidden = true;
+      a.prompt(); a.userChoice.then(function (c) { if (c.outcome !== 'accepted') { ask = a; btn.hidden = false; } }, function () {});
+    });
+  })();
   $('opt-story').addEventListener('click', function () { sfx('click'); openStory(); });
   $('story-next').addEventListener('click', storyNext); $('story-skip').addEventListener('click', storySkip);
   tap($('coach-skip'), function () { sfx('click'); tutDone(true); });

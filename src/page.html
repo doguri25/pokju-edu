@@ -1,5 +1,5 @@
 <title>폭주 구구단</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@500;700;900&display=swap" crossorigin>
 <style>
 /* Layout: full-bleed live 3D scene where the car always drives up the screen. A tabbed selection panel sits on the left (bottom sheet on phones) with the view shifted so the car stays visible; the chosen car's detail opens under its own card. In play (top-down, low chase or driver's-seat view, switchable) small HUD chips hug the edges (objective with a run clock, status, speed with a centred gain/loss gauge) and a throttle lever sits at the left hand; no guidance text is drawn over the road. The trailer shows large title cards between letterbox bars. */
 /* Look (graphics upgrade, after the mockup): one dark glass look over the 3D scene. Navy glass panels with a faint top sheen,
@@ -637,7 +637,7 @@ body { word-break: keep-all; overflow-wrap: break-word; }
 </div>
 
 <aside class="panel" id="menu" aria-label="차량, 아이템, 모드 선택" hidden>
-  <div class="brand"><button type="button" class="home" id="brand-title" title="타이틀 화면으로" aria-label="타이틀 화면으로">⌂</button><b>폭주 구구단</b><span>정식 버전 1.5</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
+  <div class="brand"><button type="button" class="home" id="brand-title" title="타이틀 화면으로" aria-label="타이틀 화면으로">⌂</button><b>폭주 구구단</b><span>정식 버전 1.6</span><span class="wallet">고철 <b id="wallet">500</b></span></div>
   <div class="tabs" role="tablist" aria-label="선택 항목">
     <button type="button" role="tab" id="tab-car" data-tab="car" aria-selected="true">차량</button>
     <button type="button" role="tab" id="tab-gear" data-tab="gear" aria-selected="false">아이템</button>
@@ -794,7 +794,7 @@ body { word-break: keep-all; overflow-wrap: break-word; }
   <b>폭주 구구단</b>
   <span class="more" id="title-more"></span>
   <div class="kinds" id="title-kinds" role="group" aria-label="모드 골라 시작"></div>
-  <div class="btns"><button type="button" class="go" id="title-start">게임 시작</button><button type="button" class="ghost" id="title-tut">이야기와 운전 연습</button><button type="button" class="ghost" id="title-trailer" hidden>예고편 보기</button></div>
+  <div class="btns"><button type="button" class="go" id="title-start">게임 시작</button><button type="button" class="ghost" id="title-tut">이야기와 운전 연습</button><button type="button" class="ghost" id="title-trailer" hidden>예고편 보기</button><button type="button" class="ghost" id="title-install" hidden>앱으로 설치</button></div>
   <span class="credit" id="title-credit"><i>AI</i><span id="title-credit-text">맞춤법 문장은 업스테이지 Solar AI로 만들고 검증했어요</span></span>
   <span class="maker">만든 사람 도구리 · <a href="mailto:raccoon@ai.cne.go.kr">raccoon@ai.cne.go.kr</a></span>
 </div>

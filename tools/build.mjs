@@ -1,5 +1,5 @@
 // Builds the game with Vite.
-//   node tools/build.mjs         index.html (one file, ready for GitHub Pages) and dist/artifact.html (body only, for a Claude artifact)
+//   node tools/build.mjs         index.html (one file, ready for GitHub Pages) with sw.js (its offline cache), and dist/artifact.html (body only, for a Claude artifact)
 //   node tools/build.mjs --dev   a Vite dev server that rebuilds when src/ or data/ changes
 //
 // The game is still the original set of fragments in src/: they share one function scope, so they are joined in a fixed
@@ -8,6 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import { build, createServer } from 'vite';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -60,11 +61,23 @@ function generate() {
   fs.writeFileSync(path.join(GEN, 'index.html'), document(page + '<script type="module" src="./game.js"></script>\n'));
 }
 
-function document(body) {
+/* pwa: the published page also links the app manifest and icons and registers the offline cache (sw.js); the dev page and the artifact do not */
+const PWA_HEAD = '<link rel="manifest" href="./manifest.webmanifest">\n'
+  + '<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">\n'
+  + '<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-capable" content="yes">\n'
+  + '<meta name="apple-mobile-web-app-title" content="폭주 구구단">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
+  + '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+  /* once the cache is running, it is handed the font files this first visit already fetched, so they work offline too */
+  + "<script>if ('serviceWorker' in navigator && window.isSecureContext) addEventListener('load', function () { navigator.serviceWorker.register('./sw.js').then(function () { return navigator.serviceWorker.ready; }).then(function (r) {"
+  + " var u = performance.getEntriesByType('resource').map(function (e) { return e.name; }).filter(function (n) { return /^https:\\/\\/fonts\\.(googleapis|gstatic)\\.com\\//.test(n); });"
+  + " if (r.active && u.length) r.active.postMessage({ keep: u }); }).catch(function () {}); });</script>\n";
+
+function document(body, pwa) {
   return '<!doctype html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n'
     + '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">\n'
     + '<meta name="theme-color" content="#0b0d1a">\n'
     + '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%230b0d1a%27/%3E%3Ctext x=%2732%27 y=%2744%27 font-size=%2730%27 font-family=%27sans-serif%27 font-weight=%27900%27 text-anchor=%27middle%27 fill=%27%2338e1ff%27%3E9%C3%979%3C/text%3E%3C/svg%3E">\n'
+    + (pwa ? PWA_HEAD : '')
     + '<style>html, body { margin: 0; height: 100%; } body { font: 14px system-ui, sans-serif; }</style>\n</head>\n<body>\n'
     + body + '</body>\n</html>\n';
 }
@@ -88,10 +101,13 @@ async function release() {
   const code = fs.readFileSync(path.join(dist, m[1]), 'utf8').replace(/<\/script/gi, '<\\/script');
   const page = fs.readFileSync(path.join(SRC, 'page.html'), 'utf8');
   const script = '<script type="module">\n' + code + '\n</script>\n';
-  fs.writeFileSync(path.join(ROOT, 'index.html'), document(page + script));
+  const out = document(page + script, true);
+  fs.writeFileSync(path.join(ROOT, 'index.html'), out);
+  const version = createHash('sha256').update(out).digest('hex').slice(0, 12);
+  fs.writeFileSync(path.join(ROOT, 'sw.js'), fs.readFileSync(path.join(SRC, 'sw.js'), 'utf8').replace('__VERSION__', version));
   fs.mkdirSync(path.join(ROOT, 'dist'), { recursive: true });
   fs.writeFileSync(path.join(ROOT, 'dist', 'artifact.html'), page + script);
-  for (const f of ['index.html', 'dist/artifact.html']) console.log(String(fs.statSync(path.join(ROOT, f)).size).padStart(9), f);
+  for (const f of ['index.html', 'dist/artifact.html', 'sw.js']) console.log(String(fs.statSync(path.join(ROOT, f)).size).padStart(9), f);
 }
 
 async function dev() {
