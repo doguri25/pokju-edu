@@ -1047,8 +1047,12 @@
   function shotPose(name, t, px, car, pull) {
     var tall = vw < vh ? 1.4 : 1, ang, R;
     if (name === 'cockpit') {
-      var ey = 0.55 + car.spec.H * 0.42, sx = px - car.W * 0.19, sz = -(car.seatF || 0);
-      wantP.set(sx, ey, sz); wantT.set(sx + player.vx * 0.3, ey - 1.5, sz - 30);
+      /* the driver's eyes as in the real vehicle (1.5): about 30 cm under the roof of a car, SUV or van (레이 1.40 m, 그랜저 1.16 m,
+         포터 1.67 m); a bus or a fire engine seats its driver high over the road (버스 2.5 m). It used to be 0.55 + 0.42 × the height,
+         a few centimetres low in a car and a whole metre low in a bus */
+      var ey = cockpitEye(car), sx = px - car.W * 0.19, sz = -(car.seatF || 0), port = vw < vh;
+      ckpLayout(car, port);   /* js_extra.js; on a portrait screen the eyes also look a little further down, so the road fills more of it */
+      wantP.set(sx, ey, sz); wantT.set(sx + player.vx * 0.3, ey - (port ? 2.3 : 1.5), sz - 30);
       return clamp(baseFov * 1.15, 64, 98);
     }
     if (name === 'low') { wantP.set(px + shotSide * 2.6, 2.1, 8.5 + car.hl - t * 0.15); wantT.set(px, 1.0, -16); return Math.min(92, 60 * tall); }

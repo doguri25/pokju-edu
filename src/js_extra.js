@@ -157,10 +157,11 @@
     });
     var stalk = new T.Mesh(new T.BoxGeometry(0.13, 0.022, 0.022), frame); stalk.position.set(0.15, 0.03, -0.06); stalk.rotation.z = 0.25; col.add(stalk);
     var colm = new T.Mesh(new T.CylinderGeometry(0.035, 0.045, 0.2, 10), frame); colm.rotation.x = Math.PI / 2; colm.position.z = -0.11; col.add(colm);
-    /* windscreen frame, pillars, mirror, door top */
-    B(2.0, 0.09, 0.34, frame, CX, 0.42, -0.34);
-    [[-0.7, 0.1], [1.44, -0.1]].forEach(function (p) { var a = B(0.05, 1.0, 0.07, frame, p[0], 0.04, -0.64); a.rotation.x = 0.66; a.rotation.z = p[1]; });
-    B(0.2, 0.065, 0.03, frame, CX, 0.31, -0.52); B(0.18, 0.05, 0.005, silver, CX, 0.31, -0.503);
+    /* windscreen frame, pillars, mirror, door top. The top ones are kept apart: in a tall cab the dash goes down and they go up (cockpitFor) */
+    ckp.upper = [B(2.0, 0.09, 0.34, frame, CX, 0.42, -0.34)];
+    ckp.pillars = [[-0.7, 0.1], [1.44, -0.1]].map(function (p) { var a = B(0.05, 1.0, 0.07, frame, p[0], 0.04, -0.64); a.rotation.x = 0.66; a.rotation.z = p[1]; return a; });
+    ckp.upper.push(B(0.2, 0.065, 0.03, frame, CX, 0.31, -0.52), B(0.18, 0.05, 0.005, silver, CX, 0.31, -0.503));
+    ckp.upper.forEach(function (m) { m.userData.y0 = m.position.y; });
     B(0.07, 0.1, 1.3, frame, -0.62, -0.31, -0.05); B(0.07, 0.1, 1.3, frame, 1.36, -0.31, -0.05);
     /* bonnet in the car's own colour */
     ckp.hoodMat = std(0x808080, 0.4, 0.2);
@@ -168,8 +169,22 @@
     cockpit.traverse(function (o) { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; o.frustumCulled = false; } });
     cockpit.visible = false; camera.add(cockpit); scene.add(camera);
   })();
+  /* where the cockpit sits under the eyes. A tall cab: the windscreen reaches higher above them, and a bus's corner pillars are far out to
+     the sides. A portrait screen sees much more above and below than a windscreen does: the dash sits a little lower there (the road was a
+     thin band over it) and the top of the frame goes up out of the picture */
+  function ckpLayout(car, port) {
+    var H = car.spec.H, key = H + (port ? 'p' : 'l');
+    if (ckp.lay === key) return;
+    ckp.lay = key;
+    var dy = 0, up = (H > 2.4 ? 0.3 : H > 1.9 ? 0.08 : 0) + (port ? 0.12 : 0);
+    cockpit.position.y = dy;
+    ckp.upper.forEach(function (m) { m.position.y = m.userData.y0 + up - dy; });
+    ckp.pillars.forEach(function (m) { m.visible = H <= 2.4; });
+  }
+  function cockpitEye(car) { var H = car.spec.H; return H > 2.4 ? Math.min(2.6, 1 + 0.45 * H) : Math.max(0.95, H - 0.3); }
   function cockpitFor(car) {
-    var len = car.hoodLen || 0;
+    var len = car.hoodLen || 0, H = car.spec.H;
+    ckp.lay = '';
     ckp.hood.visible = len > 0.3;
     if (len > 0.3) { ckp.hood.scale.z = len; ckp.hood.position.set(0.37, -0.36 - len * 0.05, -1.2 - len / 2); ckp.hood.rotation.x = -0.1; ckp.hoodMat.color.copy((car.paint || M.dark).color); }
   }
