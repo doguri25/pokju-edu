@@ -135,7 +135,10 @@
     /* drops on the lens in the rain, out in the open, in the views that look through a windscreen or from just behind the car */
     u.uRain.value = lerp(u.uRain.value, mode === 'play' && !save.calm ? rainK * (1 - tunK) : 0, 1 - Math.exp(-dt * 1.5));
     var fast = mode === 'play' && car ? clamp((veff - car.vmax * 0.92) / (car.vmax * 0.35), 0, 1) : 0;
-    u.uSpeed.value = lerp(u.uSpeed.value, Math.max(fast, buff.nitro > 0 ? 0.55 : 0) * fxK, 1 - Math.exp(-dt * 5));
+    /* while answer signs are coming up, the speed blur at the edges stays light: a right answer gives nitro, and the next gate's signs
+       were smeared just as they had to be read (1.5) */
+    var signsUp = quiz.phase === 'ask' && !!(quiz.g || quiz.b);
+    u.uSpeed.value = lerp(u.uSpeed.value, Math.max(fast, buff.nitro > 0 ? 0.55 : 0) * fxK * (signsUp ? 0.3 : 1), 1 - Math.exp(-dt * 5));
     if (!isFinite(u.uSpeed.value)) u.uSpeed.value = 0;   /* a value that once went wrong would otherwise stay wrong: each frame starts from the last */
     if (!isFinite(u.uRain.value)) u.uRain.value = 0;
     /* where the dash's top edge is on the screen in the driver's seat: the lens drops stop there */
