@@ -21,9 +21,14 @@
     if (b === 0 || a === 0) return { near: [a + b], far: [1, 10, (a + b) * 2] };   /* 6 × 0: answering 6 is by far the most common slip */
     return { near: near, far: far };
   }
-  /* blank and reverse questions ask for the missing factor: the wrong ones are the factors next to it, and the number that was shown */
-  function qWrongsFactor(shown, missing) {
-    return { near: [missing + 1, missing - 1], far: [missing + 2, missing - 2, shown, missing + 3, missing - 3] };
+  /* blank and reverse questions ask for the missing factor: the options are factors next to it, within the factors the run can have
+     (1~9, or 0~9 with 0의 곱). Where the right one falls among them is drawn first (1.5): the two neighbours either side always came first,
+     so with three options the answer was always the middle number, and a child could win 빈칸 찾기 without multiplying */
+  function qFactorOpts(ans, n, lo, rf) {
+    var hi = 9, kmin = Math.max(0, n - 1 - (hi - ans)), kmax = Math.min(n - 1, ans - lo), k = kmin + ((rf() * (kmax - kmin + 1)) | 0), out = [ans], i;
+    for (i = 1; i <= k; i++) out.push(ans - i);
+    for (i = 1; i < n - k; i++) out.push(ans + i);
+    return out;   /* the right answer first, as qOptions gives it */
   }
   function qOptions(ans, w, n, rf) {
     var out = [ans], pool = qShuffle(w.near.slice(), rf).concat(qShuffle(w.far.slice(), rf)), i;
@@ -34,10 +39,12 @@
     return out;   /* the right answer is first; the deck decides where it goes */
   }
   /* a fact is [a, b]: a is the 단 */
-  function qQuestion(a, b, type, rf) {
+  /* lo: the smallest factor the run asks (0 with 0의 곱, else 1) */
+  function qQuestion(a, b, type, rf, lo) {
     var t = Object.prototype.hasOwnProperty.call(QUIZ_TYPES, type) ? QUIZ_TYPES[type] : QUIZ_TYPES.mix, q = { a: a, b: b, key: a + 'x' + b, type: type, n: t.opts };
-    if (type === 'blank') { q.text = a + ' × □ = ' + a * b; q.ans = b; q.full = a + ' × ' + b + ' = ' + a * b; q.opts = qOptions(b, qWrongsFactor(a, b), t.opts, rf); }
-    else if (type === 'rev') { q.text = a * b + ' = ' + a + ' × □'; q.ans = b; q.full = a * b + ' = ' + a + ' × ' + b; q.opts = qOptions(b, qWrongsFactor(a, b), t.opts, rf); }
+    if (lo === undefined) lo = b === 0 ? 0 : 1;
+    if (type === 'blank') { q.text = a + ' × □ = ' + a * b; q.ans = b; q.full = a + ' × ' + b + ' = ' + a * b; q.opts = qFactorOpts(b, t.opts, lo, rf); }
+    else if (type === 'rev') { q.text = a * b + ' = ' + a + ' × □'; q.ans = b; q.full = a * b + ' = ' + a + ' × ' + b; q.opts = qFactorOpts(b, t.opts, lo, rf); }
     else { q.text = a + ' × ' + b + ' = ?'; q.ans = a * b; q.full = a + ' × ' + b + ' = ' + a * b; q.opts = qOptions(a * b, qWrongsMul(a, b), t.opts, rf); }
     return q;
   }
@@ -50,7 +57,7 @@
   }
   /* a fact is { a, b } for 구구단 (a is the 단) or { set, item } for 맞춤법; both carry their record key */
   function mulFact(a, b) { return { a: a, b: b, key: a + 'x' + b }; }
-  function qMake(f, type, rf) { var q = f.item ? qSpell(f, rf) : qQuestion(f.a, f.b, type, rf); q.fact = f; return q; }
+  function qMake(f, type, rf) { var q = f.item ? qSpell(f, rf) : qQuestion(f.a, f.b, type, rf, f.lo); q.fact = f; return q; }
   /* where the right answer sits, over the whole deck: with two gates it is left exactly half the time and never more than twice running on the same side */
   function qSlots(count, n, rf) {
     /* built one place at a time: each gate keeps its fair share, never three times running on one side while another gate is still owed,
@@ -126,7 +133,13 @@
       used[f.key] = (used[f.key] || 0) + 1;
       facts.push(f);
     }
-    return facts;
+    /* a fact drawn twice (a 단 has 9 facts for 10 questions, and weak ones come more often) is asked the second time only after every
+       fact of the run has come once (1.5): it used to come back two questions after its answer was shown */
+    var firsts = [], again = [], had = {};
+    facts.forEach(function (f) { if (had[f.key]) again.push(f); else { had[f.key] = true; firsts.push(f); } });
+    var fl = firsts.length;
+    if (again.length && fl > 1 && again[0] === firsts[fl - 1]) { var t0 = firsts[fl - 1]; firsts[fl - 1] = firsts[fl - 2]; firsts[fl - 2] = t0; }   /* never twice running */
+    return firsts.concat(again);
   }
   /* 구구단: o = { dans: [7], type: 'mix', n: 10, stats: save.quiz.facts, zero: false }. 순서대로 asks every fact of every chosen 단 once, in order; the others draw n facts.
      맞춤법: o = { subject: 'spell', sets: ['dwae'], bank: { dwae: { items: [...] } }, n: 10, stats }. Facts are drawn the same way, weak ones first */
@@ -134,8 +147,10 @@
     rf = rf || Math.random;
     var spell = o.subject === 'spell', type = spell ? 'spell' : (Object.prototype.hasOwnProperty.call(QUIZ_TYPES, o.type) && !QUIZ_TYPES[o.type].own ? o.type : 'mix'), dans = o.dans && o.dans.length ? o.dans.slice() : [2], sets = o.sets || [], all = [], i, j;
     if (spell) sets.forEach(function (k) { (o.bank[k] ? o.bank[k].items : []).forEach(function (it, n) { all.push({ set: k, item: it, key: 'sp:' + k + ':' + n }); }); });
-    else for (i = 0; i < dans.length; i++) for (j = o.zero ? 0 : 1; j <= 9; j++) all.push(mulFact(dans[i], j));   /* zero: 7×0 as well (0의 곱) */
-    var facts = type === 'seq' ? all : qDraw(all, o.n || 10, o.stats || null, rf), qs = facts.map(function (f) { return qMake(f, type, rf); });
+    else for (i = 0; i < dans.length; i++) for (j = o.zero ? 0 : 1; j <= 9; j++) { var mf = mulFact(dans[i], j); mf.lo = o.zero ? 0 : 1; all.push(mf); }   /* zero: 7×0 as well (0의 곱) */
+    var facts = type === 'seq' ? all : qDraw(all, o.n || 10, o.stats || null, rf), qs = facts.map(function (f) { return qMake(f, type, rf); }), seen = {};
+    /* a fact asked a second time in the main part: that answer is not kept as a first answer (its first one was) */
+    qs.forEach(function (q) { if (seen[q.key]) q.again = true; seen[q.key] = true; });
     /* balance the right answer's place among questions with the same number of options */
     var byN = {};
     qs.forEach(function (q) { (byN[q.n] || (byN[q.n] = [])).push(q); });
@@ -150,14 +165,20 @@
     var ok = picked === q.slot, retry = deck.i > deck.main;
     deck.log.push({ key: q.key, ok: ok, retry: retry, picked: picked < 0 ? null : q.opts[picked] });
     deck.queued = false;   /* whether this miss comes back at the end (a fact asked twice in one deck comes back only once) */
-    if (!ok && !retry && !deck.retried[q.key]) {
+    if (!ok && !retry && !deck.retried[q.key] && !laterInMain(deck, q.key)) {   /* coming again later in the main part already: that is its second chance */
       deck.queued = true;
       deck.retried[q.key] = true;
-      var again = qMake(q.fact, q.type, rf);
-      deck.items.push(qPlace(again, (rf() * again.n) | 0));
+      var again = qMake(q.fact, q.type, rf), last = deck.items.slice(-2), ban = -1, sl = (rf() * again.n) | 0;
+      /* the place keeps the deck's rule (1.5): never three times running on the same side */
+      if (last.length === 2 && last[0].n === again.n && last[1].n === again.n && last[0].slot === last[1].slot) ban = last[0].slot;
+      if (sl === ban) sl = (sl + 1 + ((rf() * (again.n - 1)) | 0)) % again.n;
+      deck.items.push(qPlace(again, sl));
     }
     return ok;
   }
+  function laterInMain(deck, key) { for (var j = deck.i; j < deck.main; j++) if (deck.items[j].key === key) return true; return false; }
+  /* every question of the main part answered: what follows are only the misses again */
+  function quizMainDone(deck) { var n = 0; deck.log.forEach(function (r) { if (!r.retry) n++; }); return n >= deck.main; }
   function quizScore(deck) {
     var first = deck.log.filter(function (r) { return !r.retry; }), right = first.filter(function (r) { return r.ok; }).length;
     return { right: right, total: first.length, missed: first.filter(function (r) { return !r.ok; }).map(function (r) { return r.key; }), fixed: deck.log.filter(function (r) { return r.retry && r.ok; }).length };

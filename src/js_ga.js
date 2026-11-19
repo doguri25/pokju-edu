@@ -293,7 +293,7 @@
   var dmgLog = {};
   function hurt(d, kind) {
     if (!live() || player.dead || player.invuln > 0) return;
-    if (quizRun() && quiz.deck && quiz.phase !== 'ask' && quiz.deck.log.length >= quiz.deck.items.length) return;   /* every question answered: the run is won, nothing can undo it */
+    if (quizRun() && quiz.deck && quizMainDone(quiz.deck)) return;   /* every question of the main part answered: the score is made, and the misses asked again cannot undo it (1.5: a car lost then failed a chapter already passed) */
     var car = CARS[player.car];
     if (kind === 'bullet') { if (car.evade && Math.random() < car.evade) return; d *= car.bulletMul; }
     if (kind === 'ram' || kind === 'debris') d *= car.ramMul * (hasSaw ? sawMul : 1);

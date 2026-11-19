@@ -60,7 +60,15 @@
   ];
   var selChapter = 0;
   /* 을/를 after a word, by whether its last syllable has a final consonant */
-  function objJosa(w) { var c = w.charCodeAt(w.length - 1) - 0xac00; return w + (c >= 0 && c < 11172 && c % 28 ? '을' : '를'); }
+  /* does a name end in a final consonant, as it is read: a Hangul syllable, a digit (3 삼, 6 육 …) or a letter read in Korean (N 엔, L 엘, M 엠, R 알) */
+  function batchim(w) {
+    var ch = String(w).trim().slice(-1), c = ch.charCodeAt(0) - 0xac00;
+    if (c >= 0 && c < 11172) return c % 28 > 0;
+    if (/[0-9]/.test(ch)) return '013678'.indexOf(ch) >= 0;
+    return /[LMNRlmnr]/.test(ch);
+  }
+  function objJosa(w) { return w + (batchim(w) ? '을' : '를'); }
+  function waJosa(w) { return w + (batchim(w) ? '과' : '와'); }   /* 「렉스톤과」, 「아또 3과」 (1.5: 「렉스톤와」) */
   /* open: everything up to the student's progress, the chapter a class link points at, and any chapter cleared (or right after one cleared),
      so a chapter played through a link keeps its stars and leads on to the next one without opening everything before it */
   function chapterOpen(i) { var st = save.story.stars || {}; return save.unlockAll || i <= (save.story.open || 0) || i === linkCh || st[i] > 0 || st[i - 1] > 0; }

@@ -224,13 +224,18 @@
     return false;
   }
   function quizJudge(picked, px, car) {
+    /* first: a question of the main part (it counts for the score); a fact's second ask in the main part and the misses asked again at the
+       end are not kept as first answers. Only main-part answers build the run of right answers (1.5: the retries at the end did too,
+       so a run with no first answer right showed 「가장 긴 연속 정답 9개」 and scored nearly as much as a perfect one) */
     var dk = quiz.deck, q = quiz.q, first = dk.i <= dk.main, ok = quizAnswer(dk, q, picked);
     postFlash(ok);
-    if (first) { factRecord(save.quiz.facts, q.key, ok); factLog.push([q.key, ok]); }
+    if (first && !q.again) { factRecord(save.quiz.facts, q.key, ok); factLog.push([q.key, ok]); }
+    if (!first) quiz.combo = 0;
     if (quiz.g) { gatesDim(q, picked); quiz.g.banners.forEach(function (b) { b.arrows.opacity = 0; }); gatePulse = 1; }
     if (quiz.b) quiz.b.items.forEach(function (it, i) { if (i !== q.slot) { gateTex(it.c, q.opts[i], QG_COL[i], true, qBody(q)); it.tx.needsUpdate = true; } if (i === picked) { it.popped = true; it.g.visible = false; spawnRing(it.x, quiz.b.g.position.z, 5, 0.35, veff, i === q.slot ? COL.cyan : COL.orange); } });
     if (ok) {
-      if (first) quiz.ok++; quiz.combo++; quiz.best = Math.max(quiz.best, quiz.combo); score += 100 + 20 * Math.min(quiz.combo - 1, 5); scrap += 20;
+      if (first) { quiz.ok++; quiz.combo++; quiz.best = Math.max(quiz.best, quiz.combo); score += 100 + 20 * Math.min(quiz.combo - 1, 5); scrap += 20; }
+      else { score += 50; scrap += 10; }   /* fixed at the end: half */
       buff.nitro = Math.max(buff.nitro, 1.2); sfx('item');
       if (EDU.arms) player.hp = Math.min(car.hp, player.hp + car.hp * 0.2);   /* a right answer repairs a fifth of the car: solving keeps you on the road */
       spawnRing(px, 0, 9, 0.45, 0, COL.cyan); spawnP('glow', px, 1.4, 0, 0, 0, 0, 0.4, 4, 12, COL.cyan, 0.9, 0);
@@ -303,13 +308,15 @@
   }
   /* the 9×9 record. dans: the rows to show; now: the facts of the run just played, outlined */
   var LV_MARK = { good: '★', learn: '●', hard: '▲', 'new': '' };
+  /* ×0 gets a column once a 0의 곱 fact of these 단 has been asked (1.5: those answers were kept but shown nowhere) */
   function factGrid(dans, now) {
+    var z = dans.some(function (a) { return save.quiz.facts[a + 'x0'] || (now && now[a + 'x0']); }) ? 0 : 1;
     var h = '<table class="fgrid"><tr><th></th>', a, b;
-    for (b = 1; b <= 9; b++) h += '<th>×' + b + '</th>';
+    for (b = z; b <= 9; b++) h += '<th>×' + b + '</th>';
     h += '</tr>';
     dans.forEach(function (a) {
       h += '<tr><th>' + a + '단</th>';
-      for (b = 1; b <= 9; b++) {
+      for (b = z; b <= 9; b++) {
         var k = a + 'x' + b, lv = factLevel(save.quiz.facts[k]);
         h += '<td class="lv-' + lv + (now && now[k] ? ' now' : '') + '" title="' + a + '×' + b + '=' + a * b + ' · ' + FACT_LEVEL[lv] + '">' + a * b + '<i>' + LV_MARK[lv] + '</i></td>';
       }
@@ -317,9 +324,9 @@
     });
     return h + '</table><div class="flegend"><span>★ 잘함 (세 번 연속 맞힘)</span><span>● 연습 중</span><span>▲ 어려움 (최근 첫 답이 틀림)</span><span>빈칸 처음</span></div>';
   }
-  function levelCount(dans) {
-    var c = { good: 0, learn: 0, hard: 0, 'new': 0 };
-    dans.forEach(function (a) { for (var b = 1; b <= 9; b++) c[factLevel(save.quiz.facts[a + 'x' + b])]++; });
+  function levelCount(dans, zero) {
+    var c = { good: 0, learn: 0, hard: 0, 'new': 0, n: 0 };
+    dans.forEach(function (a) { for (var b = zero ? 0 : 1; b <= 9; b++) { c[factLevel(save.quiz.facts[a + 'x' + b])]++; c.n++; } });
     return c;
   }
   /* 맞춤법 record: one row per set, how many of its sentences are at each level */
@@ -333,8 +340,10 @@
     return h + '</table>';
   }
   function renderRec() {
-    var all = [2, 3, 4, 5, 6, 7, 8, 9], c = levelCount(all), runs = save.quiz.runs || [], h = '';
-    $('rec-sum').textContent = '72문제 가운데 잘함 ' + c.good + ' · 연습 중 ' + c.learn + ' · 어려움 ' + c.hard + ' · 처음 ' + c['new'];
+    /* 1단 and ×0 (이야기 9장) join the record once they have been asked */
+    var keys = Object.keys(save.quiz.facts), all = keys.some(function (k) { return /^1x/.test(k); }) ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [2, 3, 4, 5, 6, 7, 8, 9],
+      zero = keys.some(function (k) { return /x0$/.test(k); }), c = levelCount(all, zero), runs = save.quiz.runs || [], h = '';
+    $('rec-sum').textContent = c.n + '문제 가운데 잘함 ' + c.good + ' · 연습 중 ' + c.learn + ' · 어려움 ' + c.hard + ' · 처음 ' + c['new'];
     $('rec-grid').innerHTML = factGrid(all);
     $('rec-spell').innerHTML = spellTable(SPELL_ORDER);
     runs.slice(-10).reverse().forEach(function (r) { h += row(r.day, r.name + ' · ' + r.type + ' · ' + r.right + ' / ' + r.total); });

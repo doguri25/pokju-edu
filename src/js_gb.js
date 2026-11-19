@@ -326,7 +326,7 @@
     $('race-list').innerHTML = html;
     $('race-brief').innerHTML = row('코스', tk.why) + row('도로', roadText(tk)) +
       row('규칙', '경쟁 차량 5대가 앞에서, 내 차는 맨 뒤에서 모두 50 km/h로 출발한다. 결승선을 지난 순서가 순위다. 상대를 쏘아 내구를 깎으면 잠시 돌며 속도를 잃고, 부딪히면 서로 밀려난다') +
-      row('상대', CARS[selCar].name + '와 최고속도가 비슷한 차량 가운데 5대가 달릴 때마다 새로 뽑힌다') +
+      row('상대', waJosa(CARS[selCar].name) + ' 최고속도가 비슷한 차량 가운데 5대가 달릴 때마다 새로 뽑힌다') +
       row('최고 순위', rec && rec.rank ? rec.rank + '위 · ' + fmtT(rec.t) + (CARS[rec.car] ? ' (' + CARS[rec.car].name + ')' : '') : '없음') +
       row('상금', '1위 400, 2위 250, 3위 150, 4위 80, 그 아래 50 고철. 모은 고철은 따로 받는다');
   }

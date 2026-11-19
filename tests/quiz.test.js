@@ -168,5 +168,35 @@ test('맞춤법 덱: 새로 더한 묶음도 10문제가 나오고 정답 위치
   });
 });
 
+test('빈칸·거꾸로: 정답이 보기 가운데 늘 같은 자리(가운데 수)에 있지 않고, 보기는 1~9 안', function () {
+  ['blank', 'rev'].forEach(function (type) {
+    var rank = {}, n = 0;
+    for (var s = 1; s <= 20; s++) for (var a = 2; a <= 9; a++) for (var b = 1; b <= 9; b++) {
+      var q = Q.qQuestion(a, b, type, seeded(s * 100 + a * 10 + b), 1), sorted = q.opts.slice().sort(function (x, y) { return x - y; });
+      q.opts.forEach(function (v) { assert.ok(v >= 1 && v <= 9, type + ' 보기 ' + v); });
+      var r = sorted.indexOf(q.ans); rank[r] = (rank[r] || 0) + 1; n++;
+    }
+    for (var r2 = 0; r2 < Q.QUIZ_TYPES[type].opts; r2++) assert.ok((rank[r2] || 0) / n > 0.15, type + ' 순위 ' + r2 + ': ' + JSON.stringify(rank));
+  });
+});
+test('한 단 10문제: 두 번 나오는 문제는 모든 문제가 한 번씩 나온 뒤에, 첫 답으로 치지 않음', function () {
+  var st = { '7x8': [2, 3, 0], '7x3': [1, 1, 0] };
+  for (var s = 1; s <= 300; s++) {
+    var d = Q.quizDeck({ dans: [7], type: 'mix', n: 10, stats: st }, seeded(s)), seen = {}, firstDone = false;
+    d.items.forEach(function (q, i) {
+      if (seen[q.key]) { assert.ok(q.again, '두 번째가 again 이 아님'); firstDone = true; }
+      else { assert.ok(!q.again && !firstDone, '처음 나오는 문제가 되풀이 뒤에 옴'); seen[q.key] = true; }
+      if (i) assert.notStrictEqual(q.key, d.items[i - 1].key, '같은 문제가 이어 나옴');
+    });
+  }
+});
+test('틀린 문제 다시 풀기: 같은 쪽에 세 번 넘게 이어 놓이지 않음', function () {
+  for (var s = 1; s <= 300; s++) {
+    var rf = seeded(s), d = Q.quizDeck({ dans: [3], type: 'mix', n: 10 }, rf), q, k = 0;
+    while ((q = Q.quizNext(d))) Q.quizAnswer(d, q, d.i <= d.main && k++ % 3 === 0 ? (q.slot + 1) % q.n : q.slot, rf);
+    for (var i = 2; i < d.items.length; i++) assert.ok(!(d.items[i].slot === d.items[i - 1].slot && d.items[i].slot === d.items[i - 2].slot), '세 번 이어 같은 쪽 ' + s);
+  }
+});
+
 console.log(runs - fails + ' / ' + runs + ' 통과');
 process.exit(fails ? 1 : 0);
