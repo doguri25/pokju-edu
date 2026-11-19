@@ -60,7 +60,7 @@
      takes the 3D picture away: the screen went black behind the panels and stayed black while the car drove on unseen. Now the run
      pauses and says so. When the browser gives the picture back, everything is redrawn one quality step lower (the same load would
      only stop it again); if it does not come back, a reload starts the game at a lighter setting (gfxBoot, js_polish.js) */
-  var glLost = false, glLostAt = 0, glLossN = 0, glNoteEnd = 0, glLostBg = false, glShownAt = -1e9;
+  var glLost = false, glLostAt = 0, glLossN = 0, glNoteEnd = 0, glLostBg = false, glBgCounted = false, glShownAt = -1e9;   /* glBgCounted: a background loss counted for the next start only (the picture coming back late is still not answered with a lower quality) */
   try { glLossN = +sessionStorage.getItem('pokju-gl-lost') || 0; } catch (e) {}
   /* a phone often takes the picture away from a page sent to the background (1.5): that is no sign of a load too heavy, so such a loss
      is neither counted for the next start nor answered with a lower quality, and the wait for the picture starts when the page is back */
@@ -75,7 +75,7 @@
   renderer.domElement.addEventListener('webglcontextlost', function (ev) {
     ev.preventDefault();   /* asks the browser to give the picture back */
     glLost = true; glLostAt = performance.now(); glNoteEnd = 0;
-    glLostBg = document.hidden || glLostAt - glShownAt < 1500;
+    glLostBg = document.hidden || glLostAt - glShownAt < 1500; glBgCounted = false;
     if (!glLostBg) { glLossN++; try { sessionStorage.setItem('pokju-gl-lost', String(glLossN)); } catch (e) {} }
     if (mode === 'play' && !paused) setPaused(true);
     glNote('그래픽 장치가 잠시 멈췄어요. 화면을 다시 그리는 중이에요…', false);
@@ -95,7 +95,7 @@
     if (!ge.hidden && (ge.parentNode === $('pause')) !== (mode === 'play' && !$('pause').hidden)) glNote($('glnote-text').textContent, !$('glnote-reload').hidden);   /* the run was left (menu, title) or paused again */
     if (glLost) {
       if (mode === 'play' && !paused && briefT <= 0) { setPaused(true); glNote($('glnote-text').textContent, !$('glnote-reload').hidden); }   /* lost during the start card: stopped as soon as the run begins, the note moved into the panel */
-      if (performance.now() - glLostAt > 5000 && $('glnote-reload').hidden && glLostBg) { glLostBg = false; glLossN++; try { sessionStorage.setItem('pokju-gl-lost', String(glLossN)); } catch (e) {} }   /* lost in the background and still not back: a reload does start lighter, as the note says */
+      if (performance.now() - glLostAt > 5000 && $('glnote-reload').hidden && glLostBg && !glBgCounted) { glBgCounted = true; glLossN++; try { sessionStorage.setItem('pokju-gl-lost', String(glLossN)); } catch (e) {} }   /* lost in the background and still not back: a reload does start lighter, as the note says */
       if (performance.now() - glLostAt > 5000 && $('glnote-reload').hidden) glNote('화면이 돌아오지 않아요. 다시 불러오면 화질을 낮춰서 시작해요. 지금 판은 처음부터 다시 해요.', true); return; }
     if (glNoteEnd && performance.now() > glNoteEnd) { glNoteEnd = 0; glNote('', false); }
   }

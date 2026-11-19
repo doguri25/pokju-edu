@@ -675,6 +675,7 @@
   }
   /* the result: the keyboard lands on the main way on (다음 장, 엔딩 보기, or 다시 하기) */
   function resFocus() {
+    resShownAt = performance.now();
     var ids = ['res-next', 'res-ending', 'res-retry'];
     for (var i = 0; i < ids.length; i++) { var b = $(ids[i]); if (b && !b.hidden) { try { b.focus({ preventScroll: true }); } catch (e) {} return; } }
   }
@@ -687,14 +688,22 @@
   window.addEventListener('pointerdown', audioInit, true);
   window.addEventListener('touchend', audioInit, true); window.addEventListener('click', audioInit, true);   /* iOS only lets sound start from the end of a touch or a click */
   window.addEventListener('keydown', audioInit, true);
-  var shiftSkill = false;
+  var shiftSkill = false, resShownAt = -1e9, keyAt = {};
+  /* a text field or a list being typed in (a checkbox in the pause panel is not: P, M and C still work there) */
+  function typingIn(t) { return !!(t && t.closest && t.closest('select, textarea, input:not([type="checkbox"]):not([type="radio"])')); }
   /* a key held down from the run into a panel (Enter on 사격) must not press the button that now has the focus */
-  document.addEventListener('keydown', function (e) { if (e.repeat && (e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('#result, #pause')) e.preventDefault(); }, true);
+  /* and a Space or Enter pressed for the run (Space is the skill) as the result comes up must not press 다음 장 or 다시 하기 before the
+     result is read: for a moment after it shows, and for a Space already down before it showed, the button waits (1.5) */
+  document.addEventListener('keydown', function (e) {
+    if (!e.repeat) keyAt[e.key] = performance.now();
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('#result, #pause') && (e.repeat || (e.target.closest('#result') && performance.now() - resShownAt < 700))) e.preventDefault();
+  }, true);
+  document.addEventListener('keyup', function (e) { if (e.key === ' ' && e.target.closest && e.target.closest('#result') && (keyAt[' '] || 0) < resShownAt + 700) e.preventDefault(); }, true);
   window.addEventListener('keydown', function (e) {
     /* with Ctrl, Alt or ⌘ the key is the browser's or the computer's, and typing in a field is typing (1.5: M in the class-link box muted the game) */
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key !== 'Escape' && nativeCtl(e.target)) return;
-    if (e.key !== 'Shift') shiftSkill = false;
+    if (e.ctrlKey || e.metaKey || e.altKey) { shiftSkill = false; return; }
+    if (e.key !== 'Escape' && typingIn(e.target)) return;
+    if (e.key === 'Tab') shiftSkill = false;   /* only Shift+Tab: a held arrow or ↑ goes on repeating while Shift is tapped */
     if (e.repeat && (isKey(e, 'KeyM', 'm') || e.key === 'Escape' || isKey(e, 'KeyP', 'p') || isKey(e, 'KeyC', 'c') || isKey(e, 'KeyV', 'v'))) return;   /* a held key toggles once */
     if (isKey(e, 'KeyM', 'm')) { toggleMute(!save.muted); return; }
     if (e.key === 'Escape' && !$('help').hidden) { closeHelp(); return; }
@@ -822,16 +831,20 @@
     if (pads) for (var i = 0; i < pads.length; i++) { var g = pads[i]; if (g && g.buttons && g.buttons[9] && g.buttons[9].pressed) down = true; }
     if (down && !padStartHeld && mode === 'play') setPaused(!paused);
     padStartHeld = down;
-    /* A and B on the panels (1.5: a gamepad could not leave the result or the pause): A goes on, B goes back to the menu */
-    var a = false, bk = false;
-    if (pads) for (i = 0; i < pads.length; i++) { var p2 = pads[i]; if (p2 && p2.buttons) { a = a || !!(p2.buttons[0] && p2.buttons[0].pressed); bk = bk || !!(p2.buttons[1] && p2.buttons[1].pressed); } }
-    var resOn = !$('result').hidden, pzOn = mode === 'play' && paused && $('help').hidden;
-    if (a && !padPanelA && (pzOn || resOn)) padSkill = true;   /* the same press must not also use the skill once driving again */
-    if (a && !padPanelA) { if (pzOn) $('pause-resume').click(); else if (resOn) { var nb = ['res-next', 'res-ending', 'res-retry'].map($).filter(function (b) { return b && !b.hidden; })[0]; if (nb) nb.click(); } }
-    if (bk && !padPanelB) { if (pzOn) $('pause-menu').click(); else if (resOn) $('res-menu').click(); }
-    padPanelA = a; padPanelB = bk;
+    /* the panels with a gamepad (1.5: it could not leave the result or the pause). A and B are the skill buttons while driving, so
+       on the pause both go back to driving, and only Back/Select (8) leaves for the menu; on the result A goes on, B or Back to the
+       menu, after a moment so that a press meant for the skill as the run ended does not count */
+    var a = false, bk = false, sel = false;
+    if (pads) for (i = 0; i < pads.length; i++) { var p2 = pads[i], bt2 = p2 && p2.buttons; if (bt2) { a = a || !!(bt2[0] && bt2[0].pressed); bk = bk || !!(bt2[1] && bt2[1].pressed); sel = sel || !!(bt2[8] && bt2[8].pressed); } }
+    var resOn = !$('result').hidden && performance.now() - resShownAt > 700, pzOn = mode === 'play' && paused && $('help').hidden;
+    if ((a && !padPanelA) || (bk && !padPanelB)) {
+      if (pzOn) { padSkill = true; $('pause-resume').click(); }
+      else if (resOn) { if (a && !padPanelA) { var nb = ['res-next', 'res-ending', 'res-retry'].map($).filter(function (b) { return b && !b.hidden; })[0]; if (nb) { padSkill = true; nb.click(); } } else $('res-menu').click(); }
+    }
+    if (sel && !padPanelS) { if (pzOn) $('pause-menu').click(); else if (resOn) $('res-menu').click(); }
+    padPanelA = a; padPanelB = bk; padPanelS = sel;
   }
-  var padPanelA = false, padPanelB = false;
+  var padPanelA = false, padPanelB = false, padPanelS = false;
   window.addEventListener('gamepaddisconnected', function () { autoPause(); });   /* the pad unplugged or out of battery: stop rather than drive on alone */
   /* iOS starts its own word-selection gesture on a second tap at the same spot: a see-through oval lens and a copy bubble appear over the game even where text cannot be selected. Only cancelling the touch at its start stops that, so
      - on the 3D view and the in-play HUD every touch is cancelled (both are driven by pointer events, which still arrive);

@@ -195,8 +195,8 @@
           if (DAN_OPTS.some(function (o) { return o[0] === qs.dan; })) save.quiz.sel.dan = qs.dan;
           if (own(QUIZ_TYPES, qs.type) && !QUIZ_TYPES[qs.type].own) save.quiz.sel.type = qs.type;
           if (own(QUIZ_PACE, qs.pace)) save.quiz.sel.pace = qs.pace;
-          if (qs.foe === 'off') save.quiz.sel.foe = 'off';
-          if (qs.style === 'shoot') save.quiz.sel.style = 'shoot';
+          save.quiz.sel.foe = qs.foe === 'off' ? 'off' : 'on';   /* both ways: a save taken up again (another tab) must not keep the old value */
+          save.quiz.sel.style = qs.style === 'shoot' ? 'shoot' : 'gate';
           if (qs.spell === 'all' || SPELL_DATA.sets.some(function (st) { return st.key === qs.spell; })) save.quiz.sel.spell = qs.spell;
           if (s.quiz.facts && typeof s.quiz.facts === 'object') save.quiz.facts = s.quiz.facts;
           if (Array.isArray(s.quiz.runs)) save.quiz.runs = s.quiz.runs.slice(-30);
