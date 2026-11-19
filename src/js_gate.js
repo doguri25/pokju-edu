@@ -28,13 +28,12 @@
     var gl = x.createLinearGradient(0, m, 0, h * 0.5);
     gl.addColorStop(0, 'rgba(255,255,255,0.45)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
     x.fillStyle = gl; x.beginPath(); x.roundRect(m * 2.2, m * 2.2, w - m * 4.4, h * 0.4, r * 0.75); x.fill();
-    var disp = body === undefined ? displayOK(text) : !body, fs = Math.round(h * (disp ? 0.7 : 0.6) * (String(text).length <= 2 ? 1.22 : 1)), font = function (z) { return disp ? '400 ' + z + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif' : '900 ' + z + 'px "Noto Sans KR", system-ui, sans-serif'; };
+    var disp = body === undefined ? displayOK(text) : !body, fs = Math.round(h * (disp ? 0.64 : 0.54)), font = function (z) { return disp ? '400 ' + z + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif' : '900 ' + z + 'px "Noto Sans KR", system-ui, sans-serif'; };
     x.font = font(fs); var tw = x.measureText(String(text)).width;
     if (tw > w - h * 0.24) { fs = Math.floor(fs * (w - h * 0.24) / tw); x.font = font(fs); }   /* a word like 가르치셨다 shrinks to fit the sign */
     /* centred on its own ink (1.5): the body face sat 15 px lower than the display face on the same sign */
     x.textAlign = 'center'; x.textBaseline = 'alphabetic';
     var mt = x.measureText(String(text)), ia = mt.actualBoundingBoxAscent, id = mt.actualBoundingBoxDescent, ty = ia + id > 0 ? h * 0.49 + (ia - id) / 2 : h * 0.55;
-    if (ia + id > h * 0.72) { fs = Math.floor(fs * h * 0.72 / (ia + id)); x.font = font(fs); mt = x.measureText(String(text)); ia = mt.actualBoundingBoxAscent; id = mt.actualBoundingBoxDescent; ty = h * 0.49 + (ia - id) / 2; }   /* a short answer (a number) is drawn big, but stays inside the sign */
     if (!(ia + id > 0)) x.textBaseline = 'middle';
     /* a dark rim round the letters, then the letters: white on the bright top of the sign read soft before */
     x.lineJoin = 'round'; x.lineWidth = h * 0.05; x.strokeStyle = 'rgba(0,0,0,0.5)';
@@ -67,11 +66,10 @@
       [cx - hw, cx + hw].forEach(function (px) { var p = new T.Mesh(tube, nm); p.scale.set(0.2, 5.0, 0.2); p.position.set(px, 2.5, 0); g.add(p); });
       var bar = new T.Mesh(tube, nm); bar.scale.set(2 * hw + 0.2, 0.2, 0.2); bar.position.set(cx, 5.0, 0); g.add(bar);
       var halo = glowSprite(parseInt(QG_COL[i].slice(1), 16), Math.min(W * 1.4, 10), 0.35); halo.material.fog = false; halo.position.set(cx, 3.3, -0.4); g.add(halo);
-      /* the answer sign (1.5: clearer): twice the pixels, the finest filtering the chip has, and as big as the gate allows (6 m on a
-         two-way gate, 4.4 m before), so the answer can be read from further away and on a small screen */
+      /* the answer sign (1.5: sharper, same size): twice the pixels and the finest filtering the chip has */
       var c = document.createElement('canvas'); c.width = 1024; c.height = 512;
       var tx = signTex(c);
-      var bw = Math.min(W - 0.7, 6), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
+      var bw = Math.min(W - 0.7, 4.4), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
       m.position.set(cx, 3.3, 0.05); g.add(m);
       var am = new T.MeshBasicMaterial({ map: chevTex, color: base.clone().multiplyScalar(1.4), transparent: true, opacity: 0.85, depthWrite: false, blending: T.AdditiveBlending });
       var lane = new T.Mesh(new T.PlaneGeometry(Math.min(W - 1.2, 6), 24, 1, 6), am);
@@ -203,7 +201,7 @@
       b.add(cyl(0.02, 0.02, 1.3, 4, M.white, 0, 2.05, 0));
       var c = document.createElement('canvas'); c.width = 1024; c.height = 512;
       var tx = signTex(c);
-      var bw = Math.min(W - 0.6, 3.6), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
+      var bw = Math.min(W - 0.6, 3.2), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
       m.position.y = 1.35; b.add(m);
       b.position.x = x; g.add(b);
       s.items.push({ g: b, c: c, tx: tx, x: x, hw: bw / 2, hp: 0, popped: false });
