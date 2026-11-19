@@ -16,17 +16,10 @@
   function displayOK(s) { s = String(s); for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i); if (c >= 0xAC00 && c <= 0xD7A3 && KSX.indexOf(s.charAt(i)) < 0) return false; } return true; }
   /* one face for all the answers of a question: a wrong spelling in another face would give itself away */
   function qBody(q) { if (q.body === undefined) q.body = !q.opts.every(displayOK); return q.body; }
-  /* a 1024×512 sign costs four times the memory and redraw time of 512×256: only where the graphics are set high (a weak device runs
-     at 보통 or 낮음, where the sign stays as it was) */
   var SIGN_PLATE = { '#e8710a': '#c25100', '#00897b': '#00695c' };
-  /* a sign made at one graphics setting and shown at another: its canvas is made again at the size the setting wants */
-  function signFit(o) {
-    var w = gfxNow === 'high' ? 1024 : 512;
-    if (o.c.width === w) return;
-    var c = signCanvas(), tx = signTex(c);
-    o.tx.dispose(); o.c = c; o.tx = tx; o.m.material.map = tx; o.m.material.needsUpdate = true;
-  }
-  function signCanvas() { var c = document.createElement('canvas'), hi = gfxNow === 'high'; c.width = hi ? 1024 : 512; c.height = hi ? 512 : 256; return c; }
+  /* 512×256: measured, a sign is never more than 512 px on screen while it is read, so a bigger canvas only cost a dropped frame at
+     every question (uploads and mipmaps five times as heavy) and four times the memory */
+  function signCanvas() { var c = document.createElement('canvas'); c.width = 512; c.height = 256; return c; }
   function signTex(c) { var tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = Math.min(16, renderer.capabilities.getMaxAnisotropy() || 1); return tx; }
   function gateTex(c, text, col, dim, body) {
     var x = c.getContext('2d'), w = c.width, h = c.height, r = h * 0.16, m = h * 0.045;
@@ -118,11 +111,11 @@
   spellFonts();
   function gatesShow(q) {
     var s = gateSet(q.n);
-    s.banners.forEach(function (b, i) { signFit(b); gateTex(b.c, q.opts[i], QG_COL[i], false, qBody(q)); b.tx.needsUpdate = true; b.m.material.opacity = 1; b.arrows.opacity = 0.85; });
+    s.banners.forEach(function (b, i) { b.dim = false; gateTex(b.c, q.opts[i], QG_COL[i], false, qBody(q)); b.tx.needsUpdate = true; b.m.material.opacity = 1; b.arrows.opacity = 0.85; });
     s.g.visible = true; quiz.g = s;
   }
   function gatesDim(q, picked) {
-    quiz.g.banners.forEach(function (b, i) { if (i !== q.slot) { gateTex(b.c, q.opts[i], QG_COL[i], true, qBody(q)); b.tx.needsUpdate = true; } });
+    quiz.g.banners.forEach(function (b, i) { b.dim = i !== q.slot; });   /* faded through the material (quizStep), not drawn and uploaded again */
   }
   function quizOff() {
     var k;
@@ -248,7 +241,7 @@
   }
   function balloonsShow(q) {
     var s = balloonSet(q.n);
-    s.items.forEach(function (it, i) { signFit(it); gateTex(it.c, q.opts[i], QG_COL[i], false, qBody(q)); it.tx.needsUpdate = true; it.hp = 0; it.popped = false; it.g.visible = true; });
+    s.items.forEach(function (it, i) { gateTex(it.c, q.opts[i], QG_COL[i], false, qBody(q)); it.tx.needsUpdate = true; it.m.material.opacity = 1; it.hp = 0; it.popped = false; it.g.visible = true; });
     s.g.visible = true; s.g.position.set(0, 0, -95); quiz.b = s;
   }
   /* called for every player bullet: true when it hit a balloon */
@@ -276,7 +269,7 @@
     if (first && !q.again) { factRecord(save.quiz.facts, q.key, ok); factLog.push([q.key, ok]); }
     if (!first) quiz.combo = 0;
     if (quiz.g) { gatesDim(q, picked); quiz.g.banners.forEach(function (b) { b.arrows.opacity = 0; }); gatePulse = 1; }
-    if (quiz.b) quiz.b.items.forEach(function (it, i) { if (i !== q.slot) { gateTex(it.c, q.opts[i], QG_COL[i], true, qBody(q)); it.tx.needsUpdate = true; } if (i === picked) { it.popped = true; it.g.visible = false; spawnRing(it.x, quiz.b.g.position.z, 5, 0.35, veff, i === q.slot ? COL.cyan : COL.orange); } });
+    if (quiz.b) quiz.b.items.forEach(function (it, i) { if (i !== q.slot) it.m.material.opacity = 0.3; if (i === picked) { it.popped = true; it.g.visible = false; spawnRing(it.x, quiz.b.g.position.z, 5, 0.35, veff, i === q.slot ? COL.cyan : COL.orange); } });
     if (ok) {
       if (first) { quiz.ok++; quiz.combo++; quiz.best = Math.max(quiz.best, quiz.combo); score += 100 + 20 * Math.min(quiz.combo - 1, 5); scrap += 20; }
       else { score += 50; scrap += 10; }   /* fixed at the end: half */
@@ -297,7 +290,7 @@
     gateGlow(dt); qboxDodge();
     if (quiz.g) {
       var gz = quiz.g.g.position.z = dist - quiz.d, fade = clamp(-(gz + 2) / 12, 0, 1);   /* the signs fade as the car passes under, so they never fill the screen */
-      quiz.g.banners.forEach(function (b) { b.m.material.opacity = fade; });
+      quiz.g.banners.forEach(function (b) { b.m.material.opacity = fade * (b.dim ? 0.3 : 1); });
       if (quiz.phase !== 'ask' && gz > 40) { quiz.g.g.visible = false; quiz.g = null; }
     }
     if (bs) {
