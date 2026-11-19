@@ -78,7 +78,7 @@
   }
   document.addEventListener('visibilitychange', function () {
     if (!AC) return;
-    try { if (document.hidden) AC.suspend(); else AC.resume(); } catch (e) {}
+    try { if (document.hidden) AC.suspend(); else if (!soundOff()) AC.resume(); } catch (e) {}   /* with every sound off it stays let go (1.5) */
     if (hush && document.hidden) { try { hush.pause(); } catch (e) {} }   /* played again by the next touch */
   });
   function tone(type, f0, f1, dur, vol) {

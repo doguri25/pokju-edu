@@ -197,13 +197,20 @@
     }
     car.g = g; car.wheels = wheels; g.visible = false; playerRoot.add(g);
   }
+  /* a weapon model is built only when the weapon on a mount changes, and the one taken off gives its geometry back (1.5): every run,
+     menu visit and car picked built them anew and kept the old ones, a slow climb of graphics memory through a lesson */
   function equipCar(key, loadout) {
     var car = CARS[key];
     for (var k in car.mounts) car.mounts[k].forEach(function (m) {
-      while (m.children.length) m.remove(m.children[0]);
-      if (EDU.arms && loadout[k]) m.add(weaponMesh(loadout[k], slotKind(k), car.W));
+      var w = EDU.arms && loadout[k] ? loadout[k] : '';
+      if (m.userData.w === w && m.children.length === (w ? 1 : 0)) return;
+      while (m.children.length) { var c = m.children[0]; m.remove(c); disposeTree(c); }
+      m.userData.w = w;
+      if (w) m.add(weaponMesh(w, slotKind(k), car.W));
     });
   }
+  /* the shared materials (M.*) stay; a sprite's geometry is shared by every sprite in three.js, so only its own material goes */
+  function disposeTree(o) { o.traverse(function (n) { if (n.isSprite) { if (n.material) n.material.dispose(); } else if (n.isMesh && n.geometry) n.geometry.dispose(); }); }
   /* wheel: tyre, rim face and spokes; st = { rim, spoke, n, cover } */
   function wheel2(r, w, x, f, list, st) {
     st = st || {};
