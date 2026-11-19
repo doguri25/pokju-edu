@@ -68,11 +68,14 @@
   var GFX_NAME = { high: '높음', mid: '보통', low: '낮음' };
   function gfxSel() {
     var el = $('opt-gfx'); if (!el) return;
-    el.value = save.gfx;
-    for (var i = 0; i < el.options.length; i++) {
-      var o = el.options[i]; if (!o.dataset.t) o.dataset.t = o.textContent;
-      o.textContent = o.dataset.t + (o.value === save.gfx && GFX[save.gfx] && gfxNow !== save.gfx ? ' · 지금은 ' + GFX_NAME[gfxNow] : '');
-    }
+    /* when the game had to come down from the chosen level, a line of its own says so and is the one shown, so every level, the chosen
+       one too, can still be picked (picking the option already shown does nothing) */
+    var down = GFX[save.gfx] && gfxNow !== save.gfx, ph = el.querySelector('option[value="now"]');
+    if (down) {
+      if (!ph) { ph = document.createElement('option'); ph.value = 'now'; ph.hidden = true; ph.disabled = true; el.insertBefore(ph, el.firstChild); }
+      ph.textContent = GFX_NAME[save.gfx] + ' · 지금은 ' + GFX_NAME[gfxNow];
+      el.value = 'now';
+    } else { if (ph) ph.remove(); el.value = save.gfx; }
   }
   function applyGfx(k, keepRes) {
     var q = GFX[k] || GFX.high;
@@ -238,12 +241,15 @@
     var ro = mirEls[1].getBoundingClientRect(), rs = mirEls[2].getBoundingClientRect(), pad = parseFloat(getComputedStyle(mirEls[0]).paddingTop) || 14;
     var left = (vw - wpx) / 2, right = left + wpx, hit = ro.width > 0 && (ro.right + 10 > left || rs.left - 10 < right);
     mirTop = hit ? Math.max(ro.bottom, rs.bottom) + 8 : pad;
-    document.documentElement.style.setProperty('--mb', Math.round(mirTop + hpx + 10) + 'px');
+    var mb = Math.round(mirTop + hpx + 10) + 'px';
+    document.documentElement.style.setProperty('--mb', mb);
+    if (mb !== mirMb) { mirMb = mb; if (!$('qbox').hidden) qboxFit(); }   /* the card hangs from the mirror: placed again when it moves (a phone turned on its side) */
   }
+  var mirMb = '';
   function mirrorPass(force) {
     var car = CARS[player.car], on = save.mirror && mode === 'play' && !player.dead && runKind !== 'tut';
     mirrorQuad.visible = on;
-    if (!on) { if (mirLay !== -99) { mirLay = -99; document.documentElement.style.removeProperty('--mb'); } return; }
+    if (!on) { if (mirLay !== -99) { mirLay = -99; mirMb = ''; document.documentElement.style.removeProperty('--mb'); if (!$('qbox').hidden) qboxFit(); } return; }
     if (mirLay === -99) mirLay = 0;
     /* the panel sits at the top centre; where the HUD chips would overlap it (a narrow screen, or a notch pushing them down) it goes below them */
     /* 1.5: a smaller mirror: 70% of its old size, and a little over half on a portrait phone, where it sits under the HUD chips and the

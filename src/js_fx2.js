@@ -95,6 +95,7 @@
     if (!ge.hidden && (ge.parentNode === $('pause')) !== (mode === 'play' && !$('pause').hidden)) glNote($('glnote-text').textContent, !$('glnote-reload').hidden);   /* the run was left (menu, title) or paused again */
     if (glLost) {
       if (mode === 'play' && !paused && briefT <= 0) { setPaused(true); glNote($('glnote-text').textContent, !$('glnote-reload').hidden); }   /* lost during the start card: stopped as soon as the run begins, the note moved into the panel */
+      if (performance.now() - glLostAt > 5000 && $('glnote-reload').hidden && glLostBg) { glLostBg = false; glLossN++; try { sessionStorage.setItem('pokju-gl-lost', String(glLossN)); } catch (e) {} }   /* lost in the background and still not back: a reload does start lighter, as the note says */
       if (performance.now() - glLostAt > 5000 && $('glnote-reload').hidden) glNote('화면이 돌아오지 않아요. 다시 불러오면 화질을 낮춰서 시작해요. 지금 판은 처음부터 다시 해요.', true); return; }
     if (glNoteEnd && performance.now() > glNoteEnd) { glNoteEnd = 0; glNote('', false); }
   }

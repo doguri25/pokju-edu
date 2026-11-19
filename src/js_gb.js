@@ -1865,10 +1865,11 @@
      its start, so a tab left open wiped what was won in the other one. Now a tab takes up what another tab saved (1.5). Its own
      settings stay as they are here (sound, camera, quality, the choices in its menu), and the answers of a run under way are kept */
   window.addEventListener('storage', function (e) {
-    if (e.key !== SAVE_KEY || e.storageArea !== window.localStorage) return;
+    if (e.key !== SAVE_KEY || e.storageArea !== window.localStorage || e.newValue === null) return;
     var keep = { muted: save.muted, music: save.music, sfx: save.sfx, cam: save.cam, camV: save.camV, gfx: save.gfx, calm: save.calm, mirror: save.mirror },
       sel = JSON.parse(JSON.stringify(save.quiz.sel)), log = factLog.slice(), k;
     loadSave();
+    if (linkKeep) linkKeep = JSON.parse(JSON.stringify(save.quiz.sel));   /* a link tab keeps the student's own choices as the other tab saved them */
     for (k in keep) save[k] = keep[k];
     save.quiz.sel = sel;
     log.forEach(function (r) { factRecord(save.quiz.facts, r[0], r[1]); }); factLog = log;   /* still to be saved by this tab */

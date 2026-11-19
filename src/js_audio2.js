@@ -16,9 +16,17 @@
     for (i = 0; i < n; i++) v.setUint8(p++, 128);
     return URL.createObjectURL(new Blob([b], { type: 'audio/wav' }));
   }
+  function soundOff() { return muted || !(sfxOn || musicOn); }
   function iosPlayback() {
-    /* with every sound off the game takes nothing (1.5): a silent loop still playing would stop the child's own music and show as playing */
-    if (muted || !(sfxOn || musicOn)) { if (hush && !hush.paused) { try { hush.pause(); } catch (e) {} } return; }
+    /* with every sound off the game takes nothing (1.5): a silent loop still playing, the page kept in the 「playback」 category or a
+       running sound context would stop the child's own music and show as playing. All three are let go, and taken up again when a sound is switched on */
+    if (soundOff()) {
+      if (hush && !hush.paused) { try { hush.pause(); } catch (e) {} }
+      try { if (navigator.audioSession && navigator.audioSession.type === 'playback') navigator.audioSession.type = 'auto'; } catch (e) {}
+      if (AC && AC.state === 'running') { try { var sp = AC.suspend(); if (sp && sp.catch) sp.catch(function () {}); } catch (e) {} }
+      return;
+    }
+    if (AC && AC.state !== 'running') { try { var rs = AC.resume(); if (rs && rs.catch) rs.catch(function () {}); } catch (e) {} }
     try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) {}
     if (!IOS || document.hidden) return;
     if (!hush) { try { hush = document.createElement('audio'); hush.setAttribute('playsinline', ''); hush.setAttribute('x-webkit-airplay', 'deny'); hush.loop = true; hush.preload = 'auto'; hush.src = silentWav(); } catch (e) { hush = null; return; } }
@@ -26,7 +34,7 @@
   }
   function audioInit() {
     iosPlayback();
-    if (AC) { if (AC.state !== 'running') { try { var r = AC.resume(); if (r && r.catch) r.catch(function () {}); } catch (e) {} } return; }
+    if (AC) { if (AC.state !== 'running' && !soundOff()) { try { var r = AC.resume(); if (r && r.catch) r.catch(function () {}); } catch (e) {} } return; }
     try {
       var Ctor = window.AudioContext || window.webkitAudioContext; if (!Ctor) return;
       AC = new Ctor();
@@ -43,6 +51,7 @@
       engGain = AC.createGain(); engGain.gain.value = 0;
       engOsc.connect(engLP); engLP.connect(engGain); engGain.connect(master); engOsc.start();
       musGain = AC.createGain(); musGain.gain.value = 0.42; musGain.connect(master);
+      if (soundOff()) iosPlayback();   /* made at a touch with every sound off: it waits, suspended */
     } catch (e) { AC = null; }
   }
   function setMuted(m) { muted = m; if (master) master.gain.value = m ? 0 : 0.8; }
