@@ -53,7 +53,7 @@
     return save.bestT[runMission] ? '최고 ' + fmtT(save.bestT[runMission]) : '첫 기록 도전';
   }
   /* cont: the run follows straight on from the one before (next mission, retry), so the car keeps its lane and its speed instead of being put back */
-  /* 연습 주행 has no result screen: scrap picked up on the way would go into the wallet when the drive is left or started again (1.5). Since 1.6 nothing is picked up there (no scrap from kills, no item crates), so this only keeps the wallet safe */
+  /* 연습 주행 has no result screen: scrap picked up on the way would go into the wallet when the drive is left or started again (1.5). Since 1.6 there is nothing to pick up there (no item crates, only traffic), so this only keeps the wallet safe */
   function bankFree() { if (mode === 'play' && runKind === 'free' && scrap > 0) { save.scrap += scrap; scrap = 0; storeSave(); } }
   function beginRun(carKey, misIdx, isDemo, taIdx, kind, cont) {
     bankFree();
@@ -370,18 +370,26 @@
   }
   /* with thirty missions the chosen one can be far down the list: keep it in view */
   function scrollSel() { var b = selKind === 'story' ? $('ch-' + selChapter) : $('mis-' + selMission); if (b && b.offsetParent && b.scrollIntoView && !$('menu').hidden) b.scrollIntoView({ block: 'nearest' }); }
+  /* the five tabs share one scroll box: each tab is shown again where it was left while the menu stays open, and the menu always opens at the top (1.6).
+     Changing the mode keeps the place too: the list used to jump to the chosen chapter, so the menu often opened half way down */
+  var tabScroll = {}, menuBox = null;
+  function menuScroller() { return menuBox || (menuBox = document.querySelector('#menu .scroll')); }
   function setKind(k) {
+    var box = menuScroller(), at = box.scrollTop;
     selKind = k; renderKinds(); renderRace(); renderCond(); renderChapters();
     if (mode === 'menu') { pickCourse(); renderFoot(); }
-    scrollSel();
+    box.scrollTop = at;
   }
   function setTab(name) {
+    var box = menuScroller();
+    if (!$('menu').hidden && menuTab) tabScroll[menuTab] = box.scrollTop;
     if (KINDS[name]) { setKind(name); name = 'mode'; }
     menuTab = name; closeInfo();
     ['car', 'gear', 'mode', 'rec', 'set'].forEach(function (t) { $('pane-' + t).hidden = t !== name; $('tab-' + t).setAttribute('aria-selected', t === name ? 'true' : 'false'); });
     if (name === 'mode' && mode === 'menu') { pickCourse(); renderFoot(); }
-    if (name === 'mode') scrollSel();
+    box.scrollTop = tabScroll[name] || 0;
   }
+  function menuTop() { tabScroll = {}; menuScroller().scrollTop = 0; $('menu').scrollTop = 0; }
   function toMenu() {
     bankFree(); shotCut = true;   /* from the driver's seat: not a blend out of the car's inside */ $('hud').inert = false; fireBtn = false;
     closeInfo(); if (!$('help').hidden) $('help').hidden = true; helpThen = null; autoPauseLater = false; mode = 'menu'; tr.on = false; tr.phase = ''; tr.fade = 0; $('card').hidden = true; $('demo').classList.remove('carded'); paused = false; briefT = 0; titleOn = false; document.body.classList.remove('paused');
@@ -392,7 +400,7 @@
     setCar(selCar, loadoutOf(selCar)); player.x = 2; player.vx = 0; apWant = 2;
     $('hud').hidden = true; $('result').hidden = true; $('demo').hidden = true; $('menu').hidden = false;
     document.body.classList.remove('cine');
-    renderMenu();
+    renderMenu(); menuTop();
   }
   function showTitle() {
     toMenu(); titleOn = true; $('menu').hidden = true; $('title').hidden = false;
@@ -1154,13 +1162,8 @@
       if (farmT <= 0) { farmT = rnd(5, 9) / mission.farm; var fl = pick(region.civLanes || LANES); if (laneOpen(fl, dist + 128) && enemies.length < 16) spawnEnemy('tractor', fl, -128, mission.dir > 0 ? TYPES.tractor.ws : -TYPES.tractor.rs); }
     }
     if (mission.goal === 'free') {
-      /* 연습 주행: the traffic, and now and then a car of the usual attackers to practise the weapons on. They do not shoot back (quiet()), and what they leave is not picked up (killEnemy) */
       spawnT -= dt * Math.max(0.75, veff / 38);
-      if (spawnT <= 0) {
-        spawnT = rnd(1.8, 3.2);
-        if (Math.random() < 0.55) { if (enemies.length < 10) spawnForward(); }
-        else { var cl = pick((region.civLanes || LANES).filter(function (x) { return laneOpen(x, dist + 128); })); if (cl !== undefined && enemies.length < 10) spawnEnemy('civ', cl, -128, ews('civ')); }
-      }
+      if (spawnT <= 0) { spawnT = rnd(2.2, 4); var cl = pick((region.civLanes || LANES).filter(function (x) { return laneOpen(x, dist + 128); })); if (cl !== undefined && enemies.length < 8) spawnEnemy('civ', cl, -128, ews('civ')); }
     } else if (mission.dir > 0) {
       spawnT -= dt * Math.max(0.75, veff / 38);
       if (spawnT <= 0) { spawnT = rnd(0.8, 1.4) * (mission.goal === 'boss' ? 2.2 : (mission.goal === 'time' ? 1.6 : (mission.traffic || 1))); if (enemies.length < 14) spawnForward(); }

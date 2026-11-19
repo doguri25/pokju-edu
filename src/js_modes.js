@@ -7,7 +7,7 @@
     story: { name: '이야기', sub: '고장 난 마성을 구구단과 맞춤법으로 고치기' },
     quiz: { name: '구구단', sub: '정답이 적힌 깃발 문으로 지나가기' },
     spell: { name: '맞춤법', sub: '빈칸에 들어갈 바른 말 고르기' },
-    free: { name: '연습 주행', sub: '문제 없이 길과 차, 공격에 익숙해지기' },
+    free: { name: '연습 주행', sub: '문제 없이 길과 차에 익숙해지기' },
     tut: { name: '운전 연습', sub: '조작과 이야기 익히기' }
   };
   var KIND_ORDER = ['story', 'quiz', 'spell', 'free'],   /* learning edition: the original modes stay in the code but are not offered; the quiz modes join this list */
@@ -18,7 +18,7 @@
     var R = REGIONS[cond.region] || REGIONS.city, W = WEATHERS[cond.weather] || WEATHERS.clear, surv = kind === 'surv';
     return { kind: kind, name: surv ? '서바이벌' : '연습 주행', region: R.key, weather: W.key, time: cond.time, timeLabel: TIME_LABEL[cond.time], dir: 1, goal: surv ? 'endless' : 'free', n: 0, civ: 0, civLimit: 0,
       drones: 0, strike: 0, kami: 0, buggy: false, strikes: ['lane', 'cross', 'diag', 'chase', 'napalm', 'cluster'], traffic: 1.2, farm: R.key === 'country' ? (surv ? 0.5 : 1) : 0, label: surv ? '생존' : '연습 주행',
-      why: R.name + ' · ' + TIME_LABEL[cond.time] + ' · ' + W.name, aim: surv ? '단계가 오를수록 거세지는 공격을 버티며 최대한 멀리 달린다.' : '문제 없이 길과 날씨, 차의 움직임에 익숙해진다. 앞차를 피해 빈 차로로 달리고, 나타나는 공격 차량을 쏘아 무기와 기술을 익힌다. 연습이라 상대는 반격하지 않고, 고철과 아이템 상자는 나오지 않는다.', win: '', lose: '', done: '' };
+      why: R.name + ' · ' + TIME_LABEL[cond.time] + ' · ' + W.name, aim: surv ? '단계가 오를수록 거세지는 공격을 버티며 최대한 멀리 달린다.' : '문제 없이 길과 날씨, 차의 움직임에 익숙해진다. 앞차를 피해 빈 차로로 달린다.', win: '', lose: '', done: '' };
   }
   function raceOf(i) {
     if (raceM[i]) return raceM[i];
