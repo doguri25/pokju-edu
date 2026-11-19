@@ -1086,7 +1086,7 @@
       /* the seat is ahead of the car's centre: on a slope it is higher or lower by as much as the road under it, and the eyes look
          along the slope, as the car itself is tilted (the cockpit around them is not lifted, see ckpFlat) */
       var h0 = heightAt(dist), hs = heightAt(dist - sz) - h0, ha = heightAt(dist - sz + 30) - h0;
-      wantP.set(sx, ey + hs, sz); wantT.set(sx + player.vx * 0.3, ey + ha - (port ? 2.3 : 1.5), sz - 30);
+      wantP.set(sx, ey + hs, sz); wantT.set(sx + player.vx * 0.3, ey + ha - (port && !(quiz.phase === 'ask' && (quiz.g || quiz.b)) ? 2.3 : 1.5), sz - 30);   /* answers coming up: a portrait screen looks less far down, or their signs left the top early */
       return clamp(baseFov * 1.15, 64, 98);
     }
     if (name === 'low') { wantP.set(px + shotSide * 2.6, 2.1, 8.5 + car.hl - t * 0.15); wantT.set(px, 1.0, -16); return Math.min(92, 60 * tall); }
@@ -1106,7 +1106,7 @@
       /* under a roof: never higher than 5 m (a bus's camera went through the jet fans), and as high as the road where the camera is (on a
          tunnel's ramp it went above the ceiling) */
       var tz = 10.5 + car.hl * 1.5 + R;
-      wantP.set(px * 0.85 + away, Math.min(tunCam ? 4.4 : 99, 4.3 + R * 0.5) + heightAt(dist - tz) - heightAt(dist), tz); wantT.set(px * 0.9 + away * 0.3, 1.2, -18); return clamp(baseFov * 0.92, 50, 92);
+      wantP.set(px * 0.85 + away, Math.min(tunCam ? 4.4 : 99, 4.3 + R * 0.5) + (quizRun() && !tunCam ? Math.max(0, car.spec.H - 2) * 1.2 : 0) + heightAt(dist - tz) - heightAt(dist), tz); wantT.set(px * 0.9 + away * 0.3, 1.2, -18); return clamp(baseFov * 0.92, 50, 92);
     }
     wantP.set(camBase.x + px * 0.38, camBase.y + pull * 0.4 + R * 0.9, camBase.z + pull + R * 1.3); wantT.set(px * 0.5, 0, -10 + R * 0.4); return baseFov;
   }
@@ -1192,7 +1192,7 @@
       addProp('cargo', dist + 150, pick(openLanes(dist + 150)), { solid: { hw: 0.9, hl: 0.9, kind: 'pick', soft: 1 } });
     }
     crateT -= dt;
-    if (EDU.arms && crateT <= 0 && !crate.active) { crateT = rnd(15, 22); spawnCrate(); }
+    if (EDU.arms && crateT <= 0 && !crate.active && !(quizRun() && quiz.phase === 'ask')) { crateT = rnd(15, 22); spawnCrate(); }   /* not while answers are coming up: its label floated in front of the signs (1.5) */
   }
 
   /* ---------- autopilot for the trailer, the selection screen and the 자율주행 skill: score every lane and pick the safest useful one ---------- */

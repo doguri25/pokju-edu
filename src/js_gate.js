@@ -18,18 +18,27 @@
   function qBody(q) { if (q.body === undefined) q.body = !q.opts.every(displayOK); return q.body; }
   /* a 1024×512 sign costs four times the memory and redraw time of 512×256: only where the graphics are set high (a weak device runs
      at 보통 or 낮음, where the sign stays as it was) */
+  var SIGN_PLATE = { '#e8710a': '#c25100', '#00897b': '#00695c' };
+  /* a sign made at one graphics setting and shown at another: its canvas is made again at the size the setting wants */
+  function signFit(o) {
+    var w = gfxNow === 'high' ? 1024 : 512;
+    if (o.c.width === w) return;
+    var c = signCanvas(), tx = signTex(c);
+    o.tx.dispose(); o.c = c; o.tx = tx; o.m.material.map = tx; o.m.material.needsUpdate = true;
+  }
   function signCanvas() { var c = document.createElement('canvas'), hi = gfxNow === 'high'; c.width = hi ? 1024 : 512; c.height = hi ? 512 : 256; return c; }
   function signTex(c) { var tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace; tx.anisotropy = Math.min(16, renderer.capabilities.getMaxAnisotropy() || 1); return tx; }
   function gateTex(c, text, col, dim, body) {
     var x = c.getContext('2d'), w = c.width, h = c.height, r = h * 0.16, m = h * 0.045;
     x.clearRect(0, 0, w, h);
     x.globalAlpha = dim ? 0.3 : 1;
+    col = SIGN_PLATE[col] || col;   /* white letters on orange and teal were under 3:1: those plates are a little deeper (1.5) */
     var g = x.createLinearGradient(0, 0, 0, h);
     g.addColorStop(0, shadeHex(col, 0.28)); g.addColorStop(0.55, col); g.addColorStop(1, shadeHex(col, -0.35));
     x.fillStyle = g; x.beginPath(); x.roundRect(m, m, w - 2 * m, h - 2 * m, r); x.fill();
     x.lineWidth = h * 0.04; x.strokeStyle = 'rgba(255,255,255,0.95)'; x.stroke();
     var gl = x.createLinearGradient(0, m, 0, h * 0.5);
-    gl.addColorStop(0, 'rgba(255,255,255,0.45)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+    gl.addColorStop(0, 'rgba(255,255,255,0.28)'); gl.addColorStop(1, 'rgba(255,255,255,0)');   /* a softer gloss: the tops of the letters sit on it */
     x.fillStyle = gl; x.beginPath(); x.roundRect(m * 2.2, m * 2.2, w - m * 4.4, h * 0.4, r * 0.75); x.fill();
     var disp = body === undefined ? displayOK(text) : !body, fs = Math.round(h * (disp ? 0.64 : 0.54)), font = function (z) { return disp ? '400 ' + z + 'px "Black Han Sans", "Noto Sans KR", system-ui, sans-serif' : '900 ' + z + 'px "Noto Sans KR", system-ui, sans-serif'; };
     x.font = font(fs); var tw = x.measureText(String(text)).width;
@@ -73,7 +82,7 @@
       var c = signCanvas();
       var tx = signTex(c);
       var bw = Math.min(W - 0.7, 4.4), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
-      m.position.set(cx, 3.3, 0.05); g.add(m);
+      m.position.set(cx, 3.3, 0.05); m.renderOrder = 5; g.add(m);   /* drawn after smoke and labels in front of it, so they do not veil the answer */
       var am = new T.MeshBasicMaterial({ map: chevTex, color: base.clone().multiplyScalar(1.4), transparent: true, opacity: 0.85, depthWrite: false, blending: T.AdditiveBlending });
       var lane = new T.Mesh(new T.PlaneGeometry(Math.min(W - 1.2, 6), 24, 1, 6), am);
       lane.rotation.x = -Math.PI / 2; lane.position.set(cx, 0.04, 12); g.add(lane);
@@ -109,7 +118,7 @@
   spellFonts();
   function gatesShow(q) {
     var s = gateSet(q.n);
-    s.banners.forEach(function (b, i) { gateTex(b.c, q.opts[i], QG_COL[i], false, qBody(q)); b.tx.needsUpdate = true; b.m.material.opacity = 1; b.arrows.opacity = 0.85; });
+    s.banners.forEach(function (b, i) { signFit(b); gateTex(b.c, q.opts[i], QG_COL[i], false, qBody(q)); b.tx.needsUpdate = true; b.m.material.opacity = 1; b.arrows.opacity = 0.85; });
     s.g.visible = true; quiz.g = s;
   }
   function gatesDim(q, picked) {
@@ -183,18 +192,43 @@
     else st.top = (Math.max(ro.bottom, rs.bottom) + 4) + 'px';
   }
   window.addEventListener('resize', function () { if (!$('qbox').hidden) qboxFit(); });
+  /* seen from above (톱뷰) the road 20~55 m ahead is at the top of the screen, right where the card is: the signs or balloons went by
+     behind it, and balloons waited there the whole time to think (1.5). In that view the card steps below the signs while they are there */
+  var qbV = new T.Vector3(), qbDodge = null;
+  function qboxDodge() {
+    var el = $('qbox'), on = save.cam === 'top' && mode === 'play' && !el.hidden && quiz.phase === 'ask' && !!(quiz.g || quiz.b);
+    if (!on) { if (qbDodge) { el.style.top = qbDodge.top; qbDodge = null; } return; }
+    var ms = quiz.g ? quiz.g.banners.map(function (b) { return b.m; }) : quiz.b.items.filter(function (it) { return !it.popped; }).map(function (it) { return it.m; });
+    var vw = window.innerWidth, vh = window.innerHeight, x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    ms.forEach(function (m) {
+      var pr = m.geometry.parameters;
+      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(function (c) {
+        qbV.set(c[0] * pr.width / 2, c[1] * pr.height / 2, 0).applyMatrix4(m.matrixWorld).project(camera);
+        if (qbV.z > 1) return;
+        var sx = (qbV.x + 1) / 2 * vw, sy = (1 - qbV.y) / 2 * vh;
+        x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy);
+      });
+    });
+    if (!qbDodge) { var r0 = el.getBoundingClientRect(); qbDodge = { top: el.style.top, y: r0.top, h: r0.height, l: r0.left, r: r0.right }; }
+    var d = qbDodge, want = '';
+    if (x0 < x1 && x0 < d.r && x1 > d.l && y0 < d.y + d.h + 6 && y1 > d.y - 6 && y1 + 8 + d.h < vh * 0.72) want = Math.round(y1 + 8) + 'px';
+    if (el.style.top !== (want || d.top)) el.style.top = want || d.top;
+  }
   function qboxSet(kick, text, cls, q, why) {
+    if (qbDodge) { $('qbox').style.top = qbDodge.top; qbDodge = null; }   /* measured again for the new card */
     $('q-kick').textContent = kick; dispSet($('q-text'), text); $('qbox').className = 'qbox' + (cls ? ' ' + cls : '') + (text.length > 12 ? ' long' : '');
     $('q-why').textContent = why || ''; $('q-why').hidden = !why;
     var h = '';
-    if (q) q.opts.forEach(function (v, i) { h += '<span style="background:' + QG_COL[i] + '">' + v + '</span>'; });
+    if (q) q.opts.forEach(function (v, i) { h += '<span style="background:' + (SIGN_PLATE[QG_COL[i]] || QG_COL[i]) + '">' + esc(v) + '</span>'; });
     $('q-opts').innerHTML = h; $('q-opts').hidden = !q;
     $('qbox').hidden = false;
     qboxFit();
   }
   /* 맞히기: the options come as numbered balloons, one over each part of the road. They drift in, hover ahead for the time to think, then come on;
      shooting one picks it, and if none is shot the one the car drives into is the pick (so a car with only a saw or missiles can still answer) */
-  var QB_HOLD = -27, balloonSets = {};
+  var balloonSets = {};
+  /* where the balloons wait: on a phone's small screen a little nearer, so their labels are big enough to read (1.5) */
+  function qbHold() { return Math.min(window.innerWidth, window.innerHeight) <= 520 ? -21 : -27; }
   function balloonSet(n) {
     if (balloonSets[n]) return balloonSets[n];
     var g = new T.Group(), W = 2 * QG_EDGE / n, s = { g: g, n: n, W: W, items: [] }, i;
@@ -205,16 +239,16 @@
       var c = signCanvas();
       var tx = signTex(c);
       var bw = Math.min(W - 0.6, 3.2), m = new T.Mesh(new T.PlaneGeometry(bw, bw / 2), new T.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
-      m.position.y = 1.35; b.add(m);
+      m.position.y = 1.35; m.renderOrder = 5; b.add(m);
       b.position.x = x; g.add(b);
-      s.items.push({ g: b, c: c, tx: tx, x: x, hw: bw / 2, hp: 0, popped: false });
+      s.items.push({ g: b, c: c, tx: tx, m: m, x: x, hw: bw / 2, hp: 0, popped: false });
     }
     g.visible = false; scene.add(g);
     return (balloonSets[n] = s);
   }
   function balloonsShow(q) {
     var s = balloonSet(q.n);
-    s.items.forEach(function (it, i) { gateTex(it.c, q.opts[i], QG_COL[i], false, qBody(q)); it.tx.needsUpdate = true; it.hp = 0; it.popped = false; it.g.visible = true; });
+    s.items.forEach(function (it, i) { signFit(it); gateTex(it.c, q.opts[i], QG_COL[i], false, qBody(q)); it.tx.needsUpdate = true; it.hp = 0; it.popped = false; it.g.visible = true; });
     s.g.visible = true; s.g.position.set(0, 0, -95); quiz.b = s;
   }
   /* called for every player bullet: true when it hit a balloon */
@@ -260,7 +294,7 @@
   function quizStep(dt, px, car) {
     if (quiz.phase === 'off' || mode !== 'play' || briefT > 0 || player.dead) return;
     var dk = quiz.deck, q = quiz.q, bs = quiz.b;
-    gateGlow(dt);
+    gateGlow(dt); qboxDodge();
     if (quiz.g) {
       var gz = quiz.g.g.position.z = dist - quiz.d, fade = clamp(-(gz + 2) / 12, 0, 1);   /* the signs fade as the car passes under, so they never fill the screen */
       quiz.g.banners.forEach(function (b) { b.m.material.opacity = fade; });
@@ -269,13 +303,13 @@
     if (bs) {
       var bz = bs.g.position.z;
       if (quiz.phase === 'ask') {
-        if (bz < QB_HOLD && quiz.hold > 0) bs.g.position.z = Math.min(QB_HOLD, bz + Math.max(18, veff) * dt);   /* drift in */
+        if (bz < qbHold() && quiz.hold > 0) bs.g.position.z = Math.min(qbHold(), bz + Math.max(18, veff) * dt);   /* drift in */
         else if ((quiz.hold -= dt) <= 0) bs.g.position.z = bz + veff * dt;                                       /* time is up: they come on */
       } else { bs.g.position.z = bz + veff * dt; if (bs.g.position.z > 30) { bs.g.visible = false; quiz.b = null; } }
       bs.items.forEach(function (it, i) { it.g.position.y = Math.sin(time * 2 + i) * 0.15; });
     }
     quiz.t -= dt;
-    if (quiz.phase === 'ask' && (!quiz.b || quiz.b.g.position.z >= QB_HOLD - 0.01)) quiz.askE += dt;   /* game time (a pause does not run the clock); balloons start it once they have drifted in */
+    if (quiz.phase === 'ask' && (!quiz.b || quiz.b.g.position.z >= qbHold() - 0.01)) quiz.askE += dt;   /* game time (a pause does not run the clock); balloons start it once they have drifted in */
     if (quiz.phase === 'wait' && quiz.t <= 0) {
       q = quiz.q = quizNext(dk);
       if (!q) { quiz.phase = 'done'; finish(true); return; }

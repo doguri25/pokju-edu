@@ -421,6 +421,9 @@ select option:checked { background-color: #2c2f55; }
    With a smaller mirror there (js_polish.js) the card starts higher, and a question on two lines (set smaller, above) drops the
    「문제 n / 10」 line while it is asked (the HUD chip shows it too), so the card ends above the signs */
 @media (max-width: 720px) and (orientation: portrait) { .qbox.long:not(.ok):not(.no) #q-kick { display: none; } }
+/* a phone: the answers are also on the card, in the colours of their signs, while it is asked (1.5). Far down the road a sign's letters
+   are only 5~7 px high on a small screen */
+@media (max-width: 720px), (max-height: 520px) { .qbox .qopts:not([hidden]) { display: flex !important; flex-wrap: wrap; } .qbox .qopts span { font-size: 18px; min-width: 40px; padding: 1px 10px; } }
 .qbox.ok .qopts span, .qbox.no .qopts span { opacity: 0.3; }
 
 /* top left: the run and its ten questions */
