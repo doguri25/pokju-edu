@@ -59,7 +59,7 @@
   function clearHulks() { for (var i = 0; i < hulks.length; i++) { hulks[i].m.visible = false; hulkPool.push(hulks[i]); } hulks.length = 0; }
 
   /* ---------- air strikes: six patterns, each avoided in a different way. None of them reaches the shoulders, and none can enter an underground road ---------- */
-  var STRIKES = { lane: '차선 폭격', cross: '횡단 폭격', diag: '대각선 폭격', cluster: '집속 폭격', chase: '추적 폭격', napalm: '소이탄' };
+  var STRIKES = { lane: '차선 폭탄', cross: '가로지르는 폭탄', diag: '대각선 폭탄', cluster: '흩어지는 폭탄', chase: '따라오는 폭탄', napalm: '불꽃 폭탄' };   /* names a child reads on the banner (1.5: 집속 폭격, 소이탄) */
   var strikeQ = [], lastStrike = '';
   function airStrike(kind) {
     if (inTunnel(dist) || inTunnel(dist + 60)) return;
@@ -116,7 +116,7 @@
 
   /* ---------- first-person view: a cockpit that rides with the camera. Layout after the car the 바다사자 7 parodies: four-spoke flat-bottom wheel with a hexagonal pad,
      a low freestanding cluster screen, a wide landscape centre screen floating over a horizontal two-tone dash, a shifter stalk on the column. Left-hand drive ---------- */
-  var CAM_SHORT = { top: '탑뷰', low: '추격 뷰', cockpit: '운전석' }, CAM_LABEL = { top: '탑뷰', low: '낮은 추격 뷰', cockpit: '운전석 뷰' }, CAM_ORDER = ['low', 'top', 'cockpit'];
+  var CAM_SHORT = { top: '톱뷰', low: '추격 뷰', cockpit: '운전석' }, CAM_LABEL = { top: '톱뷰', low: '낮은 추격 뷰', cockpit: '운전석 뷰' }, CAM_ORDER = ['low', 'top', 'cockpit'];
   var cockpit = new T.Group(), ckp = { spin: null, hood: null, hoodMat: null, cl: null, sc: null, t: 0 };
   (function () {
     var dash = std(0x1b1d22, 0.9), lower = std(0x9fb4c8, 0.8), leather = std(0x15161a, 0.75), silver = std(0x8a9098, 0.5, 0.5), frame = std(0x101114, 0.9);

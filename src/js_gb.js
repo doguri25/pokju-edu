@@ -105,7 +105,7 @@
 
   /* ---------- trailer: title card, then mission card, car card and a cut of play for one car and mission after another ---------- */
   var HINTS = [
-    '키보드는 방향키로 움직이고 Z 키로 쏩니다. ↑ ↓ 는 가속과 감속, ← → 는 좌우 이동입니다.',
+    '키보드는 방향키로 움직이고 Z 키로 쏩니다. ↑ ↓는 가속과 감속, ← →는 좌우 이동입니다.',
     '터치는 왼쪽 아래 레버로 속도를 정하고 화면 오른쪽을 좌우로 끌어 이동합니다. 레버를 잡고 있는 동안 무기가 나갑니다.',
     '보급 상자는 쏘면 내용물이 바뀝니다. 원하는 것이 나오면 지나가며 먹습니다.',
     '보급 아이템은 모두 15가지입니다. 강화 장갑은 피해를 절반으로 줄이고, 기술 충전은 두 기술의 쿨타임을 없앱니다.',
@@ -277,7 +277,7 @@
       for (k in CARS) for (var sl in CARS[k].anchors) if (fits(id, sl)) { n++; break; }
       $('info-title').textContent = W.name; $('info-tag').textContent = '무기 · ' + W.slots.map(function (x) { return SLOT_LABEL[x]; }).join('·') + ' 슬롯';
       body = row('설명', W.more) + row('수치', W.stat) + row('강화', id === 'saw' ? '1단계 50%, 2단계 60%, 3단계 70% 감소' : '1단계 기본, 2단계 피해 25% 증가, 3단계 피해 50% 증가') +
-        row('보유', lv ? lv + '단계' : '미보유' + (wLevel(id) > 0 ? ' (잠금 해제로 사용 가능)' : '')) + row('가격', '구매 ' + (W_PRICE[id] || '기본 지급') + ', 2단계 ' + UP_PRICE[1] + ', 3단계 ' + UP_PRICE[2] + ' 고철') + row('달 수 있는 차', n + '종');
+        row('보유', lv ? lv + '단계' : '미보유' + (wLevel(id) > 0 ? ' (잠금 해제로 사용 가능)' : '')) + row('가격', (W_PRICE[id] ? '구매 ' + W_PRICE[id] : '기본 지급') + ' · 2단계 ' + UP_PRICE[1] + ' · 3단계 ' + UP_PRICE[2] + ' 고철') + row('달 수 있는 차', n + '종');
       act.hidden = lv >= 3; act.disabled = price > save.scrap; act.setAttribute('data-arm', id);
       act.textContent = lv ? (lv + 1) + '단계 강화 · 고철 ' + price : '구매 · 고철 ' + price;
     } else {
@@ -353,6 +353,8 @@
   function renderFoot() {
     var why = !carOpen(selCar) ? '아직 구입하지 않은 차량입니다.' : (selKind === 'mis' && !missionOpen(selMission) ? '이 미션은 앞 미션을 완료하면 열립니다.' : (selKind === 'story' && !chapterOpen(selChapter) ? '이 장은 앞 장을 깨면 열립니다.' : ''));
     $('wallet').textContent = save.scrap.toLocaleString('ko-KR');
+    /* the class link shown for the old settings would be copied by mistake: it follows what is chosen now (1.5) */
+    if (!$('link-box').hidden) { var lnk = linkMake(); if ($('link-out').value !== lnk) { $('link-out').value = lnk; $('link-note').textContent = '설정이 바뀌어 주소를 새로 만들었습니다. 다시 복사해 나눠 주세요.'; } }
     $('go').disabled = !!why; $('go-why').hidden = !why; $('go-why').textContent = why;
     $('go-what').textContent = CARS[selCar].name + ' · ' + (selKind === 'ta' || selKind === 'race' ? KINDS[selKind].name + ' ' + TRACKS[selTrack].name
       : selKind === 'story' ? '이야기 ' + storyMission(selChapter).name
@@ -403,7 +405,7 @@
     if (!p && glLost) return;   /* no driving on while there is no picture (js_fx2.js) */
     paused = p; $('pause').hidden = !p; if (p) engineOff();
     dragsLetGo(); fireBtn = false;
-    /* a real dialog (1.5): the keyboard lands on 「계속 하기」, and the HUD behind it is out of the way of Tab */
+    /* a real dialog (1.5): the keyboard lands on 「계속하기」, and the HUD behind it is out of the way of Tab */
     $('hud').inert = p;
     if (p) { try { $('pause-resume').focus({ preventScroll: true }); } catch (e) {} }
     else if (document.activeElement && $('pause').contains(document.activeElement)) document.activeElement.blur();
@@ -681,7 +683,7 @@
   }
   /* in-play buttons act on press, not on click: a tap made while another finger is already holding the lever never becomes a click */
   function tap(el, fn) {
-    el.addEventListener('pointerdown', function (e) { if (e.button > 0) return; if (e.pointerType === 'touch') touchUI = true; e.preventDefault(); fn(); });
+    el.addEventListener('pointerdown', function (e) { if (e.button > 0) return; inputFrom(e); e.preventDefault(); fn(); });
     el.addEventListener('click', function (e) { if (e.detail === 0) fn(); });
   }
   function thrHeld() { if (leverDown && leverTouch) return true; for (var id in ptrs) { var q = ptrs[id]; if (q.touch && (q.zone === 'thr' || (q.zone === 'auto' && q.left))) return true; } return false; }   /* a thumb held on the left part fires, as before, until it moves sideways */
@@ -713,8 +715,8 @@
     if (e.key === 'Escape' || isKey(e, 'KeyP', 'p')) { setPaused(!paused); return; }
     if (isKey(e, 'KeyC', 'c') || isKey(e, 'KeyV', 'v')) { cycleCam(); return; }
     if (paused) return;
-    if (keySet(e, true)) e.preventDefault();
-    else if (e.key === ' ' || e.code === 'Space') { if (!e.repeat) useSkill(); e.preventDefault(); }
+    if (keySet(e, true)) { e.preventDefault(); inputIs('key'); }
+    else if (e.key === ' ' || e.code === 'Space') { if (!e.repeat) useSkill(); e.preventDefault(); inputIs('key'); }
     else if (e.key === 'Shift') { if (!e.repeat) shiftSkill = true; }   /* Shift alone uses the skill when let go: Shift+Tab is not a skill */
     else if (isKey(e, 'KeyX', 'x') || isKey(e, 'KeyE', 'e') || isKey(e, 'KeyF', 'f')) { if (!e.repeat) useBasic(); e.preventDefault(); }
   });
@@ -786,7 +788,7 @@
   (function () {
     var lever = $('lever'), track = $('lever-track');
     function setFrom(e) { var r = track.getBoundingClientRect(); player.thr = clamp(1 - (e.clientY - r.top) / r.height, 0, 1); }
-    lever.addEventListener('pointerdown', function (e) { leverDown = true; leverTouch = e.pointerType !== 'mouse'; if (!paused) setFrom(e); try { lever.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); });
+    lever.addEventListener('pointerdown', function (e) { inputFrom(e); leverDown = true; leverTouch = e.pointerType !== 'mouse'; if (!paused) setFrom(e); try { lever.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); });
     lever.addEventListener('pointermove', function (e) {
       if (!(e.buttons & 1)) { leverDown = false; return; }   /* a pen hovering over the lever is not holding it */
       if (!leverDown) { leverDown = true; leverTouch = e.pointerType !== 'mouse'; }   /* held through a pause or a switch to another app */
@@ -912,7 +914,19 @@
   })();
   tap($('btn-exit'), function () { setPaused(true); });
   tap($('btn-cam'), cycleCam);
-  cv.addEventListener('pointerdown', function (e) { if (e.pointerType === 'touch') touchUI = true; }, true);
+  cv.addEventListener('pointerdown', inputFrom, true);
+  /* the hints, the 공격 button and the practice's steps follow the input used last (1.5): a touch Chromebook or an iPad with a keyboard
+     switches between them, and one tap used to turn a keyboard player's hints and practice into touch ones for good (or a device that
+     says it is touch-first gave a keyboard player touch steps from the start) */
+  function inputFrom(e) { inputIs(e.pointerType === 'touch' ? 'touch' : e.pointerType === 'mouse' ? 'mouse' : ''); }
+  function inputIs(kind) {
+    if (!kind) return;
+    if (kind === 'mouse') finePtr = true;
+    var t = kind === 'touch';
+    if (touchUI === t) return;
+    touchUI = t;
+    if (runKind === 'tut' && mode === 'play' && tut.i >= 0 && !$('coach').hidden) tutCoach();
+  }
   $('pz-sound').addEventListener('change', function () { setSfx($('pz-sound').checked); });
   $('pz-music').addEventListener('change', function () { setMus($('pz-music').checked); });
   $('pz-cam').addEventListener('click', cycleCam);
@@ -1036,10 +1050,10 @@
   $('opt-unlock').addEventListener('change', function () { save.unlockAll = $('opt-unlock').checked; storeSave(); renderMenu(); });
   $('opt-reset').addEventListener('click', function () {
     /* a shared classroom device: the next child starts clean, story chapters, stars and the 구구단·맞춤법 records included */
-    if (window.confirm && !window.confirm('이야기 진행, 별, 구구단·맞춤법 기록을 모두 지우고 처음부터 시작할까요?')) return;
+    if (window.confirm && !window.confirm('이야기 진행, 별, 구구단·맞춤법 기록과 모은 고철, 산 무기·타이어를 모두 지우고 처음부터 시작할까요?')) return;
     save.story = { open: 0, stars: {}, tries: {}, done: false }; save.quiz.facts = {}; save.quiz.runs = []; save.tut = false; save.help = false;   /* the prologue, practice and controls come back too */
     save.scrap = 500; save.cars = { laser: true }; save.cleared = []; save.loadouts = {}; save.best = {}; save.bestT = {}; save.ta = {}; save.race = {}; save.surv = {}; save.tires = { allseason: 1 }; save.tire = {}; save.weapons = { mg: 1 }; save.unlockAll = false; grantStock(); storeSave();
-    $('opt-unlock').checked = false; selCar = 'laser'; selMission = 0; selTrack = 0; selKind = 'story'; selChapter = 0; toMenu(); setTab('car');
+    $('opt-unlock').checked = false; selCar = 'laser'; selMission = 0; selTrack = 0; selKind = 'story'; selChapter = 0; showTitle();   /* from the title, so the next child gets the prologue and the practice (1.5: the menu skipped them) */
   });
 
   /* ---------- camera and resize ---------- */

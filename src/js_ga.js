@@ -318,7 +318,7 @@
     if (player.hp <= 0) {
       player.hp = 0; player.dead = true; car.g.visible = false;
       explode(player.x, 1.2, 0, 2.2, veff * 0.5, M.dark);
-      finish(false, '차량이 파괴되었다.');
+      finish(false, '차가 크게 부서졌다.');
     }
   }
 

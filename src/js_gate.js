@@ -166,10 +166,11 @@
   function qboxFit() {
     var el = $('qbox'), st = el.style, hud = $('hud'), vw = window.innerWidth, vh = window.innerHeight;
     st.left = st.right = st.width = st.transform = st.top = '';
-    if (el.hidden || hud.hidden || vh > 520 || vw <= vh || !el.classList.contains('long')) return;
+    if (el.hidden || hud.hidden) return;
     var ro = hud.querySelector('.obj').getBoundingClientRect(), rs = hud.querySelector('.status').getBoundingClientRect(), r = el.getBoundingClientRect();
     if (!ro.width || !rs.width || r.top >= Math.max(ro.bottom, rs.bottom) || (r.left >= ro.right && r.right <= rs.left)) return;
-    if (rs.left - ro.right >= 280) { st.left = (ro.right + 8) + 'px'; st.right = (vw - rs.left + 8) + 'px'; st.width = 'auto'; st.transform = 'none'; }
+    /* a phone on its side has no height to spare: between the chips if they leave room; a taller screen (a tablet, 1024×768) puts it under them */
+    if (vh <= 520 && vw > vh && rs.left - ro.right >= 280) { st.left = (ro.right + 8) + 'px'; st.right = (vw - rs.left + 8) + 'px'; st.width = 'auto'; st.transform = 'none'; }
     else st.top = (Math.max(ro.bottom, rs.bottom) + 4) + 'px';
   }
   window.addEventListener('resize', function () { if (!$('qbox').hidden) qboxFit(); });
@@ -297,7 +298,7 @@
     save.quiz.runs = (save.quiz.runs || []).concat([{ day: dayText(Date.now()), name: mission.name, type: QUIZ_TYPES[dk.type].name, right: sc.right, total: sc.total }]).slice(-30);
     save.scrap += got; storeSave(); setMusic('menu'); quizOff();
     $('res-grid').innerHTML = spell ? spellTable(dk.sets, asked) : factGrid(dk.dans.slice().sort(), asked);
-    $('res-title').textContent = !win ? '차가 멈췄어요' : all ? '모두 맞혔다!' : (sc.right >= sc.total * 0.7 ? '잘했어요' : '끝까지 달렸어요');
+    $('res-title').textContent = !win ? '차가 멈췄어요' : all ? '모두 맞혔어요!' : (sc.right >= sc.total * 0.7 ? '잘했어요' : '끝까지 달렸어요');
     $('res-story').textContent = !win ? failWhy + ' ' + quiz.deck.main + '문제 가운데 ' + sc.total + '문제까지 풀고 ' + sc.right + '문제를 맞혔다.'
       : sc.total + '문제 가운데 ' + sc.right + '문제를 맞혔다.' + (sc.missed.length ? ' 틀린 문제는 끝에서 ' + sc.fixed + '개를 다시 맞혔다.' : '');
     resRows([['문제', mission.name + (spell ? '' : ' · ' + QUIZ_TYPES[dk.type].name)], ['맞힌 문제', sc.right + ' / ' + sc.total], ['가장 긴 연속 정답', quiz.best + '개'],
@@ -356,7 +357,8 @@
     var s = save.quiz.sel, spell = selKind === 'spell', o = spell ? spellSel() : quizSel(), t = QUIZ_TYPES[o.type], p = QUIZ_PACE[o.pace];
     $('opt-dan').value = s.dan; $('opt-qtype').value = s.type; $('opt-pace').value = s.pace; $('opt-spell').value = s.spell || 'dwae';
     $('lb-dan').hidden = spell; $('lb-qtype').hidden = spell; $('lb-spell').hidden = !spell;
-    $('quiz-premise').textContent = spell ? '새벽: “마성의 글자 칩도 말썽이야. 빈칸에 들어갈 바른 말이 적힌 문으로 지나가 줘.”' : '새벽: “마성이 계산을 까먹었어. 길마다 숫자 갈림길이 생겼는데, 맞는 답이 적힌 문으로 지나가면 다시 기억해.”';
+    var balloon = o.style === 'shoot';   /* gates or balloons, as chosen */
+    $('quiz-premise').textContent = spell ? '새벽: “마성의 글자 칩도 말썽이야. 빈칸에 들어갈 바른 말이 ' + (balloon ? '적힌 풍선을 맞혀 줘.”' : '적힌 문으로 지나가 줘.”') : '새벽: “마성이 계산을 까먹었어. 길마다 숫자 갈림길이 생겼는데, 맞는 답이 ' + (balloon ? '적힌 풍선을 맞히면' : '적힌 문으로 지나가면') + ' 다시 기억해.”';
     $('opt-foe').value = s.foe === 'off' ? 'off' : 'on'; $('opt-style').value = o.style;
     if (spell) {
       var st = o.sets.length === 1 ? SPELL_SETS[o.sets[0]] : null;

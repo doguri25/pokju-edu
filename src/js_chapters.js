@@ -14,7 +14,7 @@
       go: '산 위 케이블카가 몇 번째 칸인지 몰라 멈춰 버렸어. 6단이야.', hint: '6단은 3단의 두 배야. 3×4가 12니까 6×4는 24.',
       done: '케이블카가 다시 움직였다. 노을 진 산 위에서 손을 흔드는 사람들이 보였다.' },
     { dans: [4], region: 'highway', time: 'night', weather: 'rain', fix: '톨게이트', foes: { drones: 0.6, strike: 0.3, traffic: 1.2 }, name: '헷갈린 톨게이트',
-      go: '고속도로 톨게이트가 요금을 엉터리로 받고 있어. 4단을 지나가 줘. 비가 오니까 천천히.', hint: '4단은 2단의 두 배야. 2×7이 14니까 4×7은 28.',
+      go: '고속도로 톨게이트가 요금을 엉터리로 받고 있어. 4단 갈림길을 지나가 줘. 비가 오니까 천천히.', hint: '4단은 2단의 두 배야. 2×7이 14니까 4×7은 28.',
       done: '톨게이트 화면에 숫자가 똑바로 떴다. 막혀 있던 차들이 빗속을 천천히 빠져나갔다.' },
     { dans: [8], region: 'offroad', time: 'sunset', weather: 'clear', fix: '택배 창고', foes: { drones: 0.6, kami: 0.4, buggy: true, traffic: 1.2 }, name: '뒤죽박죽 택배 창고',
       go: '숲속 택배 창고가 상자 개수를 다 틀리게 세고 있어. 8단이야, 조금 어려워.', hint: '8단은 4단의 두 배야. 8×5는 40, 거기서 8씩 더하거나 빼 봐.',
@@ -55,7 +55,7 @@
       done: '등대 일지가 반듯하게 고쳐졌다. 「며칠 동안 바다가 잔잔했다. 배들이 금세 돌아왔다.」' },
     { sets: ['dwae', 'an', 'mat', 'wen', 'deun', 'garu', 'nat', 'often', 'bara', 'ro'], region: 'city', time: 'night', weather: 'clear', fix: '마성의 글자 칩', ending: 2, name: '다시 마성 타워', last: true,
       foes: { drones: 1, kami: 0.75, strike: 0.85, buggy: true, traffic: 1.05, strikes: ['lane', 'cross', 'diag', 'chase', 'cluster'] },
-      go: '마지막이야. 마성 타워 앞에는 헷갈리는 말이 다 나와. 처음 보는 「바라다」와 「로서」도 있어.', hint: '바라는 마음은 「바라」, 「바람」이야. 사람의 자격은 「로서」, 도구는 「로써」!',
+      go: '마지막이야. 마성 타워 앞에는 지금까지 고친 헷갈리는 말이 다 나와. 처음 보는 「바라다」와 「로서」도 있어.', hint: '바라는 마음은 「바라」, 「바람」이야. 사람의 자격은 「로서」, 도구는 「로써」!',
       done: '타워의 전광판에 바른 글자가 하나씩 켜졌다. 마성의 목소리가 들렸다. “고마워요. 이제 「안 돼요」를 바르게 쓸게요.”' }
   ];
   var selChapter = 0;
@@ -144,5 +144,5 @@
     var cb = $('ch-' + selChapter); if (cb && cb.scrollIntoView && !$('menu').hidden && !$('pane-story').hidden) cb.scrollIntoView({ block: 'nearest' });
     var m = storyMission(selChapter);
     $('ch-brief').innerHTML = (chapterOpen(selChapter) ? '' : row('잠금', (selChapter) + '장 「' + CHAPTERS[selChapter - 1].name + '」' + objJosa(CHAPTERS[selChapter - 1].name).slice(CHAPTERS[selChapter - 1].name.length) + ' 깨면 열립니다')) +
-      row('고칠 것', ch.fix) + row('문제', ch.sets ? '맞춤법 ' + (ch.last ? ch.sets.length + '묶음 섞어서' + chapterFresh(selChapter) : SPELL_SETS[ch.sets[0]].name) : (ch.last ? '1단~9단과 0의 곱 섞어서' : ch.dans[0] + '단 ' + QUIZ_TYPES[m.quiz.type].name)) + row('길', m.why) + row('깨기', '10문제 가운데 7문제 이상 (순서대로는 9문제 가운데 7문제). 별은 깨면 1개, 하나만 틀리면 2개, 모두 맞히면 3개');
+      row('고칠 것', ch.fix) + row('문제', ch.sets ? '맞춤법 ' + (ch.last ? ch.sets.length + '묶음 섞어서' + chapterFresh(selChapter) : SPELL_SETS[ch.sets[0]].name) : (ch.last ? '1단~9단과 0의 곱 섞어서' : ch.dans[0] + '단 ' + QUIZ_TYPES[m.quiz.type].name)) + row('길', m.why) + row('깨기', '10문제 가운데 7문제 이상' + (!ch.sets && !ch.last ? ' (처음 한 번의 순서대로는 9문제 가운데 7문제)' : '') + '. 별은 깨면 1개, 하나만 틀리면 2개, 모두 맞히면 3개');
   }
