@@ -102,7 +102,10 @@
   function postResize(w, h) {
     if (!post) return;
     /* fewer samples at the middle setting: on a phone the multisampled half-float buffer is the biggest cost after the pixels themselves */
-    var s = (GFX[gfxNow] || GFX.high).msaa || 0;
+    var s = (GFX[gfxNow] || GFX.high).msaa || 0, pr = renderer.getPixelRatio();
+    /* a big, sharp screen (a 2560×1600 tablet, a 4K monitor) at 높음: 4× samples of a half-float picture took about 150 MB there alone.
+       2× is enough where the pixels are that small (1.5) */
+    if (s > 2 && w * h * pr * pr > 2.4e6) s = 2;
     [post.composer.renderTarget1, post.composer.renderTarget2].forEach(function (t) { if (t.samples !== s) { t.samples = s; t.dispose(); } });
     post.composer.setPixelRatio(renderer.getPixelRatio()); post.composer.setSize(w, h); post.grade.uAspect.value = w / Math.max(1, h);
   }

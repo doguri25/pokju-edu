@@ -2025,6 +2025,28 @@
     audioState: function () { return { ios: IOS, ac: AC ? AC.state : null, hush: hush ? (hush.paused ? 'paused' : 'playing') : null, session: navigator.audioSession ? navigator.audioSession.type : null }; },
     sign: function (t, body) { var c = document.createElement('canvas'); c.width = 512; c.height = 256; gateTex(c, t, QG_COL[0], false, body); return c.toDataURL(); },
     fontsOk: function (t) { return { disp: document.fonts.check('400 64px "Black Han Sans"', t), body: document.fonts.check('900 64px "Noto Sans KR"', t) }; },
+    /* one whole frame drawn on demand, its draw calls split by pass (mirror, shadow map, the rest): for measuring, not used by the game */
+    passes: function () {
+      var inf = renderer.info, ar = inf.autoReset, sh = renderer.shadowMap.autoUpdate, r = {};
+      inf.autoReset = false; inf.reset(); mirrorPass(true); r.mirror = inf.render.calls;
+      inf.reset(); renderer.shadowMap.autoUpdate = false; renderFrame(); r.noShadow = inf.render.calls; r.tri = inf.render.triangles;
+      inf.reset(); renderer.shadowMap.autoUpdate = true; renderer.shadowMap.needsUpdate = true; renderFrame(); r.withShadow = inf.render.calls;
+      r.shadow = r.withShadow - r.noShadow; r.total = r.mirror + r.withShadow;
+      renderer.shadowMap.autoUpdate = sh; inf.autoReset = ar;
+      r.geo = inf.memory.geometries; r.tex = inf.memory.textures; r.prog = inf.programs ? inf.programs.length : 0;
+      var objs = 0, meshes = 0, vis = 0; scene.traverse(function (o) { objs++; if (o.isMesh || o.isSprite) { meshes++; if (o.visible) vis++; } }); r.objs = objs; r.meshes = meshes; r.visMeshes = vis;
+      /* what the main view draws, by kind: every draw call is traced back to the object it belongs to */
+      var tag = new Map(), by = {}, rbd = renderer.renderBufferDirect, k;
+      function mark(root, name) { root.traverse(function (o) { tag.set(o, name); }); }
+      scenery.forEach(function (o) { mark(o, 'scenery'); }); loops.forEach(function (o) { mark(o, 'loop'); });
+      for (k in regionScenery) regionScenery[k].forEach(function (o) { mark(o, 'region:' + k); });
+      props.forEach(function (pp) { mark(pp.m, 'prop:' + pp.type); }); enemies.forEach(function (e) { mark(e.g, 'enemy:' + e.type); });
+      mark(playerRoot, 'player'); for (k in gateSets) mark(gateSets[k].g, 'gate'); for (k in balloonSets) mark(balloonSets[k].g, 'balloon');
+      renderer.renderBufferDirect = function (cam, sc, geo, mat, obj, grp) { var n = obj.isSprite ? 'sprite' : (tag.get(obj) || 'other'); by[n] = (by[n] || 0) + 1; return rbd.apply(this, arguments); };
+      renderer.shadowMap.autoUpdate = false; try { renderer.render(scene, camera); } finally { renderer.renderBufferDirect = rbd; renderer.shadowMap.autoUpdate = sh; }
+      r.by = by;
+      return r;
+    },
     diag: function () {
       var bad = [], fin = function (n, v) { if (typeof v !== 'number' || !isFinite(v)) bad.push(n + '=' + v); };
       var v3 = function (n, v) { fin(n + '.x', v.x); fin(n + '.y', v.y); fin(n + '.z', v.z); };

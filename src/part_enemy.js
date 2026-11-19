@@ -62,6 +62,7 @@
     if ((type === 'civ' || type === 'sedan' || type === 'taxi') && trafficModels().length) return trafficEnemy(type);
     var hex = type === 'civ' ? pick(civColors) : (type === 'cbus' ? pick([0x2f6fd0, 0x3aa655]) : (type === 'taxi' ? pick([0xe8862a, 0xd9dde2]) : pick(enemyReds)));
     var g = new T.Group(), wheels = [], body = PAINTED[type] ? enemyPaint(hex, SATIN[type]) : std(hex, 0.45, 0.1), i;
+    NOMERGE.add(body);   /* it flashes when hit */
     if (type === 'sedan' || type === 'civ' || type === 'taxi') {
       g.add(prof([[-2.2, 0.35], [2.2, 0.35], [2.25, 0.75], [1.9, 0.98], [-1.95, 0.98], [-2.25, 0.8]], 1.8, body, 0.06));
       g.add(prof([[-1.5, 0.98], [1.05, 0.98], [0.35, 1.5], [-1.0, 1.5]], 1.6, M.glass, 0.02));
@@ -205,7 +206,7 @@
       var eg = glowSprite(0xff3b1f, 1.8, 0.8); eg.position.copy(eye.position); d.add(eg);
       g.userData.hover = d;
     }
-    bake(g, wheels); wheels.forEach(function (wh) { bake(wh); }); if (g.userData.hover) bake(g.userData.hover);
+    pairWheels(g, wheels); bake(g, wheels); wheels.forEach(function (wh) { bake(wh); }); if (g.userData.hover) bake(g.userData.hover);
     if (GROUNDED[type]) groundShadow(g);
     if (type === 'sedan' || type === 'bike' || type === 'buggy' || type === 'dump') foeMark(g, type === 'dump' ? 4.4 : (type === 'bike' ? 2.4 : 2.6));
     return { g: g, type: type, cfg: TYPES[type], body: body, wheels: wheels, hp: 1, x0: 0, phase: 0, flash: 0, fireT: 1, ws: 0, t: 0 };

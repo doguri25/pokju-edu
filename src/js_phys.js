@@ -99,12 +99,12 @@
     for (k in FOES) for (i = epool[k].length; i < FOES[k]; i++) { try { var e = buildEnemy(k); e.g.visible = false; scene.add(e.g); epool[k].push(e); } catch (err) {} }
     for (k in BUILD) {
       if (/^sb_/.test(k) || (propPool[k] && propPool[k].length)) continue;
-      try { var pm = bake(BUILD[k]()); pm.visible = false; scene.add(pm); (propPool[k] || (propPool[k] = [])).push({ type: k, m: pm }); } catch (err) {}
+      try { var pm = bake(BUILD[k](), null, k === 'wreck'); pm.visible = false; scene.add(pm); (propPool[k] || (propPool[k] = [])).push({ type: k, m: pm }); } catch (err) {}
     }
     ['glow', 'smoke'].forEach(function (kind) {
       for (i = ppool[kind].length; i < 140; i++) {
         var sp = { kind: kind, s: new T.Sprite(new T.SpriteMaterial({ map: kind === 'glow' ? texGlow : texSmoke, transparent: true, depthWrite: false, fog: false, blending: kind === 'glow' ? T.AdditiveBlending : T.NormalBlending })) };
-        sp.s.visible = false; scene.add(sp.s); ppool[kind].push(sp);
+        sp.s.visible = false; sp.s.layers.set(FX_LAYER); scene.add(sp.s); ppool[kind].push(sp);
       }
     });
     for (i = dpool.length; i < 40; i++) { var dm = new T.Mesh(DEB_GEOS[i % DEB_GEOS.length], M.dark); dm.castShadow = true; dm.visible = false; scene.add(dm); dpool.push({ m: dm }); }

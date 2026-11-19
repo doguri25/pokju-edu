@@ -163,6 +163,7 @@
   var shoulderTex = noiseTex(1.6); shoulderTex.repeat.set(1, 110);
   var shoulderMat = new T.MeshStandardMaterial({ map: shoulderTex, roughness: 0.95 });
   var walkMat = new T.MeshStandardMaterial({ roughness: 0.95 });
+  [groundMat, roadMat, roadOutMat, shoulderMat, walkMat].forEach(function (m) { NOMERGE.add(m); });   /* recoloured under snow and in tunnels */
   var sideKerbs = [], sideRails = [], edgeLines = [];
   [-1, 1].forEach(function (s) {
     strip(s * 9.8076, 3.3848, -0.01, shoulderMat, true);
@@ -539,7 +540,7 @@
   function addProp(type, d, x, o) {
     var pool = propPool[type] || (propPool[type] = []);
     var p = pool.pop();
-    if (!p) { p = { type: type, m: bake(BUILD[type]()) }; scene.add(p.m); }
+    if (!p) { p = { type: type, m: bake(BUILD[type](), null, type === 'wreck') }; scene.add(p.m); }   /* a wreck no longer moves: its wheels merge with the rest */
     p.d = d; p.x = x; p.drop = !!(o && o.drop); p.solid = (o && o.solid) || null; p.hit = false; p.rh = 0;
     p.m.position.x = x; p.m.scale.x = (o && o.sx) || 1; p.m.rotation.y = (o && o.ry) || 0; p.m.visible = true;
     props.push(p);

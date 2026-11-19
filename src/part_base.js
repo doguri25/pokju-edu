@@ -171,27 +171,78 @@
   function shadowed(m) { m.castShadow = true; m.receiveShadow = true; return m; }
   /* draw-call saver: every static mesh under `root` is merged into one mesh per material and shadow setting. Left alone: objects listed in `keep`, objects that root.userData points at, sprites and lines, hidden parts. A kept group can be baked on its own, so a wheel still turns as one piece */
   var bakeM = new T.Matrix4(), bakeN = new T.Matrix3(), bakeV = new T.Vector3(), bakeStat = { before: 0, after: 0 };
-  function bake(root, keep) {
+  /* 1.5: plain matte parts that differ only in colour (a car's trim, tyres and lamps' housings, a building's ledges) are merged into one
+     mesh too, their colours kept per vertex, with one shared material for each roughness and metalness. That roughly halves the draw
+     calls of cars and repeated roadside pieces. Left out: anything that changes at run time (a hit flash, snow on the ground, water,
+     lights at night: NOMERGE), anything with a texture, a glow, see-through or reflections of the sky */
+  var NOMERGE = new WeakSet(), VC_MATS = {};
+  function vcKey(c) {
+    var m = c.material;
+    if (m.userData.vcKey) return m.userData.vcKey;
+    if (!m.isMeshStandardMaterial || NOMERGE.has(m) || c.geometry.attributes.color) return null;
+    if (m.map || m.emissiveMap || m.normalMap || m.roughnessMap || m.metalnessMap || m.alphaMap || m.aoMap || m.lightMap || m.bumpMap) return null;
+    if (m.transparent || m.opacity !== 1 || m.vertexColors || m.side !== T.FrontSide || m.wireframe || m.polygonOffset || !m.depthWrite || !m.depthTest || m.shadowSide !== null) return null;
+    if (m.emissive.r + m.emissive.g + m.emissive.b !== 0 || Object.prototype.hasOwnProperty.call(m, 'onBeforeCompile')) return null;
+    /* a car finish's roughness and metalness to a tenth: finishes that close look alike, and far fewer of them remain */
+    var env = ENV_MATS.indexOf(m) >= 0, d = m.isMeshPhysicalMaterial ? 1 : 2, k = (m.roughness).toFixed(d) + '/' + (m.metalness).toFixed(d) + '/' + (m.flatShading ? 1 : 0) + '/' + (m.fog ? 1 : 0) + '/' + (env ? m.envMapIntensity.toFixed(2) : '-');
+    if (!m.isMeshPhysicalMaterial) return (env ? 'E' : 'S') + '/' + k;
+    /* car finishes (clearcoat, chrome): merged with others of the very same finish only */
+    if (!env || m.transmission || m.sheen || m.iridescence || m.anisotropy || m.dispersion || m.specularIntensity !== 1 || m.ior !== 1.5 || m.specularColor.getHex() !== 0xffffff || m.clearcoatMap || m.clearcoatNormalMap) return null;
+    return 'P/' + k + '/' + m.clearcoat.toFixed(2) + '/' + m.clearcoatRoughness.toFixed(2);
+  }
+  function vcMat(key) {
+    if (VC_MATS[key]) return VC_MATS[key];
+    var p = key.split('/'), o = { vertexColors: true, roughness: +p[1], metalness: +p[2], flatShading: p[3] === '1', fog: p[4] === '1' }, m;
+    if (p[0] === 'P') { o.clearcoat = +p[6]; o.clearcoatRoughness = +p[7]; m = new T.MeshPhysicalMaterial(o); } else m = new T.MeshStandardMaterial(o);
+    if (p[5] !== '-') {   /* reflects the sky like the parts it replaces */
+      m.envMapIntensity = +p[5]; ENV_MATS.push(m);
+      if (typeof envRT !== 'undefined' && envRT) m.envMap = envRT.texture;
+    }
+    m.userData.vcKey = key;
+    return (VC_MATS[key] = m);
+  }
+  /* the two wheels of an axle turn together about the same line: they become one piece (one draw per material instead of two) */
+  function pairWheels(root, list) {
+    var by = {}, out = [], k;
+    root.updateMatrixWorld(true);
+    list.forEach(function (w) {
+      if (w.parent !== root || !w.userData.r) { out.push(w); return; }
+      k = w.userData.r.toFixed(3) + '/' + w.position.y.toFixed(3) + '/' + w.position.z.toFixed(3) + '/' + w.rotation.x.toFixed(3) + '/' + w.rotation.y.toFixed(3) + '/' + w.rotation.z.toFixed(3);
+      (by[k] || (by[k] = [])).push(w);
+    });
+    for (k in by) {
+      var ws = by[k];
+      if (ws.length < 2 || ws[0].rotation.x || ws[0].rotation.y || ws[0].rotation.z) { ws.forEach(function (w) { out.push(w); }); continue; }
+      var pv = new T.Group(); pv.position.set(0, ws[0].position.y, ws[0].position.z); pv.userData.r = ws[0].userData.r; root.add(pv); pv.updateMatrixWorld(true);
+      ws.forEach(function (w) { pv.attach(w); });
+      out.push(pv);
+    }
+    list.length = 0; out.forEach(function (o) { list.push(o); });
+    return list;
+  }
+  function bake(root, keep, deep) {
     var ks = (keep || []).slice(), k, v, buckets = {}, order = [], inv;
     for (k in root.userData) { v = root.userData[k]; if (v && v.isObject3D) ks.push(v); else if (Array.isArray(v)) v.forEach(function (q) { if (q && q.isObject3D) ks.push(q); }); }
     root.updateMatrixWorld(true); inv = new T.Matrix4().copy(root.matrixWorld).invert();
     (function walk(o) {
       for (var i = 0; i < o.children.length; i++) {
         var c = o.children[i];
-        if (ks.indexOf(c) >= 0 || !c.visible || c.userData.baked) continue;
+        if (ks.indexOf(c) >= 0 || !c.visible || (c.userData.baked && !deep)) continue;   /* deep: pieces baked before are merged again (a wreck: a whole car that no longer moves) */
         if (c.isMesh && !c.isInstancedMesh && !Array.isArray(c.material) && c.geometry && c.geometry.isBufferGeometry && c.geometry.attributes.position && c.geometry.attributes.normal) {
-          var key = c.material.uuid + (c.castShadow ? 'c' : '-') + (c.receiveShadow ? 'r' : '-') + c.renderOrder + (c.frustumCulled ? '' : 'n');
-          if (!buckets[key]) { buckets[key] = { parts: [] }; order.push(key); }
+          var vk = vcKey(c), flags = (c.castShadow ? 'c' : '-') + (c.receiveShadow ? 'r' : '-') + c.renderOrder + (c.frustumCulled ? '' : 'n');
+          var key = vk ? 'vc' + vk + flags.slice(2) : c.material.uuid + flags;   /* colour merges also join parts that differ only in their shadows: the piece casts and takes them if any part did */
+          if (!buckets[key]) { buckets[key] = { parts: [], vc: vk }; order.push(key); }
           buckets[key].parts.push(c);
         }
         walk(c);
       }
     })(root);
     order.forEach(function (key) {
-      var parts = buckets[key].parts, total = 0, geos, pos, nor, uv, off = 0, hasUv = true, first = parts[0];
+      var parts = buckets[key].parts, vc = buckets[key].vc, total = 0, geos, pos, nor, uv, col = null, off = 0, hasUv = true, first = parts[0];
       if (parts.length < 2) return;
+      if (!vc && parts.some(function (c) { return !!c.geometry.attributes.color; })) return;   /* colours this merge would not carry */
       geos = parts.map(function (c) { var g = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry; total += g.attributes.position.count; if (!g.attributes.uv) hasUv = false; return g; });
-      pos = new Float32Array(total * 3); nor = new Float32Array(total * 3); uv = hasUv ? new Float32Array(total * 2) : null;
+      pos = new Float32Array(total * 3); nor = new Float32Array(total * 3); uv = hasUv && !vc ? new Float32Array(total * 2) : null; if (vc) col = new Float32Array(total * 3);
       parts.forEach(function (c, pi) {
         var g = geos[pi], gp = g.attributes.position, gn = g.attributes.normal, gu = g.attributes.uv, n = gp.count, i, j, flip;
         bakeM.multiplyMatrices(inv, c.matrixWorld); bakeN.getNormalMatrix(bakeM); flip = bakeM.determinant() < 0;
@@ -200,13 +251,14 @@
           bakeV.fromBufferAttribute(gp, j).applyMatrix4(bakeM); pos[(off + i) * 3] = bakeV.x; pos[(off + i) * 3 + 1] = bakeV.y; pos[(off + i) * 3 + 2] = bakeV.z;
           bakeV.fromBufferAttribute(gn, j).applyMatrix3(bakeN).normalize(); nor[(off + i) * 3] = bakeV.x; nor[(off + i) * 3 + 1] = bakeV.y; nor[(off + i) * 3 + 2] = bakeV.z;
           if (uv) { uv[(off + i) * 2] = gu.getX(j); uv[(off + i) * 2 + 1] = gu.getY(j); }
+          if (col) { var gc = g.attributes.color, mc = c.material.color; col[(off + i) * 3] = gc ? gc.getX(j) : mc.r; col[(off + i) * 3 + 1] = gc ? gc.getY(j) : mc.g; col[(off + i) * 3 + 2] = gc ? gc.getZ(j) : mc.b; }
         }
         off += n;
         if (g !== c.geometry) g.dispose();
       });
-      var geo = new T.BufferGeometry(); geo.setAttribute('position', new T.BufferAttribute(pos, 3)); geo.setAttribute('normal', new T.BufferAttribute(nor, 3)); if (uv) geo.setAttribute('uv', new T.BufferAttribute(uv, 2));
+      var geo = new T.BufferGeometry(); geo.setAttribute('position', new T.BufferAttribute(pos, 3)); geo.setAttribute('normal', new T.BufferAttribute(nor, 3)); if (uv) geo.setAttribute('uv', new T.BufferAttribute(uv, 2)); if (col) geo.setAttribute('color', new T.BufferAttribute(col, 3));
       geo.computeBoundingSphere();
-      var m = new T.Mesh(geo, first.material); m.castShadow = first.castShadow; m.receiveShadow = first.receiveShadow; m.renderOrder = first.renderOrder; m.frustumCulled = first.frustumCulled; m.userData.baked = true; m.matrixAutoUpdate = false;
+      var m = new T.Mesh(geo, vc ? vcMat(vc) : first.material); m.castShadow = parts.some(function (c) { return c.castShadow; }); m.receiveShadow = parts.some(function (c) { return c.receiveShadow; }); m.renderOrder = first.renderOrder; m.frustumCulled = first.frustumCulled; m.userData.baked = true; m.matrixAutoUpdate = false;
       parts.forEach(function (c) { while (c.children.length) c.parent.attach(c.children[0]); c.parent.remove(c); });
       root.add(m); bakeStat.before += parts.length; bakeStat.after++;
     });

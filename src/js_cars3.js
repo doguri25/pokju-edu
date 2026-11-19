@@ -184,8 +184,9 @@
     return m;
   }
   function finishCar(key, g, wheels, lights) {
+    if (CARS[key] && CARS[key].paint) NOMERGE.add(CARS[key].paint);   /* traffic copies of the car repaint it */
     var car = CARS[key], k;
-    bake(g, wheels); wheels.forEach(function (wh) { bake(wh); });
+    pairWheels(g, wheels); bake(g, wheels); wheels.forEach(function (wh) { bake(wh); });
     lights.head.forEach(function (p) { var s = glowSprite(0xfff0c0, 1.5, 0.5); s.position.set(p[0], p[1], -p[2] - 0.15); g.add(s); headGlows.push(s); });
     car.tails = [];
     lights.tail.forEach(function (p) { var s = glowSprite(0xff2a1a, p[3] || 1.4, 0.55); s.position.set(p[0], p[1], -p[2] + 0.1); s.userData.s0 = p[3] || 1.4; g.add(s); car.tails.push(s); });

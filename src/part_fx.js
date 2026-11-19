@@ -1,12 +1,14 @@
   /* ---------- particles, debris, rings, pickups ---------- */
   var parts = [], ppool = { glow: [], smoke: [] };
+  /* puffs and sparks of light are drawn by the main view only: the rear-view mirror leaves them out (1.5), one draw call each */
+  var FX_LAYER = 1; camera.layers.enable(FX_LAYER);
   function spawnP(kind, x, y, z, vx, vy, vz, life, s0, s1, color, a0, drift) {
     if (color === COL.spark && typeof sparkAdd === 'function' && spkGeo) { sparkAdd(x, y, z, vx * 1.3, vy * 1.2, vz, life * 1.6); return; }   /* sparks are streaks now (js_fx3.js) */
     if (parts.length > 300 * Math.max(0.5, fxK)) return;   /* a heavy barrage: past this many puffs more add nothing but draw calls */
     var p = ppool[kind].pop();
     if (!p) {
       p = { kind: kind, s: new T.Sprite(new T.SpriteMaterial({ map: kind === 'glow' ? texGlow : texSmoke, transparent: true, depthWrite: false, fog: false, blending: kind === 'glow' ? T.AdditiveBlending : T.NormalBlending })) };
-      scene.add(p.s);
+      p.s.layers.set(FX_LAYER); scene.add(p.s);
     }
     p.s.position.set(x, y, z); p.vx = vx; p.vy = vy; p.vz = vz; p.life = p.max = life; p.s0 = s0; p.s1 = s1; p.a0 = a0; p.drift = drift === undefined ? 1 : drift;
     p.s.material.color.copy(color); p.s.material.opacity = a0; p.s.scale.set(s0, s0, 1); p.s.visible = true;

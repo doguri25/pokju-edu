@@ -231,7 +231,7 @@
   /* ---------- rear-view mirror: the road behind is drawn into a small target every other frame and shown, flipped left to right, on a panel at the top of the screen ---------- */
   /* the rear-view mirror is drawn every frame at a small size; its buffer gets the same tone mapping as the main picture (see js_fx2.js) */
   var mirrorRT = new T.WebGLRenderTarget(GFX[gfxNow].mw, Math.round(GFX[gfxNow].mw / 3), { type: HALF_RT ? T.HalfFloatType : T.UnsignedByteType }); mirrorRT.texture.colorSpace = T.SRGBColorSpace; mirrorRT.isXRRenderTarget = true;
-  var mirrorCam = new T.PerspectiveCamera(40, 3, 0.5, 75), mirrorN = 0;
+  var mirrorCam = new T.PerspectiveCamera(40, 3, 0.5, 52), mirrorN = 0;   /* the mirror's fog is thick at 50 m (mirrorPass): nothing past it is drawn */
   var mirrorQuad = new T.Mesh(new T.PlaneGeometry(1, 1), new T.ShaderMaterial({ uniforms: { tMap: { value: mirrorRT.texture } }, depthTest: false, depthWrite: false, transparent: true, fog: false,
     vertexShader: 'varying vec2 vUv;\nvoid main() {\n\tvUv = uv;\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}',
     fragmentShader: ['uniform sampler2D tMap; varying vec2 vUv;', 'void main() {', '\tvec2 p = ( vUv - 0.5 ) * vec2( 3.0, 1.0 );', '\tfloat d = length( max( abs( p ) - vec2( 1.5 - 0.17, 0.5 - 0.17 ), 0.0 ) ) - 0.17;', '\tif ( d > 0.0 ) discard;',

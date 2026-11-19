@@ -63,6 +63,7 @@
     ice: new T.MeshStandardMaterial({ color: C(0x86bfe0), roughness: 0.06, metalness: 0.45, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }),
     cafe: [std(0xf6c9d0, 0.9), std(0xbfe3ea, 0.9), std(0xfbe6a8, 0.9), std(0xd5e8c4, 0.9)], hull: [std(0x2f6fb5, 0.6), std(0xc5221f, 0.6), std(0xf2f2ee, 0.6)]
   };
+  [RM.stream, RM.bank, RM.foam, RM.water, RM.mud, RM.ice].forEach(function (m) { if (m) NOMERGE.add(m); });   /* their colours follow the sky and the weather every frame */
   function scn(key, obj, x, z, baseY, o) {
     obj.position.set(x, baseY || 0, z); obj.userData.baseY = baseY || 0;
     if (o) for (var k in o) obj.userData[k] = o[k];
